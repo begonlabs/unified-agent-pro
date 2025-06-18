@@ -9,7 +9,277 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      ai_configurations: {
+        Row: {
+          common_questions: string | null
+          created_at: string | null
+          faq: string | null
+          goals: string | null
+          id: string
+          is_active: boolean | null
+          knowledge_base: string | null
+          response_time: number | null
+          restrictions: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          common_questions?: string | null
+          created_at?: string | null
+          faq?: string | null
+          goals?: string | null
+          id?: string
+          is_active?: boolean | null
+          knowledge_base?: string | null
+          response_time?: number | null
+          restrictions?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          common_questions?: string | null
+          created_at?: string | null
+          faq?: string | null
+          goals?: string | null
+          id?: string
+          is_active?: boolean | null
+          knowledge_base?: string | null
+          response_time?: number | null
+          restrictions?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      communication_channels: {
+        Row: {
+          channel_config: Json | null
+          channel_type: string
+          created_at: string | null
+          id: string
+          is_connected: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          channel_config?: Json | null
+          channel_type: string
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          channel_config?: Json | null
+          channel_type?: string
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          channel: string
+          channel_thread_id: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          channel_thread_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          channel_thread_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_clients: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          last_interaction: string | null
+          name: string
+          phone: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_interaction?: string | null
+          name: string
+          phone?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_interaction?: string | null
+          name?: string
+          phone?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          is_automated: boolean | null
+          sender_name: string | null
+          sender_type: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          is_automated?: boolean | null
+          sender_name?: string | null
+          sender_type: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          is_automated?: boolean | null
+          sender_name?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          phone: string | null
+          plan_type: string
+          subscription_end: string | null
+          subscription_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          plan_type?: string
+          subscription_end?: string | null
+          subscription_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          plan_type?: string
+          subscription_end?: string | null
+          subscription_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      statistics: {
+        Row: {
+          automated_messages: number | null
+          channel: string
+          created_at: string | null
+          date: string | null
+          human_messages: number | null
+          id: string
+          new_leads: number | null
+          response_rate: number | null
+          total_messages: number | null
+          user_id: string
+        }
+        Insert: {
+          automated_messages?: number | null
+          channel: string
+          created_at?: string | null
+          date?: string | null
+          human_messages?: number | null
+          id?: string
+          new_leads?: number | null
+          response_rate?: number | null
+          total_messages?: number | null
+          user_id: string
+        }
+        Update: {
+          automated_messages?: number | null
+          channel?: string
+          created_at?: string | null
+          date?: string | null
+          human_messages?: number | null
+          id?: string
+          new_leads?: number | null
+          response_rate?: number | null
+          total_messages?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
