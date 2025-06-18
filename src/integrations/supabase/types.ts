@@ -244,11 +244,13 @@ export type Database = {
       statistics: {
         Row: {
           automated_messages: number | null
+          avg_response_time: number | null
           channel: string
           created_at: string | null
           date: string | null
           human_messages: number | null
           id: string
+          leads_converted: number | null
           new_leads: number | null
           response_rate: number | null
           total_messages: number | null
@@ -256,11 +258,13 @@ export type Database = {
         }
         Insert: {
           automated_messages?: number | null
+          avg_response_time?: number | null
           channel: string
           created_at?: string | null
           date?: string | null
           human_messages?: number | null
           id?: string
+          leads_converted?: number | null
           new_leads?: number | null
           response_rate?: number | null
           total_messages?: number | null
@@ -268,11 +272,13 @@ export type Database = {
         }
         Update: {
           automated_messages?: number | null
+          avg_response_time?: number | null
           channel?: string
           created_at?: string | null
           date?: string | null
           human_messages?: number | null
           id?: string
+          leads_converted?: number | null
           new_leads?: number | null
           response_rate?: number | null
           total_messages?: number | null
@@ -280,15 +286,91 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          priority: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          priority?: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          priority?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      admin_general_stats: {
+        Row: {
+          enterprise_clients: number | null
+          facebook_leads: number | null
+          facebook_messages: number | null
+          free_clients: number | null
+          instagram_leads: number | null
+          instagram_messages: number | null
+          premium_clients: number | null
+          total_clients: number | null
+          total_leads_platform: number | null
+          total_messages_platform: number | null
+          whatsapp_leads: number | null
+          whatsapp_messages: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -403,6 +485,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "client"],
+    },
   },
 } as const

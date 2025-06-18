@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { useAdmin } from '@/hooks/useAdmin';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MessagesView from '@/components/dashboard/MessagesView';
 import StatsView from '@/components/dashboard/StatsView';
@@ -11,6 +12,7 @@ import ChannelsView from '@/components/dashboard/ChannelsView';
 import ProfileView from '@/components/dashboard/ProfileView';
 import SupportView from '@/components/dashboard/SupportView';
 import AIAgentView from '@/components/dashboard/AIAgentView';
+import AdminPanel from '@/components/admin/AdminPanel';
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -18,6 +20,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, loading: adminLoading } = useAdmin(user);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,6 +62,11 @@ const Dashboard = () => {
   };
 
   const renderView = () => {
+    // Si el usuario es administrador y está en la vista admin, mostrar el panel
+    if (isAdmin && currentView === 'admin') {
+      return <AdminPanel user={user!} />;
+    }
+
     switch (currentView) {
       case 'messages':
         return <MessagesView />;
@@ -77,7 +85,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -91,6 +99,7 @@ const Dashboard = () => {
         currentView={currentView} 
         setCurrentView={setCurrentView}
         onSignOut={handleSignOut}
+        isAdmin={isAdmin}
       />
       <main className="flex-1 overflow-hidden">
         {renderView()}
