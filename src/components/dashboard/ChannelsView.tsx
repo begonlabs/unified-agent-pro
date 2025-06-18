@@ -17,19 +17,36 @@ interface Channel {
   is_connected: boolean;
 }
 
+interface WhatsAppConfig {
+  phone_number: string;
+  api_token: string;
+  webhook_url: string;
+}
+
+interface FacebookConfig {
+  page_id: string;
+  access_token: string;
+  app_secret: string;
+}
+
+interface InstagramConfig {
+  account_id: string;
+  access_token: string;
+}
+
 const ChannelsView = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [whatsappConfig, setWhatsappConfig] = useState({
+  const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>({
     phone_number: '',
     api_token: '',
     webhook_url: ''
   });
-  const [facebookConfig, setFacebookConfig] = useState({
+  const [facebookConfig, setFacebookConfig] = useState<FacebookConfig>({
     page_id: '',
     access_token: '',
     app_secret: ''
   });
-  const [instagramConfig, setInstagramConfig] = useState({
+  const [instagramConfig, setInstagramConfig] = useState<InstagramConfig>({
     account_id: '',
     access_token: ''
   });
@@ -38,6 +55,26 @@ const ChannelsView = () => {
   useEffect(() => {
     fetchChannels();
   }, []);
+
+  const isWhatsAppConfig = (config: any): config is WhatsAppConfig => {
+    return config && typeof config === 'object' && 
+           typeof config.phone_number === 'string' &&
+           typeof config.api_token === 'string' &&
+           typeof config.webhook_url === 'string';
+  };
+
+  const isFacebookConfig = (config: any): config is FacebookConfig => {
+    return config && typeof config === 'object' && 
+           typeof config.page_id === 'string' &&
+           typeof config.access_token === 'string' &&
+           typeof config.app_secret === 'string';
+  };
+
+  const isInstagramConfig = (config: any): config is InstagramConfig => {
+    return config && typeof config === 'object' && 
+           typeof config.account_id === 'string' &&
+           typeof config.access_token === 'string';
+  };
 
   const fetchChannels = async () => {
     try {
@@ -48,14 +85,20 @@ const ChannelsView = () => {
       if (error) throw error;
       setChannels(data || []);
 
-      // Load existing configurations
+      // Load existing configurations with proper type checking
       data?.forEach(channel => {
         if (channel.channel_type === 'whatsapp' && channel.channel_config) {
-          setWhatsappConfig(channel.channel_config);
+          if (isWhatsAppConfig(channel.channel_config)) {
+            setWhatsappConfig(channel.channel_config);
+          }
         } else if (channel.channel_type === 'facebook' && channel.channel_config) {
-          setFacebookConfig(channel.channel_config);
+          if (isFacebookConfig(channel.channel_config)) {
+            setFacebookConfig(channel.channel_config);
+          }
         } else if (channel.channel_type === 'instagram' && channel.channel_config) {
-          setInstagramConfig(channel.channel_config);
+          if (isInstagramConfig(channel.channel_config)) {
+            setInstagramConfig(channel.channel_config);
+          }
         }
       });
     } catch (error: any) {
