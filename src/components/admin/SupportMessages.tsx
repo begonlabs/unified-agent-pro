@@ -51,16 +51,36 @@ const SupportMessages = () => {
 
   const fetchSupportMessages = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch support messages
+      const { data: supportData, error: supportError } = await supabase
         .from('support_messages')
-        .select(`
-          *,
-          profiles(company_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setMessages(data || []);
+      if (supportError) throw supportError;
+
+      if (supportData && supportData.length > 0) {
+        // Get unique user IDs
+        const userIds = [...new Set(supportData.map(msg => msg.user_id))];
+        
+        // Fetch profiles for those users
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, company_name, email')
+          .in('user_id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Merge the data
+        const messagesWithProfiles = supportData.map(message => ({
+          ...message,
+          profiles: profilesData?.find(profile => profile.user_id === message.user_id) || null
+        }));
+
+        setMessages(messagesWithProfiles);
+      } else {
+        setMessages([]);
+      }
     } catch (error: any) {
       toast({
         title: "Error al cargar mensajes",
