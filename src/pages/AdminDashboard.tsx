@@ -15,8 +15,11 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const { isAdmin, loading: adminLoading } = useAdmin(user);
 
+  console.log('AdminDashboard state:', { user: user?.email, isAdmin, adminLoading, loading });
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Admin dashboard session:', session?.user?.email);
       if (session) {
         setUser(session.user);
       } else {
@@ -27,6 +30,7 @@ const AdminDashboard = () => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Admin dashboard auth state changed:', event, session?.user?.email);
       if (event === 'SIGNED_OUT' || !session) {
         navigate('/auth');
       } else if (session) {
@@ -38,8 +42,11 @@ const AdminDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
+    console.log('Admin check effect:', { adminLoading, isAdmin, user: user?.email });
+    
     // Redirigir si no es admin una vez que se carga la verificación
     if (!adminLoading && !isAdmin && user) {
+      console.log('User is not admin, redirecting to dashboard');
       toast({
         title: "Acceso denegado",
         description: "No tienes permisos para acceder al panel de administración.",
@@ -77,8 +84,11 @@ const AdminDashboard = () => {
 
   // Si no es admin, no mostrar nada (el useEffect se encargará de redirigir)
   if (!isAdmin) {
+    console.log('User is not admin, returning null');
     return null;
   }
+
+  console.log('Rendering admin dashboard for user:', user?.email);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

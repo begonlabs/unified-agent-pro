@@ -21,8 +21,11 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { isAdmin, loading: adminLoading } = useAdmin(user);
 
+  console.log('Dashboard state:', { user: user?.email, isAdmin, adminLoading, loading });
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Session retrieved:', session?.user?.email);
       if (session) {
         setUser(session.user);
       } else {
@@ -32,6 +35,7 @@ const Dashboard = () => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
       if (event === 'SIGNED_OUT' || !session) {
         navigate('/auth');
       } else if (session) {
