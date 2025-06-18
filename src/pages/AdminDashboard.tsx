@@ -5,17 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/hooks/useAdmin';
-import Sidebar from '@/components/dashboard/Sidebar';
-import MessagesView from '@/components/dashboard/MessagesView';
-import StatsView from '@/components/dashboard/StatsView';
-import ChannelsView from '@/components/dashboard/ChannelsView';
-import ProfileView from '@/components/dashboard/ProfileView';
-import SupportView from '@/components/dashboard/SupportView';
-import AIAgentView from '@/components/dashboard/AIAgentView';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminPanel from '@/components/admin/AdminPanel';
 
-const Dashboard = () => {
+const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState('messages');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,6 +21,7 @@ const Dashboard = () => {
         setUser(session.user);
       } else {
         navigate('/auth');
+        return;
       }
       setLoading(false);
     });
@@ -41,6 +36,18 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    // Redirigir si no es admin una vez que se carga la verificación
+    if (!adminLoading && !isAdmin && user) {
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para acceder al panel de administración.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [isAdmin, adminLoading, user, navigate, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -60,46 +67,27 @@ const Dashboard = () => {
     }
   };
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'messages':
-        return <MessagesView />;
-      case 'stats':
-        return <StatsView />;
-      case 'channels':
-        return <ChannelsView />;
-      case 'profile':
-        return <ProfileView user={user} />;
-      case 'support':
-        return <SupportView />;
-      case 'ai-agent':
-        return <AIAgentView />;
-      default:
-        return <MessagesView />;
-    }
-  };
-
   if (loading || adminLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
   }
 
+  // Si no es admin, no mostrar nada (el useEffect se encargará de redirigir)
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar 
-        currentView={currentView} 
-        setCurrentView={setCurrentView}
-        onSignOut={handleSignOut}
-        isAdmin={isAdmin}
-      />
+      <AdminSidebar onSignOut={handleSignOut} />
       <main className="flex-1 overflow-hidden">
-        {renderView()}
+        <AdminPanel user={user!} />
       </main>
     </div>
   );
 };
 
-export default Dashboard;
+export default AdminDashboard;

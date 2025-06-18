@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, 
   BarChart3, 
@@ -23,6 +24,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: SidebarProps) => {
+  const navigate = useNavigate();
+
   const menuItems = [
     { id: 'messages', label: 'Mensajes/CRM', icon: MessageSquare },
     { id: 'stats', label: 'Estadísticas', icon: BarChart3 },
@@ -32,10 +35,9 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
     { id: 'ai-agent', label: 'Mi Agente IA', icon: Bot },
   ];
 
-  // Agregar opción de administración solo si es admin
-  if (isAdmin) {
-    menuItems.push({ id: 'admin', label: 'Panel Admin', icon: Shield });
-  }
+  const goToAdminDashboard = () => {
+    navigate('/admin');
+  };
 
   return (
     <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
@@ -47,12 +49,24 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">ChatBot AI</h1>
-            <p className="text-sm text-gray-500">
-              {isAdmin ? 'Panel de Control' : 'Panel de Control'}
-            </p>
+            <p className="text-sm text-gray-500">Panel de Control</p>
           </div>
         </div>
       </div>
+
+      {/* Admin Access Button */}
+      {isAdmin && (
+        <div className="p-4 border-b bg-orange-50">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 border-orange-300 text-orange-700 hover:bg-orange-100"
+            onClick={goToAdminDashboard}
+          >
+            <Shield className="h-5 w-5" />
+            Panel de Administración
+          </Button>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
@@ -62,12 +76,10 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
             <Button
               key={item.id}
               variant={currentView === item.id ? "default" : "ghost"}
-              className={`w-full justify-start gap-3 ${
-                item.id === 'admin' ? 'border border-orange-300 bg-orange-50 hover:bg-orange-100' : ''
-              }`}
+              className="w-full justify-start gap-3"
               onClick={() => setCurrentView(item.id)}
             >
-              <Icon className={`h-5 w-5 ${item.id === 'admin' ? 'text-orange-600' : ''}`} />
+              <Icon className="h-5 w-5" />
               {item.label}
             </Button>
           );
@@ -98,10 +110,10 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
 
       {/* Admin Badge */}
       {isAdmin && (
-        <div className="p-4 border-t bg-orange-50">
-          <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
+        <div className="p-4 border-t bg-blue-50">
+          <div className="flex items-center gap-2 text-sm font-medium text-blue-700">
             <Shield className="h-4 w-4" />
-            Administrador
+            Privilegios de Administrador
           </div>
         </div>
       )}
