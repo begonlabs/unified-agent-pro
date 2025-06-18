@@ -55,7 +55,7 @@ const SupportMessages = () => {
         .from('support_messages')
         .select(`
           *,
-          profiles!inner(company_name, email)
+          profiles(company_name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -164,8 +164,8 @@ const SupportMessages = () => {
                     <TableRow key={message.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{message.profiles?.company_name}</div>
-                          <div className="text-sm text-gray-500">{message.profiles?.email}</div>
+                          <div className="font-medium">{message.profiles?.company_name || 'Cliente'}</div>
+                          <div className="text-sm text-gray-500">{message.profiles?.email || 'Sin email'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -245,8 +245,8 @@ const SupportMessages = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700">Cliente</label>
                   <div className="mt-1">
-                    <div className="font-medium">{selectedMessage.profiles?.company_name}</div>
-                    <div className="text-sm text-gray-500">{selectedMessage.profiles?.email}</div>
+                    <div className="font-medium">{selectedMessage.profiles?.company_name || 'Cliente'}</div>
+                    <div className="text-sm text-gray-500">{selectedMessage.profiles?.email || 'Sin email'}</div>
                   </div>
                 </div>
                 
