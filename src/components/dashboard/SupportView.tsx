@@ -5,293 +5,312 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, HelpCircle, Clock, CheckCircle, MessageSquare } from 'lucide-react';
+import { 
+  HelpCircle, 
+  MessageCircle, 
+  Book, 
+  Video, 
+  Mail, 
+  Phone,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  ChevronRight
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const SupportView = () => {
-  const [newTicket, setNewTicket] = useState({
-    subject: '',
-    message: ''
-  });
+  const [ticketSubject, setTicketSubject] = useState('');
+  const [ticketMessage, setTicketMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Datos de ejemplo - en producción vendrían de la base de datos
-  const supportTickets = [
+  const faqItems = [
     {
-      id: '1',
-      subject: 'Problema con integración de WhatsApp',
-      status: 'open',
-      priority: 'high',
-      created_at: '2024-01-15T10:30:00Z',
-      messages: [
-        {
-          id: '1',
-          content: 'No puedo conectar mi número de WhatsApp Business. Me aparece un error de autenticación.',
-          sender: 'user',
-          created_at: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          content: 'Hola! Gracias por contactarnos. Para ayudarte con la integración de WhatsApp, necesitaríamos que verifiques que tu token de API esté actualizado.',
-          sender: 'support',
-          created_at: '2024-01-15T11:45:00Z'
-        }
-      ]
+      question: "¿Cómo conectar WhatsApp Business?",
+      answer: "Ve a la sección 'Canales', selecciona WhatsApp y sigue las instrucciones para vincular tu cuenta de WhatsApp Business."
     },
     {
-      id: '2',
-      subject: 'Consulta sobre límites del plan Professional',
-      status: 'resolved',
-      priority: 'medium',
-      created_at: '2024-01-10T14:20:00Z',
-      messages: [
-        {
-          id: '3',
-          content: '¿Cuántos mensajes puedo enviar con el plan Professional?',
-          sender: 'user',
-          created_at: '2024-01-10T14:20:00Z'
-        },
-        {
-          id: '4',
-          content: 'El plan Professional incluye hasta 1,000 mensajes mensuales. Si necesitas más, puedes actualizar al plan Enterprise.',
-          sender: 'support',
-          created_at: '2024-01-10T15:30:00Z'
-        }
-      ]
+      question: "¿Cómo entrenar mi agente de IA?",
+      answer: "En 'Mi Agente IA' puedes definir objetivos, restricciones y cargar tu base de conocimientos para personalizar las respuestas."
+    },
+    {
+      question: "¿Cuántos mensajes incluye cada plan?",
+      answer: "Plan Free: 100 mensajes/mes, Plan Professional: 1,000 mensajes/mes, Plan Enterprise: mensajes ilimitados."
+    },
+    {
+      question: "¿Cómo cambiar mi plan?",
+      answer: "Ve a tu perfil y selecciona 'Cambiar Plan'. Los cambios se aplican inmediatamente."
     }
   ];
 
-  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
-  const [replyMessage, setReplyMessage] = useState('');
+  const tutorials = [
+    {
+      title: "Configuración inicial",
+      description: "Aprende a configurar tu cuenta y conectar tus primeros canales",
+      duration: "5 min",
+      type: "video"
+    },
+    {
+      title: "Entrenamiento de IA",
+      description: "Cómo personalizar tu agente de IA para tu negocio",
+      duration: "8 min",
+      type: "video"
+    },
+    {
+      title: "Gestión de leads",
+      description: "Organiza y convierte tus leads efectivamente",
+      duration: "6 min",
+      type: "guide"
+    },
+    {
+      title: "Análisis de métricas",
+      description: "Interpreta tus estadísticas para mejorar resultados",
+      duration: "4 min",
+      type: "guide"
+    }
+  ];
 
-  const createTicket = () => {
-    if (!newTicket.subject.trim() || !newTicket.message.trim()) {
+  const supportTickets = [
+    {
+      id: "TICK-001",
+      subject: "Problema con conexión de Facebook",
+      status: "en_progreso",
+      created: "2024-01-15",
+      lastUpdate: "2024-01-16"
+    },
+    {
+      id: "TICK-002",
+      subject: "Consulta sobre facturación",
+      status: "resuelto",
+      created: "2024-01-10",
+      lastUpdate: "2024-01-12"
+    }
+  ];
+
+  const handleSubmitTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Simular envío de ticket
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       toast({
-        title: "Error",
-        description: "Por favor completa todos los campos",
+        title: "Ticket creado exitosamente",
+        description: "Te contactaremos dentro de 24 horas.",
+      });
+      
+      setTicketSubject('');
+      setTicketMessage('');
+    } catch (error) {
+      toast({
+        title: "Error al crear ticket",
+        description: "Inténtalo de nuevo más tarde.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    // En producción, aquí se enviaría a la base de datos
-    toast({
-      title: "Ticket creado",
-      description: "Tu consulta ha sido enviada. Te responderemos pronto.",
-    });
-
-    setNewTicket({ subject: '', message: '' });
   };
 
-  const sendReply = () => {
-    if (!replyMessage.trim()) return;
-
-    // En producción, aquí se enviaría la respuesta
-    toast({
-      title: "Mensaje enviado",
-      description: "Tu respuesta ha sido enviada al equipo de soporte.",
-    });
-
-    setReplyMessage('');
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-yellow-100 text-yellow-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'en_progreso':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">En Progreso</Badge>;
+      case 'resuelto':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Resuelto</Badge>;
+      default:
+        return <Badge variant="secondary">Abierto</Badge>;
     }
   };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const selectedTicketData = supportTickets.find(t => t.id === selectedTicket);
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Centro de Soporte</h1>
-        <div className="flex items-center gap-2">
-          <HelpCircle className="h-5 w-5 text-gray-500" />
-          <span className="text-sm text-gray-500">¿Necesitas ayuda? Estamos aquí para ti</span>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2">
+            <MessageCircle className="h-4 w-4" />
+            Chat en Vivo
+          </Button>
+          <Button variant="outline" className="gap-2">
+            <Phone className="h-4 w-4" />
+            Llamar
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Nuevo Ticket */}
+      {/* Contact Methods */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              Crear Nuevo Ticket
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Asunto</label>
-              <Input
-                placeholder="Describe brevemente tu consulta"
-                value={newTicket.subject}
-                onChange={(e) => setNewTicket(prev => ({ ...prev, subject: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Descripción</label>
-              <Textarea
-                placeholder="Describe tu problema o consulta en detalle..."
-                rows={4}
-                value={newTicket.message}
-                onChange={(e) => setNewTicket(prev => ({ ...prev, message: e.target.value }))}
-              />
-            </div>
-            <Button onClick={createTicket} className="w-full">
-              <Send className="h-4 w-4 mr-2" />
-              Enviar Consulta
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Mis Tickets */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Mis Consultas
+              <MessageCircle className="h-5 w-5 text-blue-600" />
+              Chat en Vivo
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-96">
-              <div className="space-y-3">
-                {supportTickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedTicket === ticket.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => setSelectedTicket(ticket.id)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-sm">{ticket.subject}</h4>
-                      <div className="flex gap-1">
-                        <Badge className={getStatusColor(ticket.status)} variant="secondary">
-                          {ticket.status}
-                        </Badge>
-                        <Badge className={getPriorityColor(ticket.priority)} variant="secondary">
-                          {ticket.priority}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Clock className="h-3 w-3" />
-                      {new Date(ticket.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+            <p className="text-gray-600 mb-4">
+              Habla directamente con nuestro equipo de soporte
+            </p>
+            <div className="flex items-center gap-2 text-sm text-green-600 mb-4">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              En línea
+            </div>
+            <Button className="w-full">Iniciar Chat</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-purple-600" />
+              Email
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Respuesta en menos de 4 horas
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              support@chatbotai.com
+            </p>
+            <Button variant="outline" className="w-full">Enviar Email</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-green-600" />
+              Teléfono
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Lunes a Viernes 9:00 - 18:00
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              +1 (555) 123-4567
+            </p>
+            <Button variant="outline" className="w-full">Llamar Ahora</Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Chat del Ticket Seleccionado */}
-      {selectedTicketData && (
+      {/* Support Ticket Creation */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Crear Ticket de Soporte</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmitTicket} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Asunto</label>
+              <Input
+                value={ticketSubject}
+                onChange={(e) => setTicketSubject(e.target.value)}
+                placeholder="Describe brevemente tu problema"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Descripción</label>
+              <Textarea
+                value={ticketMessage}
+                onChange={(e) => setTicketMessage(e.target.value)}
+                placeholder="Describe detalladamente tu problema o consulta"
+                rows={4}
+                required
+              />
+            </div>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Enviando...' : 'Crear Ticket'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* My Tickets */}
+      {supportTickets.length > 0 && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{selectedTicketData.subject}</CardTitle>
-              <div className="flex gap-2">
-                <Badge className={getStatusColor(selectedTicketData.status)}>
-                  {selectedTicketData.status}
-                </Badge>
-                <Badge className={getPriorityColor(selectedTicketData.priority)}>
-                  {selectedTicketData.priority}
-                </Badge>
-              </div>
-            </div>
+            <CardTitle>Mis Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-64 mb-4">
-              <div className="space-y-4">
-                {selectedTicketData.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.sender === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {new Date(message.created_at).toLocaleString()}
-                      </p>
+            <div className="space-y-4">
+              {supportTickets.map((ticket) => (
+                <div key={ticket.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">{ticket.id}</span>
+                      {getStatusBadge(ticket.status)}
                     </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-
-            {selectedTicketData.status === 'open' && (
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Escribe tu respuesta..."
-                  value={replyMessage}
-                  onChange={(e) => setReplyMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendReply()}
-                  className="flex-1"
-                />
-                <Button onClick={sendReply} disabled={!replyMessage.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+                  <h4 className="font-medium mb-2">{ticket.subject}</h4>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>Creado: {ticket.created}</span>
+                    <span>Última actualización: {ticket.lastUpdate}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* FAQs */}
+      {/* FAQ Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Preguntas Frecuentes</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" />
+            Preguntas Frecuentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {faqItems.map((item, index) => (
+              <div key={index} className="border-b pb-4 last:border-b-0">
+                <h4 className="font-medium mb-2">{item.question}</h4>
+                <p className="text-gray-600 text-sm">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tutorials and Guides */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Book className="h-5 w-5" />
+            Tutoriales y Guías
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">¿Cómo conecto WhatsApp?</h4>
-              <p className="text-sm text-gray-600">
-                Ve a Configuración > Canales y sigue las instrucciones para conectar tu cuenta de WhatsApp Business.
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">¿Puedo cambiar mi plan?</h4>
-              <p className="text-sm text-gray-600">
-                Sí, puedes cambiar tu plan en cualquier momento desde tu perfil. Los cambios se aplicarán en el siguiente ciclo de facturación.
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">¿Cómo entreno mi IA?</h4>
-              <p className="text-sm text-gray-600">
-                En la sección "Mi Agente IA" puedes configurar objetivos, restricciones y subir documentos para entrenar tu asistente.
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">¿Hay límites de mensajes?</h4>
-              <p className="text-sm text-gray-600">
-                Cada plan tiene límites diferentes. El plan gratuito incluye 100 mensajes, Professional 1,000 y Enterprise es ilimitado.
-              </p>
-            </div>
+            {tutorials.map((tutorial, index) => (
+              <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {tutorial.type === 'video' ? (
+                      <Video className="h-4 w-4 text-red-600" />
+                    ) : (
+                      <Book className="h-4 w-4 text-blue-600" />
+                    )}
+                    <span className="text-sm text-gray-500">{tutorial.type}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    {tutorial.duration}
+                  </div>
+                </div>
+                <h4 className="font-medium mb-1">{tutorial.title}</h4>
+                <p className="text-sm text-gray-600">{tutorial.description}</p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
