@@ -47,6 +47,20 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Efecto separado para manejar la redirección cuando NO es admin
+  useEffect(() => {
+    // Solo ejecutar cuando tenemos todos los datos y el usuario NO es admin
+    if (!loading && !adminLoading && user && isAdmin === false) {
+      console.log('User is confirmed NOT admin, redirecting to dashboard');
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para acceder al panel de administración.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [loading, adminLoading, user, isAdmin, navigate, toast]);
+
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -65,7 +79,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Si está cargando la sesión o el estado de admin, mostrar loading
+  // Mostrar loading si cualquier cosa está cargando
   if (loading || adminLoading) {
     console.log('Showing loading spinner', { loading, adminLoading });
     return (
@@ -75,27 +89,18 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si no hay usuario, redirigir a auth
+  // Si no hay usuario, ya se maneja en el useEffect
   if (!user) {
-    console.log('No user, redirecting to auth');
-    navigate('/auth');
-    return null;
+    console.log('No user found');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
   }
 
-  // Si definitivamente NO es admin, mostrar error y redirigir
-  if (!adminLoading && isAdmin === false) {
-    console.log('User is NOT admin, redirecting to dashboard');
-    toast({
-      title: "Acceso denegado",
-      description: "No tienes permisos para acceder al panel de administración.",
-      variant: "destructive",
-    });
-    navigate('/dashboard');
-    return null;
-  }
-
-  // Si es admin, mostrar el panel
-  if (!adminLoading && isAdmin === true) {
+  // Solo mostrar el panel si es definitivamente admin
+  if (isAdmin === true) {
     console.log('User IS admin, showing admin panel');
     return (
       <div className="min-h-screen bg-gray-50 flex">
@@ -107,8 +112,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si llegamos aquí, seguimos cargando el estado de admin
-  console.log('Still loading admin status...');
+  // Para cualquier otro caso, mostrar loading
+  console.log('Default case - showing loading');
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
