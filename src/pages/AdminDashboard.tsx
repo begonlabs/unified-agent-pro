@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
@@ -14,14 +14,12 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, loading: adminLoading } = useAdmin(user);
-  const hasRedirected = useRef(false);
 
   console.log('AdminDashboard render:', { 
     user: user?.email, 
     isAdmin, 
     adminLoading, 
     loading,
-    hasRedirected: hasRedirected.current,
     timestamp: new Date().toISOString()
   });
 
@@ -49,17 +47,18 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Efecto para manejar la redirección cuando NO es admin
+  // Verificar permisos de admin cuando los datos estén listos
   useEffect(() => {
-    if (!loading && !adminLoading && user && isAdmin === false && !hasRedirected.current) {
-      console.log('User is confirmed NOT admin, redirecting to dashboard');
-      hasRedirected.current = true;
-      toast({
-        title: "Acceso denegado",
-        description: "No tienes permisos para acceder al panel de administración.",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
+    if (!loading && !adminLoading && user) {
+      if (isAdmin === false) {
+        console.log('User is NOT admin, redirecting to dashboard');
+        toast({
+          title: "Acceso denegado",
+          description: "No tienes permisos para acceder al panel de administración.",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
+      }
     }
   }, [loading, adminLoading, user, isAdmin, navigate, toast]);
 
@@ -81,9 +80,9 @@ const AdminDashboard = () => {
     }
   };
 
-  // Mostrar loading mientras se cargan los datos
-  if (loading || adminLoading) {
-    console.log('Showing loading spinner', { loading, adminLoading });
+  // Mostrar loading mientras se verifican permisos
+  if (loading || adminLoading || !user || isAdmin === undefined) {
+    console.log('Showing loading spinner', { loading, adminLoading, user: !!user, isAdmin });
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
@@ -91,17 +90,7 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si no hay usuario, mostrar loading (el useEffect se encarga de redirigir)
-  if (!user) {
-    console.log('No user found');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
-      </div>
-    );
-  }
-
-  // Si ES admin, mostrar el panel
+  // Solo mostrar el panel si el usuario ES admin
   if (isAdmin === true) {
     console.log('User IS admin, showing admin panel');
     return (
@@ -114,8 +103,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Caso por defecto: mostrar loading (la redirección se maneja en el useEffect)
-  console.log('Default case - showing loading');
+  // En cualquier otro caso, mostrar loading (el useEffect se encarga de la redirección)
+  console.log('Fallback loading state');
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>

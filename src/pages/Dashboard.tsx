@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import { useAdmin } from '@/hooks/useAdmin';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MessagesView from '@/components/dashboard/MessagesView';
 import StatsView from '@/components/dashboard/StatsView';
@@ -19,9 +18,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: adminLoading } = useAdmin(user);
 
-  console.log('Dashboard state:', { user: user?.email, isAdmin, adminLoading, loading });
+  console.log('Dashboard state:', { user: user?.email, loading });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -83,7 +81,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading || adminLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -97,7 +95,6 @@ const Dashboard = () => {
         currentView={currentView} 
         setCurrentView={setCurrentView}
         onSignOut={handleSignOut}
-        isAdmin={isAdmin}
       />
       <main className="flex-1 overflow-hidden">
         {renderView()}

@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, 
   BarChart3, 
@@ -12,20 +11,16 @@ import {
   LogOut,
   Phone,
   Instagram,
-  Facebook,
-  Shield
+  Facebook
 } from 'lucide-react';
 
 interface SidebarProps {
   currentView: string;
   setCurrentView: (view: string) => void;
   onSignOut: () => void;
-  isAdmin?: boolean;
 }
 
-const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: SidebarProps) => {
-  const navigate = useNavigate();
-
+const Sidebar = ({ currentView, setCurrentView, onSignOut }: SidebarProps) => {
   const menuItems = [
     { id: 'messages', label: 'Mensajes/CRM', icon: MessageSquare },
     { id: 'stats', label: 'Estadísticas', icon: BarChart3 },
@@ -34,10 +29,6 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
     { id: 'support', label: 'Soporte', icon: HelpCircle },
     { id: 'ai-agent', label: 'Mi Agente IA', icon: Bot },
   ];
-
-  const goToAdminDashboard = () => {
-    navigate('/admin');
-  };
 
   return (
     <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
@@ -53,20 +44,6 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
           </div>
         </div>
       </div>
-
-      {/* Admin Access Button */}
-      {isAdmin && (
-        <div className="p-4 border-b bg-orange-50">
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3 border-orange-300 text-orange-700 hover:bg-orange-100"
-            onClick={goToAdminDashboard}
-          >
-            <Shield className="h-5 w-5" />
-            Panel de Administración
-          </Button>
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
@@ -107,16 +84,6 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, isAdmin = false }: Si
           </div>
         </div>
       </div>
-
-      {/* Admin Badge */}
-      {isAdmin && (
-        <div className="p-4 border-t bg-blue-50">
-          <div className="flex items-center gap-2 text-sm font-medium text-blue-700">
-            <Shield className="h-4 w-4" />
-            Privilegios de Administrador
-          </div>
-        </div>
-      )}
 
       {/* Sign Out */}
       <div className="p-4 border-t">
