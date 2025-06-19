@@ -65,7 +65,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Mostrar loading mientras carga
+  // Si está cargando la sesión o el estado de admin, mostrar loading
   if (loading || adminLoading) {
     console.log('Showing loading spinner', { loading, adminLoading });
     return (
@@ -75,33 +75,28 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si no hay usuario, redirigir
+  // Si no hay usuario, redirigir a auth
   if (!user) {
     console.log('No user, redirecting to auth');
     navigate('/auth');
     return null;
   }
 
-  // IMPORTANTE: Solo verificar isAdmin cuando NO está cargando
-  // y solo redirigir si definitivamente NO es admin
-  console.log('About to check admin status:', { isAdmin, typeof: typeof isAdmin });
-  
-  if (isAdmin === false) {
-    console.log('User is confirmed NOT admin, redirecting');
-    setTimeout(() => {
-      toast({
-        title: "Acceso denegado",
-        description: "No tienes permisos para acceder al panel de administración.",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
-    }, 0);
+  // Si definitivamente NO es admin, mostrar error y redirigir
+  if (!adminLoading && isAdmin === false) {
+    console.log('User is NOT admin, redirecting to dashboard');
+    toast({
+      title: "Acceso denegado",
+      description: "No tienes permisos para acceder al panel de administración.",
+      variant: "destructive",
+    });
+    navigate('/dashboard');
     return null;
   }
 
-  // Si isAdmin es true, mostrar dashboard
-  if (isAdmin === true) {
-    console.log('User is confirmed ADMIN, showing dashboard');
+  // Si es admin, mostrar el panel
+  if (!adminLoading && isAdmin === true) {
+    console.log('User IS admin, showing admin panel');
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <AdminSidebar onSignOut={handleSignOut} />
@@ -112,8 +107,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si llegamos aquí, isAdmin debe ser undefined o null (estado indeterminado)
-  console.log('Admin status indeterminate, showing loading');
+  // Si llegamos aquí, seguimos cargando el estado de admin
+  console.log('Still loading admin status...');
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
