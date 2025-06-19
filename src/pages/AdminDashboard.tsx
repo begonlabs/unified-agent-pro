@@ -15,7 +15,13 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const { isAdmin, loading: adminLoading } = useAdmin(user);
 
-  console.log('AdminDashboard state:', { user: user?.email, isAdmin, adminLoading, loading });
+  console.log('AdminDashboard render:', { 
+    user: user?.email, 
+    isAdmin, 
+    adminLoading, 
+    loading,
+    timestamp: new Date().toISOString()
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -61,7 +67,7 @@ const AdminDashboard = () => {
 
   // Mostrar loading mientras carga
   if (loading || adminLoading) {
-    console.log('Showing loading spinner');
+    console.log('Showing loading spinner', { loading, adminLoading });
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
@@ -76,26 +82,41 @@ const AdminDashboard = () => {
     return null;
   }
 
-  // Si no es admin, mostrar mensaje y redirigir
+  // IMPORTANTE: Solo verificar isAdmin cuando NO está cargando
+  // y solo redirigir si definitivamente NO es admin
+  console.log('About to check admin status:', { isAdmin, typeof: typeof isAdmin });
+  
   if (isAdmin === false) {
-    console.log('User is NOT admin, showing access denied and redirecting');
-    toast({
-      title: "Acceso denegado",
-      description: "No tienes permisos para acceder al panel de administración.",
-      variant: "destructive",
-    });
-    navigate('/dashboard');
+    console.log('User is confirmed NOT admin, redirecting');
+    setTimeout(() => {
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para acceder al panel de administración.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }, 0);
     return null;
   }
 
-  // Si es admin, mostrar el dashboard
-  console.log('Rendering admin dashboard for admin user:', user.email);
+  // Si isAdmin es true, mostrar dashboard
+  if (isAdmin === true) {
+    console.log('User is confirmed ADMIN, showing dashboard');
+    return (
+      <div className="min-h-screen bg-gray-50 flex">
+        <AdminSidebar onSignOut={handleSignOut} />
+        <main className="flex-1 overflow-hidden">
+          <AdminPanel user={user} />
+        </main>
+      </div>
+    );
+  }
+
+  // Si llegamos aquí, isAdmin debe ser undefined o null (estado indeterminado)
+  console.log('Admin status indeterminate, showing loading');
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <AdminSidebar onSignOut={handleSignOut} />
-      <main className="flex-1 overflow-hidden">
-        <AdminPanel user={user} />
-      </main>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
     </div>
   );
 };
