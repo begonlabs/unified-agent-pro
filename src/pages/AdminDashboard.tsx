@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
@@ -14,12 +14,14 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const hasRedirected = useRef(false);
 
   console.log('AdminDashboard render:', { 
     user: user?.email, 
     isAdmin, 
     adminLoading, 
     loading,
+    hasRedirected: hasRedirected.current,
     timestamp: new Date().toISOString()
   });
 
@@ -46,6 +48,20 @@ const AdminDashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Efecto para manejar la redirección cuando NO es admin
+  useEffect(() => {
+    if (!loading && !adminLoading && user && isAdmin === false && !hasRedirected.current) {
+      console.log('User is confirmed NOT admin, redirecting to dashboard');
+      hasRedirected.current = true;
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para acceder al panel de administración.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [loading, adminLoading, user, isAdmin, navigate, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -85,22 +101,6 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si NO es admin, mostrar error y redirigir SOLO UNA VEZ
-  if (isAdmin === false) {
-    console.log('User is NOT admin, showing error and redirecting');
-    toast({
-      title: "Acceso denegado",
-      description: "No tienes permisos para acceder al panel de administración.",
-      variant: "destructive",
-    });
-    navigate('/dashboard');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
-      </div>
-    );
-  }
-
   // Si ES admin, mostrar el panel
   if (isAdmin === true) {
     console.log('User IS admin, showing admin panel');
@@ -114,7 +114,7 @@ const AdminDashboard = () => {
     );
   }
 
-  // Caso por defecto: mostrar loading
+  // Caso por defecto: mostrar loading (la redirección se maneja en el useEffect)
   console.log('Default case - showing loading');
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
