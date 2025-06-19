@@ -44,9 +44,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     console.log('Admin check effect:', { adminLoading, isAdmin, user: user?.email });
     
-    // Redirigir si no es admin una vez que se carga la verificación
-    if (!adminLoading && !isAdmin && user) {
-      console.log('User is not admin, redirecting to dashboard');
+    // Solo redirigir si NO estamos cargando Y el usuario no es admin Y tenemos un usuario
+    // Cambiamos la lógica para ser más específica
+    if (!adminLoading && user && isAdmin === false) {
+      console.log('User is confirmed NOT admin, redirecting to dashboard');
       toast({
         title: "Acceso denegado",
         description: "No tienes permisos para acceder al panel de administración.",
@@ -74,6 +75,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Mostrar loading mientras carga la autenticación O la verificación de admin
   if (loading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -82,20 +84,29 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si no es admin, no mostrar nada (el useEffect se encargará de redirigir)
-  if (!isAdmin) {
-    console.log('User is not admin, returning null');
+  // Solo mostrar "null" si definitivamente NO es admin (no mientras está cargando)
+  if (!adminLoading && isAdmin === false) {
+    console.log('User is confirmed NOT admin, returning null');
     return null;
   }
 
-  console.log('Rendering admin dashboard for user:', user?.email);
+  // Solo renderizar si el usuario ES admin (isAdmin === true)
+  if (!adminLoading && isAdmin === true) {
+    console.log('Rendering admin dashboard for confirmed admin user:', user?.email);
+    return (
+      <div className="min-h-screen bg-gray-50 flex">
+        <AdminSidebar onSignOut={handleSignOut} />
+        <main className="flex-1 overflow-hidden">
+          <AdminPanel user={user!} />
+        </main>
+      </div>
+    );
+  }
 
+  // Fallback - seguir mostrando loading si no estamos seguros del estado
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <AdminSidebar onSignOut={handleSignOut} />
-      <main className="flex-1 overflow-hidden">
-        <AdminPanel user={user!} />
-      </main>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
     </div>
   );
 };
