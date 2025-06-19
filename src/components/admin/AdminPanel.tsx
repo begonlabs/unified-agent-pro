@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ClientManagement from './ClientManagement';
 import GeneralStats from './GeneralStats';
 import ClientStats from './ClientStats';
@@ -29,49 +28,54 @@ const AdminPanel = ({ user }: AdminPanelProps) => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
           <p className="text-gray-600 mt-2">Gestión general de la plataforma ChatBot AI</p>
+          <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border">
+            <p className="text-sm text-gray-600">
+              Conectado como: <span className="font-medium text-gray-900">{user.email}</span>
+            </p>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="clients" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
+            <TabsTrigger value="clients" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
               <Users className="h-4 w-4" />
-              Clientes
+              <span className="hidden sm:inline">Clientes</span>
             </TabsTrigger>
-            <TabsTrigger value="general-stats" className="flex items-center gap-2">
+            <TabsTrigger value="general-stats" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
               <BarChart3 className="h-4 w-4" />
-              Estadísticas Generales
+              <span className="hidden sm:inline">Estadísticas</span>
             </TabsTrigger>
-            <TabsTrigger value="client-stats" className="flex items-center gap-2">
+            <TabsTrigger value="client-stats" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
               <UserCheck className="h-4 w-4" />
-              Stats por Cliente
+              <span className="hidden sm:inline">Stats Cliente</span>
             </TabsTrigger>
-            <TabsTrigger value="support" className="flex items-center gap-2">
+            <TabsTrigger value="support" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
               <MessageSquare className="h-4 w-4" />
-              Soporte
+              <span className="hidden sm:inline">Soporte</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
               <Settings className="h-4 w-4" />
-              Configuración
+              <span className="hidden sm:inline">Config</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="clients">
+          <TabsContent value="clients" className="space-y-6">
             <ClientManagement />
           </TabsContent>
 
-          <TabsContent value="general-stats">
+          <TabsContent value="general-stats" className="space-y-6">
             <GeneralStats />
           </TabsContent>
 
-          <TabsContent value="client-stats">
+          <TabsContent value="client-stats" className="space-y-6">
             <ClientStats />
           </TabsContent>
 
-          <TabsContent value="support">
+          <TabsContent value="support" className="space-y-6">
             <SupportMessages />
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value="settings" className="space-y-6">
             <AdminSettings />
           </TabsContent>
         </Tabs>

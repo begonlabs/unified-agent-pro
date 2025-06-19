@@ -13,9 +13,25 @@ import {
 
 interface AdminSidebarProps {
   onSignOut: () => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
+const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSidebarProps) => {
+  const menuItems = [
+    { id: 'clients', title: 'Gestión de Clientes', icon: Users },
+    { id: 'general-stats', title: 'Estadísticas Generales', icon: BarChart3 },
+    { id: 'client-stats', title: 'Stats por Cliente', icon: UserCheck },
+    { id: 'support', title: 'Gestión de Soporte', icon: MessageSquare },
+    { id: 'settings', title: 'Configuración', icon: Settings },
+  ];
+
+  const handleMenuClick = (itemId: string) => {
+    if (onTabChange) {
+      onTabChange(itemId);
+    }
+  };
+
   return (
     <div className="w-72 bg-white shadow-lg h-screen flex flex-col border-r border-gray-200">
       {/* Header */}
@@ -43,30 +59,25 @@ const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
           </div>
           
           <div className="space-y-1">
-            <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 bg-orange-50 rounded-md border border-orange-200">
-              <Users className="h-4 w-4 text-orange-600" />
-              <span>Gestión de Clientes</span>
-            </div>
-            
-            <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600">
-              <BarChart3 className="h-4 w-4" />
-              <span>Estadísticas Generales</span>
-            </div>
-            
-            <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600">
-              <UserCheck className="h-4 w-4" />
-              <span>Stats por Cliente</span>
-            </div>
-            
-            <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600">
-              <MessageSquare className="h-4 w-4" />
-              <span>Gestión de Soporte</span>
-            </div>
-            
-            <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600">
-              <Settings className="h-4 w-4" />
-              <span>Configuración</span>
-            </div>
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleMenuClick(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                    isActive
+                      ? 'text-orange-700 bg-orange-50 border border-orange-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-orange-600' : ''}`} />
+                  <span>{item.title}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

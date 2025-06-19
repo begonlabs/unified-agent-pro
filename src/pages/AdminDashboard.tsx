@@ -5,12 +5,17 @@ import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminPanel from '@/components/admin/AdminPanel';
+import ClientManagement from '@/components/admin/ClientManagement';
+import GeneralStats from '@/components/admin/GeneralStats';
+import ClientStats from '@/components/admin/ClientStats';
+import AdminSettings from '@/components/admin/AdminSettings';
+import SupportMessages from '@/components/admin/SupportMessages';
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('clients');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -18,6 +23,7 @@ const AdminDashboard = () => {
     user: user?.email, 
     isAdmin, 
     loading,
+    activeTab,
     timestamp: new Date().toISOString()
   });
 
@@ -60,7 +66,6 @@ const AdminDashboard = () => {
 
         if (!roleData) {
           console.log('User is not admin, redirecting to admin auth');
-          // Cerrar sesión y redirigir
           await supabase.auth.signOut();
           toast({
             title: "Acceso denegado",
@@ -83,7 +88,6 @@ const AdminDashboard = () => {
 
     checkAdminAccess();
 
-    // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Admin dashboard auth state changed:', event, session?.user?.email);
       
@@ -116,6 +120,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'clients':
+        return <ClientManagement />;
+      case 'general-stats':
+        return <GeneralStats />;
+      case 'client-stats':
+        return <ClientStats />;
+      case 'support':
+        return <SupportMessages />;
+      case 'settings':
+        return <AdminSettings />;
+      default:
+        return <ClientManagement />;
+    }
+  };
+
+  const getTabTitle = () => {
+    const titles = {
+      'clients': 'Gestión de Clientes',
+      'general-stats': 'Estadísticas Generales',
+      'client-stats': 'Stats por Cliente',
+      'support': 'Gestión de Soporte',
+      'settings': 'Configuración'
+    };
+    return titles[activeTab as keyof typeof titles] || 'Panel Admin';
+  };
+
   // Mostrar loading mientras se verifican permisos
   if (loading || !user || isAdmin !== true) {
     return (
@@ -130,9 +162,30 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <AdminSidebar onSignOut={handleSignOut} />
+      <AdminSidebar 
+        onSignOut={handleSignOut} 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
       <main className="flex-1 overflow-hidden">
-        <AdminPanel user={user} />
+        <div className="h-full">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{getTabTitle()}</h1>
+                <p className="text-gray-600 mt-1">
+                  Administrando como: <span className="font-medium">{user.email}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="p-6 h-[calc(100vh-80px)] overflow-y-auto">
+            {renderActiveTab()}
+          </div>
+        </div>
       </main>
     </div>
   );
