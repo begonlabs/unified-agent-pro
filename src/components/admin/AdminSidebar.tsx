@@ -8,22 +8,14 @@ import {
   Settings, 
   MessageSquare,
   LogOut,
-  Shield,
-  Home
+  Shield
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface AdminSidebarProps {
   onSignOut: () => void;
 }
 
 const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
-  const navigate = useNavigate();
-
-  const goToUserDashboard = () => {
-    navigate('/dashboard');
-  };
-
   return (
     <div className="w-72 bg-white shadow-lg h-screen flex flex-col border-r border-gray-200">
       {/* Header */}
@@ -43,17 +35,6 @@ const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
 
       {/* Navigation Links */}
       <div className="flex-1 p-4">
-        <div className="mb-6">
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3 border-orange-200 text-orange-700 hover:bg-orange-50"
-            onClick={goToUserDashboard}
-          >
-            <Home className="h-5 w-5" />
-            Ir al Dashboard Usuario
-          </Button>
-        </div>
-
         <div className="space-y-2">
           <div className="px-3 py-2">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -109,7 +90,7 @@ const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
           onClick={onSignOut}
         >
           <LogOut className="h-5 w-5" />
-          Cerrar Sesión
+          Cerrar Sesión Admin
         </Button>
       </div>
     </div>
