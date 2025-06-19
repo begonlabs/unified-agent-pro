@@ -44,9 +44,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     console.log('Admin check effect:', { adminLoading, isAdmin, user: user?.email });
     
-    // Solo redirigir si NO estamos cargando Y el usuario no es admin Y tenemos un usuario
-    // Cambiamos la lógica para ser más específica
-    if (!adminLoading && user && isAdmin === false) {
+    // Solo redirigir si hemos terminado de cargar Y el usuario definitivamente NO es admin
+    if (!adminLoading && !loading && user && isAdmin === false) {
       console.log('User is confirmed NOT admin, redirecting to dashboard');
       toast({
         title: "Acceso denegado",
@@ -55,7 +54,7 @@ const AdminDashboard = () => {
       });
       navigate('/dashboard');
     }
-  }, [isAdmin, adminLoading, user, navigate, toast]);
+  }, [isAdmin, adminLoading, loading, user, navigate, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -75,8 +74,9 @@ const AdminDashboard = () => {
     }
   };
 
-  // Mostrar loading mientras carga la autenticación O la verificación de admin
+  // Mostrar loading mientras carga cualquier cosa
   if (loading || adminLoading) {
+    console.log('Showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
@@ -84,26 +84,28 @@ const AdminDashboard = () => {
     );
   }
 
-  // Solo mostrar "null" si definitivamente NO es admin (no mientras está cargando)
-  if (!adminLoading && isAdmin === false) {
-    console.log('User is confirmed NOT admin, returning null');
+  // Si no hay usuario, no mostrar nada (el useEffect redirigirá)
+  if (!user) {
+    console.log('No user, returning null');
     return null;
   }
 
-  // Solo renderizar si el usuario ES admin (isAdmin === true)
-  if (!adminLoading && isAdmin === true) {
-    console.log('Rendering admin dashboard for confirmed admin user:', user?.email);
+  // Si el usuario es admin, mostrar el dashboard
+  if (isAdmin === true) {
+    console.log('Rendering admin dashboard for confirmed admin user:', user.email);
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <AdminSidebar onSignOut={handleSignOut} />
         <main className="flex-1 overflow-hidden">
-          <AdminPanel user={user!} />
+          <AdminPanel user={user} />
         </main>
       </div>
     );
   }
 
-  // Fallback - seguir mostrando loading si no estamos seguros del estado
+  // Si llegamos aquí y isAdmin es false, el useEffect se encargará de redirigir
+  // Mientras tanto, mostramos loading
+  console.log('Admin status unclear, showing loading');
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
