@@ -41,21 +41,6 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  useEffect(() => {
-    console.log('Admin check effect:', { adminLoading, isAdmin, user: user?.email });
-    
-    // Solo redirigir si hemos terminado de cargar Y el usuario definitivamente NO es admin
-    if (!adminLoading && !loading && user && isAdmin === false) {
-      console.log('User is confirmed NOT admin, redirecting to dashboard');
-      toast({
-        title: "Acceso denegado",
-        description: "No tienes permisos para acceder al panel de administración.",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
-    }
-  }, [isAdmin, adminLoading, loading, user, navigate, toast]);
-
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -74,7 +59,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Mostrar loading mientras carga cualquier cosa
+  // Mostrar loading mientras carga
   if (loading || adminLoading) {
     console.log('Showing loading spinner');
     return (
@@ -84,31 +69,33 @@ const AdminDashboard = () => {
     );
   }
 
-  // Si no hay usuario, no mostrar nada (el useEffect redirigirá)
+  // Si no hay usuario, redirigir
   if (!user) {
-    console.log('No user, returning null');
+    console.log('No user, redirecting to auth');
+    navigate('/auth');
     return null;
   }
 
-  // Si el usuario es admin, mostrar el dashboard
-  if (isAdmin === true) {
-    console.log('Rendering admin dashboard for confirmed admin user:', user.email);
-    return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <AdminSidebar onSignOut={handleSignOut} />
-        <main className="flex-1 overflow-hidden">
-          <AdminPanel user={user} />
-        </main>
-      </div>
-    );
+  // Si no es admin, mostrar mensaje y redirigir
+  if (isAdmin === false) {
+    console.log('User is NOT admin, showing access denied and redirecting');
+    toast({
+      title: "Acceso denegado",
+      description: "No tienes permisos para acceder al panel de administración.",
+      variant: "destructive",
+    });
+    navigate('/dashboard');
+    return null;
   }
 
-  // Si llegamos aquí y isAdmin es false, el useEffect se encargará de redirigir
-  // Mientras tanto, mostramos loading
-  console.log('Admin status unclear, showing loading');
+  // Si es admin, mostrar el dashboard
+  console.log('Rendering admin dashboard for admin user:', user.email);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+    <div className="min-h-screen bg-gray-50 flex">
+      <AdminSidebar onSignOut={handleSignOut} />
+      <main className="flex-1 overflow-hidden">
+        <AdminPanel user={user} />
+      </main>
     </div>
   );
 };
