@@ -73,7 +73,7 @@ const Dashboard = () => {
       case 'channels':
         return <ChannelsView />;
       case 'profile':
-        return <ProfileView />;
+        return <ProfileView user={user} />;
       case 'support':
         return <SupportView />;
       case 'ai-agent':
