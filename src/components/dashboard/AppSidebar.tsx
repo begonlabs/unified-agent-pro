@@ -42,16 +42,16 @@ const menuItems = [
 
 export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSidebarProps) {
   return (
-    <Sidebar className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+    <Sidebar className="bg-gray-50 border-gray-200">
       {/* Header */}
-      <SidebarHeader className="p-6 border-b border-zinc-700 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
+      <SidebarHeader className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-sm">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md">
             <MessageSquare className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black uppercase tracking-widest text-white">CHATBOT AI</h1>
-            <p className="text-sm font-mono text-zinc-400 tracking-wide">Panel de Control</p>
+            <h1 className="text-lg font-bold text-gray-800">CHATBOT AI</h1>
+            <p className="text-sm text-gray-600">Panel de Control</p>
           </div>
         </div>
       </SidebarHeader>
@@ -60,7 +60,7 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
       <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
@@ -68,13 +68,13 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
                       onClick={() => setCurrentView(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-mono tracking-wider uppercase rounded-sm transition-all duration-300 ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm rounded-md transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border border-blue-500/50'
-                          : 'text-zinc-300 hover:text-white hover:bg-zinc-700/50 border border-transparent hover:border-zinc-600'
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
                       }`}
                     >
-                      <Icon className={`h-5 w-5 ${isActive ? 'text-blue-400' : ''}`} />
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
                       {item.label}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -86,25 +86,25 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
 
         {/* Quick Channel Status */}
         <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className="text-sm font-mono font-medium text-zinc-300 mb-3 uppercase tracking-wider">
+          <SidebarGroupLabel className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">
             Canales Conectados
           </SidebarGroupLabel>
-          <SidebarGroupContent className="p-4 bg-zinc-800/30 rounded-sm">
+          <SidebarGroupContent className="p-4 bg-white rounded-md border border-gray-200">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-mono text-zinc-400">
-                <Phone className="h-4 w-4 text-green-400" />
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="h-4 w-4 text-green-500" />
                 <span>WhatsApp</span>
-                <div className="w-2 h-2 bg-green-400 rounded-full ml-auto animate-pulse"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full ml-auto"></div>
               </div>
-              <div className="flex items-center gap-2 text-sm font-mono text-zinc-400">
-                <Facebook className="h-4 w-4 text-blue-400" />
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Facebook className="h-4 w-4 text-blue-500" />
                 <span>Facebook</span>
-                <div className="w-2 h-2 bg-zinc-600 rounded-full ml-auto"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full ml-auto"></div>
               </div>
-              <div className="flex items-center gap-2 text-sm font-mono text-zinc-400">
-                <Instagram className="h-4 w-4 text-pink-400" />
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Instagram className="h-4 w-4 text-pink-500" />
                 <span>Instagram</span>
-                <div className="w-2 h-2 bg-zinc-600 rounded-full ml-auto"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full ml-auto"></div>
               </div>
             </div>
           </SidebarGroupContent>
@@ -112,12 +112,12 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
       </SidebarContent>
 
       {/* Sign Out */}
-      <SidebarFooter className="p-4 border-t border-zinc-700">
+      <SidebarFooter className="p-4 border-t border-gray-200">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={onSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-mono tracking-wider uppercase text-zinc-300 hover:text-white border border-zinc-600 hover:border-red-500/50 hover:bg-red-600/10 rounded-sm transition-all duration-300"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 hover:border-red-400 hover:bg-red-50 rounded-md transition-all duration-200"
             >
               <LogOut className="h-5 w-5" />
               Cerrar Sesión
