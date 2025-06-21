@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,62 +5,42 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
-  const [isFadeActive, setIsFadeActive] = useState(false);
-  const [letterOpacities, setLetterOpacities] = useState<number[]>([]);
+  const [isMatrixActive, setIsMatrixActive] = useState(false);
+  const [matrixText, setMatrixText] = useState('Y AUTOMATIZA');
   
   const originalText = 'Y AUTOMATIZA';
+  const matrixChars = '!@#$%^&*()_+-=[]{}|;:,.<>?~`';
   
   useEffect(() => {
-    // Initialize all letters as visible
-    setLetterOpacities(new Array(originalText.length).fill(1));
-  }, []);
-  
-  useEffect(() => {
-    if (!isFadeActive) return;
+    if (!isMatrixActive) return;
     
-    // Phase 1: Fade out letters one by one
-    const fadeOut = () => {
-      let currentIndex = 0;
-      const fadeOutInterval = setInterval(() => {
-        if (currentIndex < originalText.length) {
-          setLetterOpacities(prev => {
-            const newOpacities = [...prev];
-            if (originalText[currentIndex] !== ' ') {
-              newOpacities[currentIndex] = 0;
-            }
-            return newOpacities;
-          });
-          currentIndex++;
-        } else {
-          clearInterval(fadeOutInterval);
-          // Start fade in after a brief pause
-          setTimeout(fadeIn, 200);
-        }
-      }, 80);
-    };
+    let iterations = 0;
+    const maxIterations = 20;
     
-    // Phase 2: Fade in letters one by one
-    const fadeIn = () => {
-      let currentIndex = 0;
-      const fadeInInterval = setInterval(() => {
-        if (currentIndex < originalText.length) {
-          setLetterOpacities(prev => {
-            const newOpacities = [...prev];
-            if (originalText[currentIndex] !== ' ') {
-              newOpacities[currentIndex] = 1;
-            }
-            return newOpacities;
-          });
-          currentIndex++;
-        } else {
-          clearInterval(fadeInInterval);
-          setIsFadeActive(false);
-        }
-      }, 80);
-    };
+    const interval = setInterval(() => {
+      setMatrixText(prevText => 
+        prevText.split('').map((char, index) => {
+          if (char === ' ') return ' ';
+          
+          if (iterations < maxIterations - 5) {
+            return matrixChars[Math.floor(Math.random() * matrixChars.length)];
+          } else {
+            return originalText[index];
+          }
+        }).join('')
+      );
+      
+      iterations++;
+      
+      if (iterations >= maxIterations) {
+        clearInterval(interval);
+        setMatrixText(originalText);
+        setIsMatrixActive(false);
+      }
+    }, 50);
     
-    fadeOut();
-  }, [isFadeActive]);
+    return () => clearInterval(interval);
+  }, [isMatrixActive]);
 
   return (
     <section className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -78,18 +57,10 @@ const HeroSection = () => {
         <h1 className="text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-widest text-white mb-8 leading-[0.9] group cursor-default">
           <span className="block transition-all duration-700 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text">CENTRALIZA</span>
           <span 
-            className="block text-transparent bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text cursor-pointer"
-            onMouseEnter={() => setIsFadeActive(true)}
+            className="block text-zinc-400 transition-all duration-700 text-transparent bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text cursor-pointer"
+            onMouseEnter={() => setIsMatrixActive(true)}
           >
-            {originalText.split('').map((char, index) => (
-              <span
-                key={index}
-                className="inline-block transition-opacity duration-300"
-                style={{ opacity: letterOpacities[index] || 1 }}
-              >
-                {char}
-              </span>
-            ))}
+            {matrixText}
           </span>
           <span className="block text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">TUS CONVERSACIONES</span>
         </h1>
