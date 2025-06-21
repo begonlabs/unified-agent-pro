@@ -39,31 +39,31 @@ const StatsView = () => {
   ];
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
-    <Card>
+    <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">{title}</CardTitle>
         <Icon className={`h-4 w-4 ${color}`} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        <div className="text-2xl font-mono font-bold text-white">{value}</div>
+        {subtitle && <p className="text-xs font-mono text-zinc-400 tracking-wide">{subtitle}</p>}
       </CardContent>
     </Card>
   );
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-zinc-900 min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Estadísticas</h1>
+        <h1 className="text-3xl font-mono font-black uppercase tracking-widest text-white">Estadísticas</h1>
         <div className="flex gap-2">
           {['24h', '7d', '30d', '90d'].map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-sm text-sm font-mono tracking-wider uppercase transition-all duration-300 ${
                 timeRange === range
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-700/50 border border-zinc-600 hover:border-zinc-500'
               }`}
             >
               {range}
@@ -78,28 +78,28 @@ const StatsView = () => {
           title="Mensajes Totales"
           value={stats.totalMessages.toLocaleString()}
           icon={MessageSquare}
-          color="text-blue-600"
+          color="text-blue-400"
           subtitle="+12% vs mes anterior"
         />
         <StatCard
           title="Tasa de Respuesta"
           value={`${stats.responseRate}%`}
           icon={TrendingUp}
-          color="text-green-600"
+          color="text-green-400"
           subtitle="+2.3% vs mes anterior"
         />
         <StatCard
           title="Nuevos Leads"
           value={stats.newLeads}
           icon={Users}
-          color="text-purple-600"
+          color="text-purple-400"
           subtitle="+8% vs mes anterior"
         />
         <StatCard
           title="Mensajes IA"
           value={`${((stats.automatedMessages / stats.totalMessages) * 100).toFixed(1)}%`}
           icon={Bot}
-          color="text-emerald-600"
+          color="text-emerald-400"
           subtitle="Automatización"
         />
       </div>
@@ -107,17 +107,24 @@ const StatsView = () => {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Messages per Channel */}
-        <Card>
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Mensajes por Canal</CardTitle>
+            <CardTitle className="font-mono text-white uppercase tracking-wider">Mensajes por Canal</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={channelData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+                <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} fontFamily="monospace" />
+                <YAxis stroke="#a1a1aa" fontSize={12} fontFamily="monospace" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#27272a', 
+                    border: '1px solid #3f3f46', 
+                    borderRadius: '4px',
+                    fontFamily: 'monospace'
+                  }} 
+                />
                 <Bar dataKey="messages" fill="#3B82F6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -125,9 +132,9 @@ const StatsView = () => {
         </Card>
 
         {/* Automation Distribution */}
-        <Card>
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Distribución de Mensajes</CardTitle>
+            <CardTitle className="font-mono text-white uppercase tracking-wider">Distribución de Mensajes</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -141,12 +148,21 @@ const StatsView = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
+                  fontSize={12}
+                  fontFamily="monospace"
                 >
                   {automationData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#27272a', 
+                    border: '1px solid #3f3f46', 
+                    borderRadius: '4px',
+                    fontFamily: 'monospace'
+                  }} 
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -156,18 +172,25 @@ const StatsView = () => {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 gap-6">
         {/* Daily Activity */}
-        <Card>
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Actividad Diaria</CardTitle>
+            <CardTitle className="font-mono text-white uppercase tracking-wider">Actividad Diaria</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={dailyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+                <XAxis dataKey="date" stroke="#a1a1aa" fontSize={12} fontFamily="monospace" />
+                <YAxis yAxisId="left" stroke="#a1a1aa" fontSize={12} fontFamily="monospace" />
+                <YAxis yAxisId="right" orientation="right" stroke="#a1a1aa" fontSize={12} fontFamily="monospace" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#27272a', 
+                    border: '1px solid #3f3f46', 
+                    borderRadius: '4px',
+                    fontFamily: 'monospace'
+                  }} 
+                />
                 <Bar yAxisId="left" dataKey="messages" fill="#3B82F6" />
                 <Line yAxisId="right" type="monotone" dataKey="responseRate" stroke="#10B981" strokeWidth={3} />
               </LineChart>
@@ -179,20 +202,20 @@ const StatsView = () => {
       {/* Channel Details */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {channelData.map((channel) => (
-          <Card key={channel.name}>
+          <Card key={channel.name} className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium">{channel.name}</CardTitle>
-              {channel.name === 'WhatsApp' && <Phone className="h-5 w-5 text-green-600" />}
-              {channel.name === 'Facebook' && <Facebook className="h-5 w-5 text-blue-600" />}
-              {channel.name === 'Instagram' && <Instagram className="h-5 w-5 text-pink-600" />}
+              <CardTitle className="text-lg font-mono font-medium text-white uppercase tracking-wider">{channel.name}</CardTitle>
+              {channel.name === 'WhatsApp' && <Phone className="h-5 w-5 text-green-400" />}
+              {channel.name === 'Facebook' && <Facebook className="h-5 w-5 text-blue-400" />}
+              {channel.name === 'Instagram' && <Instagram className="h-5 w-5 text-pink-400" />}
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Mensajes</span>
-                  <span className="font-bold">{channel.messages.toLocaleString()}</span>
+                  <span className="text-sm text-zinc-400 font-mono">Mensajes</span>
+                  <span className="font-mono font-bold text-white">{channel.messages.toLocaleString()}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                <div className="w-full bg-zinc-700 rounded-full h-2 mt-1">
                   <div
                     className="h-2 rounded-full"
                     style={{ 
@@ -204,10 +227,10 @@ const StatsView = () => {
               </div>
               <div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Leads</span>
-                  <span className="font-bold">{channel.leads}</span>
+                  <span className="text-sm text-zinc-400 font-mono">Leads</span>
+                  <span className="font-mono font-bold text-white">{channel.leads}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                <div className="w-full bg-zinc-700 rounded-full h-2 mt-1">
                   <div
                     className="h-2 rounded-full"
                     style={{ 
