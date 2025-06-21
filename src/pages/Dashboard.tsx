@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import Sidebar from '@/components/dashboard/Sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/dashboard/AppSidebar';
 import MessagesView from '@/components/dashboard/MessagesView';
 import StatsView from '@/components/dashboard/StatsView';
 import ChannelsView from '@/components/dashboard/ChannelsView';
@@ -14,30 +15,29 @@ import AIAgentView from '@/components/dashboard/AIAgentView';
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState('messages');
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState('messages');
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  console.log('Dashboard state:', { user: user?.email, loading });
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Session retrieved:', session?.user?.email);
-      if (session) {
-        setUser(session.user);
-      } else {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
         navigate('/auth');
+        return;
       }
+
+      setUser(session.user);
       setLoading(false);
-    });
+    };
+
+    checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
       if (event === 'SIGNED_OUT' || !session) {
         navigate('/auth');
-      } else if (session) {
-        setUser(session.user);
       }
     });
 
@@ -53,6 +53,8 @@ const Dashboard = () => {
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente.",
       });
+      
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Error al cerrar sesión",
@@ -62,7 +64,7 @@ const Dashboard = () => {
     }
   };
 
-  const renderView = () => {
+  const renderCurrentView = () => {
     switch (currentView) {
       case 'messages':
         return <MessagesView />;
@@ -71,7 +73,7 @@ const Dashboard = () => {
       case 'channels':
         return <ChannelsView />;
       case 'profile':
-        return <ProfileView user={user} />;
+        return <ProfileView />;
       case 'support':
         return <SupportView />;
       case 'ai-agent':
@@ -81,7 +83,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center">
@@ -93,16 +95,22 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex">
-      <Sidebar 
-        currentView={currentView} 
-        setCurrentView={setCurrentView}
-        onSignOut={handleSignOut}
-      />
-      <main className="flex-1 overflow-hidden bg-zinc-900">
-        {renderView()}
-      </main>
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-zinc-950">
+        <AppSidebar 
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          onSignOut={handleSignOut}
+        />
+        <SidebarInset>
+          <main className="flex-1 overflow-hidden bg-zinc-900">
+            <div className="h-screen overflow-y-auto">
+              {renderCurrentView()}
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 
