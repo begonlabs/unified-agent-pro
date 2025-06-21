@@ -42,16 +42,16 @@ const menuItems = [
 
 export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSidebarProps) {
   return (
-    <Sidebar className="bg-gray-50 border-gray-200">
+    <Sidebar className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
       {/* Header */}
-      <SidebarHeader className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+      <SidebarHeader className="p-6 border-b border-zinc-700 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md">
             <MessageSquare className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-800">CHATBOT AI</h1>
-            <p className="text-sm text-gray-600">Panel de Control</p>
+            <h1 className="text-lg font-bold text-white">CHATBOT AI</h1>
+            <p className="text-sm text-zinc-400">Panel de Control</p>
           </div>
         </div>
       </SidebarHeader>
@@ -70,11 +70,11 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
                       onClick={() => setCurrentView(item.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm rounded-md transition-all duration-200 ${
                         isActive
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                          ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border border-blue-500/50'
+                          : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
                       }`}
                     >
-                      <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-blue-400' : 'text-zinc-500'}`} />
                       {item.label}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -86,22 +86,22 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
 
         {/* Quick Channel Status */}
         <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">
+          <SidebarGroupLabel className="text-sm font-medium text-zinc-400 mb-3 uppercase tracking-wide">
             Canales Conectados
           </SidebarGroupLabel>
-          <SidebarGroupContent className="p-4 bg-white rounded-md border border-gray-200">
+          <SidebarGroupContent className="p-4 bg-zinc-700/30 rounded-md border border-zinc-600">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
                 <Phone className="h-4 w-4 text-green-500" />
                 <span>WhatsApp</span>
                 <div className="w-2 h-2 bg-green-500 rounded-full ml-auto"></div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
                 <Facebook className="h-4 w-4 text-blue-500" />
                 <span>Facebook</span>
                 <div className="w-2 h-2 bg-gray-400 rounded-full ml-auto"></div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
                 <Instagram className="h-4 w-4 text-pink-500" />
                 <span>Instagram</span>
                 <div className="w-2 h-2 bg-gray-400 rounded-full ml-auto"></div>
@@ -112,12 +112,12 @@ export function AppSidebar({ currentView, setCurrentView, onSignOut }: AppSideba
       </SidebarContent>
 
       {/* Sign Out */}
-      <SidebarFooter className="p-4 border-t border-gray-200">
+      <SidebarFooter className="p-4 border-t border-zinc-700">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={onSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 hover:border-red-400 hover:bg-red-50 rounded-md transition-all duration-200"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-400 hover:text-white border border-zinc-600 hover:border-red-400 hover:bg-red-600/10 rounded-md transition-all duration-200"
             >
               <LogOut className="h-5 w-5" />
               Cerrar Sesión
