@@ -148,13 +148,13 @@ const MessagesView = () => {
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'whatsapp':
-        return <Phone className="h-4 w-4 text-green-400" />;
+        return <Phone className="h-4 w-4 text-green-600" />;
       case 'facebook':
-        return <Facebook className="h-4 w-4 text-blue-400" />;
+        return <Facebook className="h-4 w-4 text-blue-600" />;
       case 'instagram':
-        return <Instagram className="h-4 w-4 text-pink-400" />;
+        return <Instagram className="h-4 w-4 text-pink-600" />;
       default:
-        return <MessageCircle className="h-4 w-4 text-zinc-400" />;
+        return <MessageCircle className="h-4 w-4" />;
     }
   };
 
@@ -166,24 +166,24 @@ const MessagesView = () => {
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 
   return (
-    <div className="h-screen flex bg-zinc-900">
+    <div className="h-screen flex">
       {/* Conversations List */}
-      <div className="w-1/3 border-r border-zinc-700 bg-zinc-800/50 backdrop-blur-sm">
-        <div className="p-4 border-b border-zinc-700">
+      <div className="w-1/3 border-r bg-white">
+        <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-mono font-bold tracking-wider uppercase text-white">Conversaciones</h2>
-            <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-mono text-xs uppercase tracking-wider">
+            <h2 className="text-xl font-semibold">Conversaciones</h2>
+            <Button size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Nueva
             </Button>
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Buscar conversaciones..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
+              className="pl-10"
             />
           </div>
         </div>
@@ -193,36 +193,34 @@ const MessagesView = () => {
             {filteredConversations.map((conversation) => (
               <Card 
                 key={conversation.id}
-                className={`cursor-pointer transition-all duration-300 border ${
-                  selectedConversation === conversation.id 
-                    ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-blue-500/50' 
-                    : 'bg-zinc-800/30 border-zinc-700 hover:bg-zinc-700/50 hover:border-zinc-600'
+                className={`cursor-pointer transition-colors ${
+                  selectedConversation === conversation.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
                 }`}
                 onClick={() => setSelectedConversation(conversation.id)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-zinc-700 text-white font-mono">
+                      <AvatarFallback>
                         {conversation.client?.name?.substring(0, 2).toUpperCase() || 'CL'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-mono font-medium truncate text-white">
+                        <h3 className="font-medium truncate">
                           {conversation.client?.name || 'Cliente Anónimo'}
                         </h3>
                         <div className="flex items-center gap-1">
                           {getChannelIcon(conversation.channel)}
-                          <Badge variant={conversation.status === 'open' ? 'default' : 'secondary'} className="text-xs font-mono">
+                          <Badge variant={conversation.status === 'open' ? 'default' : 'secondary'} className="text-xs">
                             {conversation.status}
                           </Badge>
                         </div>
                       </div>
-                      <p className="text-sm text-zinc-400 truncate font-mono">
+                      <p className="text-sm text-gray-500 truncate">
                         {conversation.client?.email || conversation.client?.phone}
                       </p>
-                      <p className="text-xs text-zinc-500 mt-1 font-mono">
+                      <p className="text-xs text-gray-400 mt-1">
                         {new Date(conversation.last_message_at).toLocaleString()}
                       </p>
                     </div>
@@ -239,26 +237,26 @@ const MessagesView = () => {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-zinc-700 bg-zinc-800/30">
+            <div className="p-4 border-b bg-white">
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarFallback className="bg-zinc-700 text-white font-mono">
+                  <AvatarFallback>
                     {selectedConv?.client?.name?.substring(0, 2).toUpperCase() || 'CL'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-mono font-semibold text-white">
+                  <h3 className="font-semibold">
                     {selectedConv?.client?.name || 'Cliente Anónimo'}
                   </h3>
                   <div className="flex items-center gap-2">
                     {getChannelIcon(selectedConv?.channel || '')}
-                    <span className="text-sm text-zinc-400 capitalize font-mono">
+                    <span className="text-sm text-gray-500 capitalize">
                       {selectedConv?.channel}
                     </span>
                   </div>
                 </div>
                 <div className="ml-auto">
-                  <Badge variant={selectedConv?.status === 'open' ? 'default' : 'secondary'} className="font-mono">
+                  <Badge variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}>
                     {selectedConv?.status}
                   </Badge>
                 </div>
@@ -266,7 +264,7 @@ const MessagesView = () => {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4 bg-zinc-900">
+            <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
@@ -276,12 +274,12 @@ const MessagesView = () => {
                     }`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg font-mono ${
+                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         message.sender_type === 'client'
-                          ? 'bg-zinc-700 text-zinc-100'
+                          ? 'bg-gray-200 text-gray-900'
                           : message.is_automated
-                          ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
-                          : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-blue-500 text-white'
                       }`}
                     >
                       <p>{message.content}</p>
@@ -290,7 +288,7 @@ const MessagesView = () => {
                           {new Date(message.created_at).toLocaleTimeString()}
                         </p>
                         {message.is_automated && (
-                          <Badge variant="secondary" className="text-xs font-mono">IA</Badge>
+                          <Badge variant="secondary" className="text-xs">IA</Badge>
                         )}
                       </div>
                     </div>
@@ -300,33 +298,29 @@ const MessagesView = () => {
             </ScrollArea>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-zinc-700 bg-zinc-800/30">
+            <div className="p-4 border-t bg-white">
               <div className="flex gap-2">
                 <Input
                   placeholder="Escribe tu mensaje..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  className="flex-1 bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
+                  className="flex-1"
                 />
-                <Button 
-                  onClick={sendMessage} 
-                  disabled={!newMessage.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
+                <Button onClick={sendMessage} disabled={!newMessage.trim()}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-zinc-900">
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
             <div className="text-center">
-              <MessageCircle className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
-              <h3 className="text-lg font-mono font-medium text-white mb-2 uppercase tracking-wider">
+              <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Selecciona una conversación
               </h3>
-              <p className="text-zinc-400 font-mono">
+              <p className="text-gray-500">
                 Elige una conversación para ver los mensajes
               </p>
             </div>

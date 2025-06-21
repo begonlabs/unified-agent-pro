@@ -151,31 +151,31 @@ const AdminDashboard = () => {
   // Mostrar loading mientras se verifican permisos
   if (loading || !user || isAdmin !== true) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="font-mono text-zinc-400 tracking-wider uppercase">Verificando permisos de administrador...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando permisos de administrador...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex">
+    <div className="min-h-screen bg-gray-50 flex">
       <AdminSidebar 
         onSignOut={handleSignOut} 
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
-      <main className="flex-1 overflow-hidden bg-zinc-900">
+      <main className="flex-1 overflow-hidden">
         <div className="h-full">
           {/* Header */}
-          <div className="bg-zinc-800 border-b border-zinc-700 px-6 py-4">
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-black uppercase tracking-widest text-white">{getTabTitle()}</h1>
-                <p className="font-mono text-zinc-400 mt-1 tracking-wide">
-                  Administrando como: <span className="font-medium text-red-400">{user.email}</span>
+                <h1 className="text-2xl font-bold text-gray-900">{getTabTitle()}</h1>
+                <p className="text-gray-600 mt-1">
+                  Administrando como: <span className="font-medium">{user.email}</span>
                 </p>
               </div>
             </div>

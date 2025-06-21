@@ -1,234 +1,375 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { User2, CreditCard, Bell, Shield, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  User as UserIcon, 
-  Mail, 
-  Phone, 
-  Building, 
-  Calendar,
-  Edit,
-  Save,
-  Camera,
-  Shield,
-  Settings
-} from 'lucide-react';
+
+interface Profile {
+  id: string;
+  company_name: string;
+  email: string;
+  phone?: string;
+  plan_type: string;
+  subscription_start?: string;
+  subscription_end?: string;
+  is_active: boolean;
+}
 
 interface ProfileViewProps {
   user: User | null;
 }
 
 const ProfileView = ({ user }: ProfileViewProps) => {
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: user?.user_metadata?.name || '',
-    company: user?.user_metadata?.company || '',
-    phone: user?.user_metadata?.phone || '',
-    bio: user?.user_metadata?.bio || ''
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    company_name: '',
+    email: '',
+    phone: ''
   });
   const { toast } = useToast();
 
-  const handleSave = () => {
-    // Aquí iría la lógica para actualizar el perfil
-    setEditing(false);
-    toast({
-      title: "Perfil actualizado",
-      description: "Tu información ha sido guardada exitosamente.",
-    });
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+      
+      setProfile(data);
+      setProfileData({
+        company_name: data.company_name || '',
+        email: data.email || '',
+        phone: data.phone || ''
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el perfil",
+        variant: "destructive",
+      });
+    }
   };
 
-  const userInitials = user?.user_metadata?.name
-    ? user.user_metadata.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
-    : user?.email?.substring(0, 2).toUpperCase() || 'US';
+  const updateProfile = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          company_name: profileData.company_name,
+          email: profileData.email,
+          phone: profileData.phone,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      await fetchProfile();
+      setEditingProfile(false);
+      toast({
+        title: "Perfil actualizado",
+        description: "Tu perfil ha sido actualizado exitosamente",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const plans = [
+    {
+      name: 'Free',
+      price: '$0',
+      description: '7 días gratis para probar',
+      features: ['1 canal de comunicación', '100 mensajes/mes', 'Soporte básico'],
+      current: profile?.plan_type === 'free'
+    },
+    {
+      name: 'Professional',
+      price: '$29',
+      description: 'Perfecto para pequeñas empresas',
+      features: ['3 canales de comunicación', '1,000 mensajes/mes', 'IA personalizada', 'Soporte prioritario'],
+      current: profile?.plan_type === 'professional'
+    },
+    {
+      name: 'Enterprise',
+      price: '$99',
+      description: 'Para empresas en crecimiento',
+      features: ['Canales ilimitados', 'Mensajes ilimitados', 'IA avanzada', 'Soporte 24/7', 'API personalizada'],
+      current: profile?.plan_type === 'enterprise'
+    }
+  ];
+
+  const getPlanColor = (planType: string) => {
+    switch (planType) {
+      case 'free': return 'bg-gray-100 text-gray-800';
+      case 'professional': return 'bg-blue-100 text-blue-800';
+      case 'enterprise': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div className="p-6 space-y-6 bg-zinc-900 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl font-mono font-black uppercase tracking-widest text-white mb-2">Mi Perfil</h1>
-        <p className="text-zinc-400 font-mono tracking-wide">
-          Gestiona tu información personal y configuración de cuenta
-        </p>
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Mi Perfil</h1>
+        <Badge className={getPlanColor(profile?.plan_type || 'free')}>
+          Plan {profile?.plan_type?.charAt(0).toUpperCase()}{profile?.plan_type?.slice(1)}
+        </Badge>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Profile Card */}
-        <Card className="lg:col-span-2 bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Avatar className="h-20 w-20 border-2 border-zinc-600">
-                    <AvatarImage src={user?.user_metadata?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xl font-mono font-bold">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button size="sm" className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-zinc-700 hover:bg-zinc-600 border border-zinc-600">
-                    <Camera className="h-4 w-4" />
-                  </Button>
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User2 className="h-4 w-4" />
+            Datos
+          </TabsTrigger>
+          <TabsTrigger value="subscription" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Suscripción
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notificaciones
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Seguridad
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Información Personal</CardTitle>
+              <Button
+                variant={editingProfile ? "default" : "outline"}
+                onClick={() => editingProfile ? updateProfile() : setEditingProfile(true)}
+                disabled={loading}
+              >
+                {editingProfile ? (loading ? 'Guardando...' : 'Guardar') : 'Editar'}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="company">Nombre de la Empresa</Label>
+                  <Input
+                    id="company"
+                    value={profileData.company_name}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, company_name: e.target.value }))}
+                    disabled={!editingProfile}
+                  />
                 </div>
-                <div>
-                  <CardTitle className="text-2xl font-mono text-white uppercase tracking-wider">
-                    {user?.user_metadata?.name || 'Usuario'}
-                  </CardTitle>
-                  <CardDescription className="text-zinc-400 font-mono flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    {user?.email}
-                  </CardDescription>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className="bg-green-600 text-white font-mono">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Usuario Activo
-                    </Badge>
-                    <Badge variant="outline" className="border-zinc-600 text-zinc-300 font-mono">
-                      Miembro desde {new Date(user?.created_at || '').getFullYear()}
-                    </Badge>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={!editingProfile}
+                  />
                 </div>
               </div>
-              <Button
-                onClick={() => editing ? handleSave() : setEditing(true)}
-                className={editing 
-                  ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" 
-                  : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                }
-              >
-                {editing ? (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                  disabled={!editingProfile}
+                  placeholder="+1234567890"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado de la Cuenta</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                {profile?.is_active ? (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Guardar
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="text-green-600 font-medium">Cuenta Activa</span>
                   </>
                 ) : (
                   <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    <span className="text-red-600 font-medium">Cuenta Inactiva</span>
                   </>
                 )}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-zinc-300 font-mono uppercase tracking-wider">Nombre Completo</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  disabled={!editing}
-                  className="bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
-                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="company" className="text-zinc-300 font-mono uppercase tracking-wider">Empresa</Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  disabled={!editing}
-                  className="bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
-                />
-              </div>
-            </div>
+              {profile?.subscription_start && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Suscripción iniciada: {new Date(profile.subscription_start).toLocaleDateString()}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-zinc-300 font-mono uppercase tracking-wider">Teléfono</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                disabled={!editing}
-                className="bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bio" className="text-zinc-300 font-mono uppercase tracking-wider">Biografía</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                disabled={!editing}
-                className="min-h-[100px] bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
-                placeholder="Cuéntanos un poco sobre ti..."
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Info */}
-        <div className="space-y-6">
-          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+        <TabsContent value="subscription" className="space-y-6">
+          <Card>
             <CardHeader>
-              <CardTitle className="font-mono text-white uppercase tracking-wider flex items-center gap-2">
-                <UserIcon className="h-5 w-5" />
-                Información de Cuenta
-              </CardTitle>
+              <CardTitle>Plan Actual</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-zinc-700/50 rounded-sm">
-                  <Mail className="h-4 w-4 text-blue-400" />
-                </div>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <p className="text-sm font-mono font-medium text-white">Email</p>
-                  <p className="text-sm text-zinc-400 font-mono">{user?.email}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-zinc-700/50 rounded-sm">
-                  <Calendar className="h-4 w-4 text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-mono font-medium text-white">Miembro desde</p>
-                  <p className="text-sm text-zinc-400 font-mono">
-                    {new Date(user?.created_at || '').toLocaleDateString()}
+                  <h3 className="font-semibold text-lg">
+                    Plan {profile?.plan_type?.charAt(0).toUpperCase()}{profile?.plan_type?.slice(1)}
+                  </h3>
+                  <p className="text-gray-500">
+                    {plans.find(p => p.current)?.description}
                   </p>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-zinc-700/50 rounded-sm">
-                  <Shield className="h-4 w-4 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-mono font-medium text-white">Estado</p>
-                  <p className="text-sm text-green-400 font-mono">Verificado</p>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {plans.find(p => p.current)?.price}/mes
+                  </div>
+                  {profile?.subscription_end && (
+                    <p className="text-sm text-gray-500">
+                      Vence: {new Date(profile.subscription_end).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan) => (
+              <Card key={plan.name} className={plan.current ? 'ring-2 ring-blue-500' : ''}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{plan.name}</CardTitle>
+                    {plan.current && <Badge>Actual</Badge>}
+                  </div>
+                  <div className="text-2xl font-bold">{plan.price}<span className="text-sm font-normal">/mes</span></div>
+                  <p className="text-gray-500">{plan.description}</p>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  {!plan.current && (
+                    <Button className="w-full">
+                      Cambiar a {plan.name}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card>
             <CardHeader>
-              <CardTitle className="font-mono text-white uppercase tracking-wider flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Configuración
-              </CardTitle>
+              <CardTitle>Historial de Pagos</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start border-zinc-600 text-zinc-300 hover:text-white hover:border-zinc-500 font-mono">
-                Cambiar Contraseña
-              </Button>
-              <Button variant="outline" className="w-full justify-start border-zinc-600 text-zinc-300 hover:text-white hover:border-zinc-500 font-mono">
-                Notificaciones
-              </Button>
-              <Button variant="outline" className="w-full justify-start border-zinc-600 text-zinc-300 hover:text-white hover:border-zinc-500 font-mono">
-                Privacidad
-              </Button>
+            <CardContent>
+              <div className="text-center py-8 text-gray-500">
+                <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay historial de pagos disponible</p>
+              </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferencias de Notificaciones</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Nuevos mensajes</h4>
+                  <p className="text-sm text-gray-500">Recibir notificaciones por nuevos mensajes</p>
+                </div>
+                <input type="checkbox" className="toggle" defaultChecked />
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Límites de plan</h4>
+                  <p className="text-sm text-gray-500">Avisos cuando te acerques a los límites</p>
+                </div>
+                <input type="checkbox" className="toggle" defaultChecked />
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Actualizaciones del producto</h4>
+                  <p className="text-sm text-gray-500">Noticias sobre nuevas funciones</p>
+                </div>
+                <input type="checkbox" className="toggle" />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Seguridad de la Cuenta</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Cambiar contraseña</h4>
+                  <p className="text-sm text-gray-500">Actualizar tu contraseña de acceso</p>
+                </div>
+                <Button variant="outline">Cambiar</Button>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Autenticación de dos factores</h4>
+                  <p className="text-sm text-gray-500">Agregar una capa extra de seguridad</p>
+                </div>
+                <Button variant="outline">Configurar</Button>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Sesiones activas</h4>
+                  <p className="text-sm text-gray-500">Ver y gestionar dispositivos conectados</p>
+                </div>
+                <Button variant="outline">Ver sesiones</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -66,75 +66,70 @@ const SupportView = () => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-zinc-900 min-h-screen">
+    <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-mono font-black uppercase tracking-widest text-white mb-2">Centro de Soporte</h1>
-        <p className="text-zinc-400 font-mono tracking-wide">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Centro de Soporte</h1>
+        <p className="text-gray-600">
           ¿Necesitas ayuda? Estamos aquí para asistirte con cualquier pregunta o problema.
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Formulario de Contacto */}
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-mono text-white uppercase tracking-wider">
+            <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               Enviar Mensaje de Soporte
             </CardTitle>
-            <CardDescription className="text-zinc-400 font-mono">
+            <CardDescription>
               Describe tu consulta o problema y nuestro equipo te ayudará
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="subject" className="text-zinc-300 font-mono uppercase tracking-wider">Asunto</Label>
+                <Label htmlFor="subject">Asunto</Label>
                 <Input
                   id="subject"
                   placeholder="Describe brevemente tu consulta"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="priority" className="text-zinc-300 font-mono uppercase tracking-wider">Prioridad</Label>
+                <Label htmlFor="priority">Prioridad</Label>
                 <Select 
                   value={formData.priority} 
                   onValueChange={(value) => setFormData({ ...formData, priority: value })}
                 >
-                  <SelectTrigger className="bg-zinc-700/50 border-zinc-600 text-white font-mono">
+                  <SelectTrigger>
                     <SelectValue placeholder="Selecciona la prioridad" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="low" className="text-white font-mono">Baja</SelectItem>
-                    <SelectItem value="normal" className="text-white font-mono">Normal</SelectItem>
-                    <SelectItem value="high" className="text-white font-mono">Alta</SelectItem>
-                    <SelectItem value="urgent" className="text-white font-mono">Urgente</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="low">Baja</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="message" className="text-zinc-300 font-mono uppercase tracking-wider">Mensaje</Label>
+                <Label htmlFor="message">Mensaje</Label>
                 <Textarea
                   id="message"
                   placeholder="Proporciona todos los detalles posibles sobre tu consulta o problema..."
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="min-h-[120px] bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
+                  className="min-h-[120px]"
                   required
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-mono uppercase tracking-wider" 
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -153,66 +148,66 @@ const SupportView = () => {
 
         {/* Información de Ayuda */}
         <div className="space-y-6">
-          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-mono text-white uppercase tracking-wider">
+              <CardTitle className="flex items-center gap-2">
                 <HelpCircle className="h-5 w-5" />
                 Preguntas Frecuentes
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-mono font-medium mb-2 text-white">¿Cómo conectar WhatsApp?</h4>
-                <p className="text-sm text-zinc-400 font-mono">
+                <h4 className="font-medium mb-2">¿Cómo conectar WhatsApp?</h4>
+                <p className="text-sm text-gray-600">
                   Ve a la sección "Canales", selecciona WhatsApp y sigue las instrucciones para conectar tu número.
                 </p>
               </div>
               
               <div>
-                <h4 className="font-mono font-medium mb-2 text-white">¿Cómo configurar mi IA?</h4>
-                <p className="text-sm text-zinc-400 font-mono">
+                <h4 className="font-medium mb-2">¿Cómo configurar mi IA?</h4>
+                <p className="text-sm text-gray-600">
                   En "Mi Agente IA" puedes definir objetivos, restricciones y preguntas frecuentes para personalizar las respuestas.
                 </p>
               </div>
               
               <div>
-                <h4 className="font-mono font-medium mb-2 text-white">¿Cómo ver mis estadísticas?</h4>
-                <p className="text-sm text-zinc-400 font-mono">
+                <h4 className="font-medium mb-2">¿Cómo ver mis estadísticas?</h4>
+                <p className="text-sm text-gray-600">
                   La sección "Estadísticas" te muestra métricas detalladas de mensajes, leads y rendimiento por canal.
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-mono text-white uppercase tracking-wider">
+              <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
                 Información Importante
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                 <div>
-                  <p className="text-sm font-mono font-medium text-white">Tiempo de respuesta</p>
-                  <p className="text-sm text-zinc-400 font-mono">Respondemos en menos de 24 horas en días laborables</p>
+                  <p className="text-sm font-medium">Tiempo de respuesta</p>
+                  <p className="text-sm text-gray-600">Respondemos en menos de 24 horas en días laborables</p>
                 </div>
               </div>
               
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
                 <div>
-                  <p className="text-sm font-mono font-medium text-white">Soporte técnico</p>
-                  <p className="text-sm text-zinc-400 font-mono">Disponible 24/7 para problemas críticos</p>
+                  <p className="text-sm font-medium">Soporte técnico</p>
+                  <p className="text-sm text-gray-600">Disponible 24/7 para problemas críticos</p>
                 </div>
               </div>
               
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-purple-400 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
                 <div>
-                  <p className="text-sm font-mono font-medium text-white">Documentación</p>
-                  <p className="text-sm text-zinc-400 font-mono">Consulta nuestra guía completa en línea</p>
+                  <p className="text-sm font-medium">Documentación</p>
+                  <p className="text-sm text-gray-600">Consulta nuestra guía completa en línea</p>
                 </div>
               </div>
             </CardContent>

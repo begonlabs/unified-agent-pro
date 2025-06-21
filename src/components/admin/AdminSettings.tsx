@@ -6,343 +6,344 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Settings, 
+  Bell, 
+  Mail, 
   Shield, 
   Database,
-  Mail,
-  Bell,
-  Lock,
-  Server,
-  Users,
-  Save,
-  RefreshCw,
-  AlertTriangle
+  Settings,
+  Save
 } from 'lucide-react';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
-    siteName: 'ChatBot AI Platform',
-    siteDescription: 'Plataforma de automatización de mensajes con IA',
-    adminEmail: 'admin@chatbotai.com',
-    maxUsersPerPlan: 1000,
-    enableRegistrations: true,
-    enableNotifications: true,
-    maintenanceMode: false,
-    backupFrequency: 'daily',
-    sessionTimeout: 24
+    notifications: {
+      email_enabled: true,
+      new_client_alert: true,
+      support_message_alert: true,
+      daily_report: false,
+    },
+    email: {
+      smtp_host: '',
+      smtp_port: '587',
+      smtp_user: '',
+      smtp_password: '',
+      from_email: '',
+    },
+    security: {
+      max_login_attempts: 5,
+      session_timeout: 24,
+      require_2fa: false,
+    },
+    maintenance: {
+      maintenance_mode: false,
+      maintenance_message: '',
+    }
   });
-
-  const [apiSettings, setApiSettings] = useState({
-    rateLimitPerMinute: 100,
-    maxMessageLength: 4000,
-    enableWebhooks: true,
-    webhookRetries: 3
-  });
-
+  
   const { toast } = useToast();
 
-  const handleSaveGeneralSettings = () => {
+  const handleSaveSettings = () => {
+    // Aquí se guardarían las configuraciones
     toast({
       title: "Configuración guardada",
-      description: "La configuración general ha sido actualizada exitosamente.",
+      description: "Los cambios se han guardado exitosamente.",
     });
-  };
-
-  const handleSaveApiSettings = () => {
-    toast({
-      title: "Configuración API guardada",
-      description: "La configuración de la API ha sido actualizada exitosamente.",
-    });
-  };
-
-  const handleBackupNow = () => {
-    toast({
-      title: "Backup iniciado",
-      description: "El backup de la base de datos ha comenzado. Te notificaremos cuando termine.",
-    });
-  };
-
-  const systemStats = {
-    totalUsers: 1247,
-    totalMessages: 18569,
-    storageUsed: '2.4 GB',
-    uptime: '99.9%',
-    lastBackup: '2024-01-07 02:00:00'
   };
 
   return (
-    <div className="space-y-6 bg-zinc-900 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-mono font-black uppercase tracking-widest text-white">Configuración del Sistema</h2>
-        <p className="text-zinc-400 font-mono tracking-wide">
-          Administra la configuración general de la plataforma
-        </p>
-      </div>
+    <div className="space-y-6">
+      {/* Configuración de Notificaciones */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notificaciones
+          </CardTitle>
+          <CardDescription>
+            Configura las alertas y notificaciones del sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="email-notifications">Notificaciones por Email</Label>
+              <p className="text-sm text-gray-500">Habilitar envío de notificaciones por correo</p>
+            </div>
+            <Switch 
+              id="email-notifications"
+              checked={settings.notifications.email_enabled}
+              onCheckedChange={(checked) => 
+                setSettings(prev => ({
+                  ...prev,
+                  notifications: { ...prev.notifications, email_enabled: checked }
+                }))
+              }
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="new-client-alert">Alerta de Nuevo Cliente</Label>
+              <p className="text-sm text-gray-500">Notificar cuando se registre un nuevo cliente</p>
+            </div>
+            <Switch 
+              id="new-client-alert"
+              checked={settings.notifications.new_client_alert}
+              onCheckedChange={(checked) => 
+                setSettings(prev => ({
+                  ...prev,
+                  notifications: { ...prev.notifications, new_client_alert: checked }
+                }))
+              }
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="support-alert">Alerta de Mensaje de Soporte</Label>
+              <p className="text-sm text-gray-500">Notificar nuevos mensajes de soporte</p>
+            </div>
+            <Switch 
+              id="support-alert"
+              checked={settings.notifications.support_message_alert}
+              onCheckedChange={(checked) => 
+                setSettings(prev => ({
+                  ...prev,
+                  notifications: { ...prev.notifications, support_message_alert: checked }
+                }))
+              }
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="daily-report">Reporte Diario</Label>
+              <p className="text-sm text-gray-500">Enviar reporte diario de actividad</p>
+            </div>
+            <Switch 
+              id="daily-report"
+              checked={settings.notifications.daily_report}
+              onCheckedChange={(checked) => 
+                setSettings(prev => ({
+                  ...prev,
+                  notifications: { ...prev.notifications, daily_report: checked }
+                }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* System Status */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Usuarios</CardTitle>
-            <Users className="h-4 w-4 text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-mono font-bold text-white">{systemStats.totalUsers.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Mensajes</CardTitle>
-            <Mail className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-mono font-bold text-white">{systemStats.totalMessages.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Almacenamiento</CardTitle>
-            <Database className="h-4 w-4 text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-mono font-bold text-white">{systemStats.storageUsed}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Uptime</CardTitle>
-            <Server className="h-4 w-4 text-emerald-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-mono font-bold text-white">{systemStats.uptime}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Último Backup</CardTitle>
-            <RefreshCw className="h-4 w-4 text-orange-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-mono font-bold text-white">{new Date(systemStats.lastBackup).toLocaleDateString()}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* General Settings */}
-        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-mono text-white uppercase tracking-wider">
-              <Settings className="h-5 w-5" />
-              Configuración General
-            </CardTitle>
-            <CardDescription className="text-zinc-400 font-mono">
-              Configuración básica de la plataforma
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="site-name" className="text-zinc-300 font-mono uppercase tracking-wider">Nombre del Sitio</Label>
-              <Input
-                id="site-name"
-                value={settings.siteName}
-                onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                className="bg-zinc-700/50 border-zinc-600 text-white font-mono"
+      {/* Configuración de Email */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Configuración de Email
+          </CardTitle>
+          <CardDescription>
+            Configura el servidor SMTP para envío de emails
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="smtp-host">Servidor SMTP</Label>
+              <Input 
+                id="smtp-host"
+                placeholder="smtp.gmail.com"
+                value={settings.email.smtp_host}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    email: { ...prev.email, smtp_host: e.target.value }
+                  }))
+                }
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="site-description" className="text-zinc-300 font-mono uppercase tracking-wider">Descripción</Label>
-              <Textarea
-                id="site-description"
-                value={settings.siteDescription}
-                onChange={(e) => setSettings({ ...settings, siteDescription: e.target.value })}
-                className="min-h-[80px] bg-zinc-700/50 border-zinc-600 text-white font-mono"
+            
+            <div>
+              <Label htmlFor="smtp-port">Puerto</Label>
+              <Input 
+                id="smtp-port"
+                placeholder="587"
+                value={settings.email.smtp_port}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    email: { ...prev.email, smtp_port: e.target.value }
+                  }))
+                }
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="admin-email" className="text-zinc-300 font-mono uppercase tracking-wider">Email Administrador</Label>
-              <Input
-                id="admin-email"
-                type="email"
-                value={settings.adminEmail}
-                onChange={(e) => setSettings({ ...settings, adminEmail: e.target.value })}
-                className="bg-zinc-700/50 border-zinc-600 text-white font-mono"
+            
+            <div>
+              <Label htmlFor="smtp-user">Usuario</Label>
+              <Input 
+                id="smtp-user"
+                placeholder="usuario@empresa.com"
+                value={settings.email.smtp_user}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    email: { ...prev.email, smtp_user: e.target.value }
+                  }))
+                }
               />
             </div>
+            
+            <div>
+              <Label htmlFor="smtp-password">Contraseña</Label>
+              <Input 
+                id="smtp-password"
+                type="password"
+                value={settings.email.smtp_password}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    email: { ...prev.email, smtp_password: e.target.value }
+                  }))
+                }
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="from-email">Email Remitente</Label>
+            <Input 
+              id="from-email"
+              placeholder="noreply@empresa.com"
+              value={settings.email.from_email}
+              onChange={(e) => 
+                setSettings(prev => ({
+                  ...prev,
+                  email: { ...prev.email, from_email: e.target.value }
+                }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="max-users" className="text-zinc-300 font-mono uppercase tracking-wider">Máx. Usuarios por Plan</Label>
-              <Input
-                id="max-users"
+      {/* Configuración de Seguridad */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Seguridad
+          </CardTitle>
+          <CardDescription>
+            Configuraciones de seguridad del sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="max-attempts">Máximo Intentos de Login</Label>
+              <Input 
+                id="max-attempts"
                 type="number"
-                value={settings.maxUsersPerPlan}
-                onChange={(e) => setSettings({ ...settings, maxUsersPerPlan: parseInt(e.target.value) })}
-                className="bg-zinc-700/50 border-zinc-600 text-white font-mono"
+                value={settings.security.max_login_attempts}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    security: { ...prev.security, max_login_attempts: parseInt(e.target.value) }
+                  }))
+                }
               />
             </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-zinc-300 font-mono uppercase tracking-wider">Registros Habilitados</Label>
-                  <p className="text-sm text-zinc-500 font-mono">Permitir nuevos registros de usuarios</p>
-                </div>
-                <Switch
-                  checked={settings.enableRegistrations}
-                  onCheckedChange={(checked) => setSettings({ ...settings, enableRegistrations: checked })}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-zinc-300 font-mono uppercase tracking-wider">Notificaciones</Label>
-                  <p className="text-sm text-zinc-500 font-mono">Enviar notificaciones por email</p>
-                </div>
-                <Switch
-                  checked={settings.enableNotifications}
-                  onCheckedChange={(checked) => setSettings({ ...settings, enableNotifications: checked })}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-zinc-300 font-mono uppercase tracking-wider">Modo Mantenimiento</Label>
-                  <p className="text-sm text-zinc-500 font-mono">Deshabilitar acceso temporal</p>
-                </div>
-                <Switch
-                  checked={settings.maintenanceMode}
-                  onCheckedChange={(checked) => setSettings({ ...settings, maintenanceMode: checked })}
-                />
-              </div>
+            
+            <div>
+              <Label htmlFor="session-timeout">Timeout de Sesión (horas)</Label>
+              <Input 
+                id="session-timeout"
+                type="number"
+                value={settings.security.session_timeout}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    security: { ...prev.security, session_timeout: parseInt(e.target.value) }
+                  }))
+                }
+              />
             </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="require-2fa">Requerir Autenticación de Dos Factores</Label>
+              <p className="text-sm text-gray-500">Obligar 2FA para nuevos usuarios</p>
+            </div>
+            <Switch 
+              id="require-2fa"
+              checked={settings.security.require_2fa}
+              onCheckedChange={(checked) => 
+                setSettings(prev => ({
+                  ...prev,
+                  security: { ...prev.security, require_2fa: checked }
+                }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-            <Button 
-              onClick={handleSaveGeneralSettings}
-              className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 font-mono uppercase tracking-wider"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Guardar Configuración
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Configuración de Mantenimiento */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Mantenimiento
+          </CardTitle>
+          <CardDescription>
+            Configuraciones de mantenimiento del sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="maintenance-mode">Modo Mantenimiento</Label>
+              <p className="text-sm text-gray-500">Activar modo mantenimiento para toda la plataforma</p>
+            </div>
+            <Switch 
+              id="maintenance-mode"
+              checked={settings.maintenance.maintenance_mode}
+              onCheckedChange={(checked) => 
+                setSettings(prev => ({
+                  ...prev,
+                  maintenance: { ...prev.maintenance, maintenance_mode: checked }
+                }))
+              }
+            />
+          </div>
+          
+          {settings.maintenance.maintenance_mode && (
+            <div>
+              <Label htmlFor="maintenance-message">Mensaje de Mantenimiento</Label>
+              <Textarea 
+                id="maintenance-message"
+                placeholder="El sistema está en mantenimiento. Volveremos pronto..."
+                value={settings.maintenance.maintenance_message}
+                onChange={(e) => 
+                  setSettings(prev => ({
+                    ...prev,
+                    maintenance: { ...prev.maintenance, maintenance_message: e.target.value }
+                  }))
+                }
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Security & API Settings */}
-        <div className="space-y-6">
-          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-mono text-white uppercase tracking-wider">
-                <Shield className="h-5 w-5" />
-                Seguridad & API
-              </CardTitle>
-              <CardDescription className="text-zinc-400 font-mono">
-                Configuración de seguridad y límites de API
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="rate-limit" className="text-zinc-300 font-mono uppercase tracking-wider">Rate Limit (por minuto)</Label>
-                <Input
-                  id="rate-limit"
-                  type="number"
-                  value={apiSettings.rateLimitPerMinute}
-                  onChange={(e) => setApiSettings({ ...apiSettings, rateLimitPerMinute: parseInt(e.target.value) })}
-                  className="bg-zinc-700/50 border-zinc-600 text-white font-mono"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="max-message" className="text-zinc-300 font-mono uppercase tracking-wider">Máx. Caracteres por Mensaje</Label>
-                <Input
-                  id="max-message"
-                  type="number"
-                  value={apiSettings.maxMessageLength}
-                  onChange={(e) => setApiSettings({ ...apiSettings, maxMessageLength: parseInt(e.target.value) })}
-                  className="bg-zinc-700/50 border-zinc-600 text-white font-mono"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="session-timeout" className="text-zinc-300 font-mono uppercase tracking-wider">Timeout Sesión (horas)</Label>
-                <Input
-                  id="session-timeout"
-                  type="number"
-                  value={settings.sessionTimeout}
-                  onChange={(e) => setSettings({ ...settings, sessionTimeout: parseInt(e.target.value) })}
-                  className="bg-zinc-700/50 border-zinc-600 text-white font-mono"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-zinc-300 font-mono uppercase tracking-wider">Webhooks Habilitados</Label>
-                  <p className="text-sm text-zinc-500 font-mono">Permitir webhooks externos</p>
-                </div>
-                <Switch
-                  checked={apiSettings.enableWebhooks}
-                  onCheckedChange={(checked) => setApiSettings({ ...apiSettings, enableWebhooks: checked })}
-                />
-              </div>
-
-              <Button 
-                onClick={handleSaveApiSettings}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-mono uppercase tracking-wider"
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                Guardar Seguridad
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-mono text-white uppercase tracking-wider">
-                <Database className="h-5 w-5" />
-                Backup & Mantenimiento
-              </CardTitle>
-              <CardDescription className="text-zinc-400 font-mono">
-                Gestión de copias de seguridad y mantenimiento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-zinc-700/30 rounded-sm border border-zinc-600">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-zinc-300 uppercase tracking-wider">Último Backup</span>
-                  <Badge className="bg-green-600 text-white font-mono">Exitoso</Badge>
-                </div>
-                <p className="text-sm text-zinc-400 font-mono">{systemStats.lastBackup}</p>
-              </div>
-
-              <Button 
-                onClick={handleBackupNow}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-mono uppercase tracking-wider"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Crear Backup Ahora
-              </Button>
-
-              {settings.maintenanceMode && (
-                <div className="p-3 bg-orange-600/20 border border-orange-600/50 rounded-sm">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-400" />
-                    <span className="font-mono text-orange-300 text-sm uppercase tracking-wider">
-                      Modo Mantenimiento Activo
-                    </span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+      {/* Botón de Guardar */}
+      <div className="flex justify-end">
+        <Button onClick={handleSaveSettings} className="flex items-center gap-2">
+          <Save className="h-4 w-4" />
+          Guardar Configuración
+        </Button>
       </div>
     </div>
   );
