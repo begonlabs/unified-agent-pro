@@ -13,7 +13,7 @@ const Index = () => {
   useSmoothScroll();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-zinc-950">
       <Navigation />
       <main>
         <HeroSection />
