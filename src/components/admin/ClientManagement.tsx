@@ -20,6 +20,7 @@ import {
   UserX,
   Edit
 } from 'lucide-react';
+import type { User } from '@supabase/supabase-js';
 
 interface Client {
   id: string;
@@ -29,6 +30,7 @@ interface Client {
     name?: string;
     company?: string;
     phone?: string;
+    avatar_url?: string;
   };
 }
 
@@ -47,7 +49,16 @@ const ClientManagement = () => {
       const { data, error } = await supabase.auth.admin.listUsers();
       
       if (error) throw error;
-      setClients(data.users || []);
+      
+      // Transform Supabase User[] to Client[]
+      const transformedClients: Client[] = (data.users || []).map((user: User) => ({
+        id: user.id,
+        email: user.email || '', // Provide fallback for optional email
+        created_at: user.created_at,
+        user_metadata: user.user_metadata
+      }));
+      
+      setClients(transformedClients);
     } catch (error: any) {
       toast({
         title: "Error",
