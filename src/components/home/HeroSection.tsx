@@ -1,11 +1,47 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
+  const [isMatrixActive, setIsMatrixActive] = useState(false);
+  const [matrixText, setMatrixText] = useState('Y AUTOMATIZA');
+  
+  const originalText = 'Y AUTOMATIZA';
+  const matrixChars = '!@#$%^&*()_+-=[]{}|;:,.<>?~`';
+  
+  useEffect(() => {
+    if (!isMatrixActive) return;
+    
+    let iterations = 0;
+    const maxIterations = 20;
+    
+    const interval = setInterval(() => {
+      setMatrixText(prevText => 
+        prevText.split('').map((char, index) => {
+          if (char === ' ') return ' ';
+          
+          if (iterations < maxIterations - 5) {
+            return matrixChars[Math.floor(Math.random() * matrixChars.length)];
+          } else {
+            return originalText[index];
+          }
+        }).join('')
+      );
+      
+      iterations++;
+      
+      if (iterations >= maxIterations) {
+        clearInterval(interval);
+        setMatrixText(originalText);
+        setIsMatrixActive(false);
+      }
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [isMatrixActive]);
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background effects */}
@@ -20,7 +56,12 @@ const HeroSection = () => {
         
         <h1 className="text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-widest text-white mb-8 leading-[0.9] group cursor-default">
           <span className="block transition-all duration-700 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text">CENTRALIZA</span>
-          <span className="block text-zinc-400 transition-all duration-700 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-blue-400 group-hover:bg-clip-text">Y AUTOMATIZA</span>
+          <span 
+            className="block text-zinc-400 transition-all duration-700 text-transparent bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text cursor-pointer"
+            onMouseEnter={() => setIsMatrixActive(true)}
+          >
+            {matrixText}
+          </span>
           <span className="block text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">TUS CONVERSACIONES</span>
         </h1>
         
