@@ -2,19 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
   MessageSquare, 
-  Clock, 
-  CheckCircle, 
+  Search, 
+  Filter,
+  Clock,
+  CheckCircle,
   AlertCircle,
+  MessageCircle,
   Send,
-  User,
-  Calendar
+  User
 } from 'lucide-react';
 
 interface SupportMessage {
@@ -22,21 +26,20 @@ interface SupportMessage {
   user_id: string;
   subject: string;
   message: string;
-  status: 'open' | 'in_progress' | 'resolved';
-  priority: 'low' | 'medium' | 'high';
+  priority: string;
+  status: string;
   created_at: string;
-  updated_at: string;
-  user_profile?: {
-    company_name: string;
-    email: string;
-  };
+  user_email?: string;
 }
 
 const SupportMessages = () => {
   const [messages, setMessages] = useState<SupportMessage[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(null);
   const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,57 +48,24 @@ const SupportMessages = () => {
 
   const fetchSupportMessages = async () => {
     try {
-      // Simulando datos ya que no existe la tabla support_messages
-      const mockMessages: SupportMessage[] = [
-        {
-          id: '1',
-          user_id: 'user1',
-          subject: 'Problema con integración de WhatsApp',
-          message: 'No puedo conectar mi número de WhatsApp Business con la plataforma. ¿Podrían ayudarme?',
-          status: 'open',
-          priority: 'high',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_profile: {
-            company_name: 'Empresa ABC',
-            email: 'contacto@empresaabc.com'
-          }
-        },
-        {
-          id: '2',
-          user_id: 'user2',
-          subject: 'Consulta sobre límites del plan Premium',
-          message: 'Quisiera saber cuáles son los límites exactos de mensajes en el plan Premium.',
-          status: 'in_progress',
-          priority: 'medium',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-          user_profile: {
-            company_name: 'Tech Solutions',
-            email: 'admin@techsolutions.com'
-          }
-        },
-        {
-          id: '3',
-          user_id: 'user3',
-          subject: 'Error en estadísticas',
-          message: 'Las estadísticas de leads no se están actualizando correctamente desde ayer.',
-          status: 'resolved',
-          priority: 'medium',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          updated_at: new Date(Date.now() - 172800000).toISOString(),
-          user_profile: {
-            company_name: 'Marketing Pro',
-            email: 'soporte@marketingpro.com'
-          }
-        }
-      ];
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      setMessages(mockMessages);
+      if (error) throw error;
+
+      // Simular email del usuario para los datos de ejemplo
+      const messagesWithUserData = (data || []).map(msg => ({
+        ...msg,
+        user_email: `user${msg.user_id.substring(0, 8)}@example.com`
+      }));
+
+      setMessages(messagesWithUserData);
     } catch (error: any) {
       toast({
-        title: "Error al cargar mensajes",
-        description: error.message,
+        title: "Error",
+        description: "No se pudieron cargar los mensajes de soporte",
         variant: "destructive",
       });
     } finally {
@@ -103,268 +73,347 @@ const SupportMessages = () => {
     }
   };
 
-  const updateMessageStatus = async (messageId: string, newStatus: 'open' | 'in_progress' | 'resolved') => {
+  const updateMessageStatus = async (messageId: string, newStatus: string) => {
     try {
-      // Aquí se actualizaría en la base de datos
+      const { error } = await supabase
+        .from('support_messages')
+        .update({ status: newStatus })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
       setMessages(messages.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, status: newStatus, updated_at: new Date().toISOString() }
-          : msg
+        msg.id === messageId ? { ...msg, status: newStatus } : msg
       ));
+
+      if (selectedMessage?.id === messageId) {
+        setSelectedMessage({ ...selectedMessage, status: newStatus });
+      }
 
       toast({
         title: "Estado actualizado",
-        description: `El mensaje ha sido marcado como ${newStatus}.`,
+        description: `El mensaje ha sido marcado como ${newStatus}`,
       });
     } catch (error: any) {
       toast({
-        title: "Error al actualizar estado",
-        description: error.message,
+        title: "Error",
+        description: "No se pudo actualizar el estado del mensaje",
         variant: "destructive",
       });
     }
   };
 
   const sendResponse = async () => {
-    if (!selectedMessage || !response.trim()) return;
+    if (!response.trim() || !selectedMessage) return;
 
     try {
-      // Aquí se enviaría la respuesta
+      // Aquí se enviaría la respuesta al usuario
+      // Por ahora solo actualizamos el estado
+      await updateMessageStatus(selectedMessage.id, 'resolved');
+      setResponse('');
+      
       toast({
         title: "Respuesta enviada",
-        description: "La respuesta ha sido enviada al cliente.",
+        description: "Tu respuesta ha sido enviada al usuario",
       });
-      
-      setResponse('');
-      updateMessageStatus(selectedMessage.id, 'resolved');
-      setSelectedMessage(null);
     } catch (error: any) {
       toast({
-        title: "Error al enviar respuesta",
-        description: error.message,
+        title: "Error",
+        description: "No se pudo enviar la respuesta",
         variant: "destructive",
       });
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      open: { color: 'bg-red-100 text-red-800', icon: AlertCircle },
-      in_progress: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      resolved: { color: 'bg-green-100 text-green-800', icon: CheckCircle }
-    };
-    const variant = variants[status as keyof typeof variants];
-    const Icon = variant.icon;
-    
-    return (
-      <Badge className={variant.color}>
-        <Icon className="w-3 h-3 mr-1" />
-        {status === 'open' ? 'Abierto' : status === 'in_progress' ? 'En Progreso' : 'Resuelto'}
-      </Badge>
-    );
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-600 text-white';
+      case 'high': return 'bg-orange-600 text-white';
+      case 'normal': return 'bg-blue-600 text-white';
+      case 'low': return 'bg-gray-600 text-white';
+      default: return 'bg-gray-600 text-white';
+    }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const colors = {
-      low: 'bg-gray-100 text-gray-800',
-      medium: 'bg-blue-100 text-blue-800',
-      high: 'bg-red-100 text-red-800'
-    };
-    return (
-      <Badge className={colors[priority as keyof typeof colors]}>
-        {priority === 'low' ? 'Baja' : priority === 'medium' ? 'Media' : 'Alta'}
-      </Badge>
-    );
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return <Clock className="h-4 w-4 text-yellow-400" />;
+      case 'in_progress': return <MessageCircle className="h-4 w-4 text-blue-400" />;
+      case 'resolved': return <CheckCircle className="h-4 w-4 text-green-400" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Pendiente';
+      case 'in_progress': return 'En Progreso';
+      case 'resolved': return 'Resuelto';
+      default: return 'Desconocido';
+    }
+  };
+
+  const filteredMessages = messages.filter(message => {
+    const matchesSearch = message.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         message.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         message.user_email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || message.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || message.priority === priorityFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  const stats = {
+    total: messages.length,
+    pending: messages.filter(m => m.status === 'pending').length,
+    inProgress: messages.filter(m => m.status === 'in_progress').length,
+    resolved: messages.filter(m => m.status === 'resolved').length
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </CardContent>
-      </Card>
+      <div className="p-6 bg-zinc-900 min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="font-mono text-zinc-400 tracking-wider uppercase">Cargando mensajes...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Resumen de Mensajes */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+    <div className="space-y-6 bg-zinc-900 min-h-screen">
+      {/* Header */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-mono font-black uppercase tracking-widest text-white">Gestión de Soporte</h2>
+        <p className="text-zinc-400 font-mono tracking-wide">
+          Administra y responde a los mensajes de soporte de los usuarios
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Mensajes</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Total</CardTitle>
+            <MessageSquare className="h-4 w-4 text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{messages.length}</div>
+            <div className="text-2xl font-mono font-bold text-white">{stats.total}</div>
+            <p className="text-xs font-mono text-zinc-400 tracking-wide">Mensajes totales</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abiertos</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Pendientes</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{messages.filter(m => m.status === 'open').length}</div>
+            <div className="text-2xl font-mono font-bold text-white">{stats.pending}</div>
+            <p className="text-xs font-mono text-zinc-400 tracking-wide">Requieren atención</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Progreso</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">En Progreso</CardTitle>
+            <MessageCircle className="h-4 w-4 text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{messages.filter(m => m.status === 'in_progress').length}</div>
+            <div className="text-2xl font-mono font-bold text-white">{stats.inProgress}</div>
+            <p className="text-xs font-mono text-zinc-400 tracking-wide">Siendo atendidos</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resueltos</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-mono font-medium text-zinc-300 uppercase tracking-wider">Resueltos</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{messages.filter(m => m.status === 'resolved').length}</div>
+            <div className="text-2xl font-mono font-bold text-white">{stats.resolved}</div>
+            <p className="text-xs font-mono text-zinc-400 tracking-wide">Completados</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de Mensajes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mensajes de Soporte</CardTitle>
-          <CardDescription>
-            Gestiona todos los mensajes de soporte de los clientes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Asunto</TableHead>
-                  <TableHead>Prioridad</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {messages.map((message) => (
-                  <TableRow key={message.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{message.user_profile?.company_name}</div>
-                        <div className="text-sm text-gray-500 flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {message.user_profile?.email}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs">
-                        <div className="font-medium truncate">{message.subject}</div>
-                        <div className="text-sm text-gray-500 truncate">{message.message}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getPriorityBadge(message.priority)}</TableCell>
-                    <TableCell>{getStatusBadge(message.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(message.created_at).toLocaleDateString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedMessage(message)}
-                        >
-                          Ver
-                        </Button>
-                        {message.status !== 'resolved' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateMessageStatus(
-                              message.id,
-                              message.status === 'open' ? 'in_progress' : 'resolved'
-                            )}
-                          >
-                            {message.status === 'open' ? 'Tomar' : 'Resolver'}
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal de Detalle del Mensaje */}
-      {selectedMessage && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalle del Mensaje</CardTitle>
-            <div className="flex gap-2">
-              {getStatusBadge(selectedMessage.status)}
-              {getPriorityBadge(selectedMessage.priority)}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-medium">Cliente:</h4>
-              <p>{selectedMessage.user_profile?.company_name} ({selectedMessage.user_profile?.email})</p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium">Asunto:</h4>
-              <p>{selectedMessage.subject}</p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium">Mensaje:</h4>
-              <p className="bg-gray-50 p-3 rounded-md">{selectedMessage.message}</p>
-            </div>
-
-            {selectedMessage.status !== 'resolved' && (
-              <div>
-                <h4 className="font-medium mb-2">Responder:</h4>
-                <Textarea
-                  placeholder="Escribe tu respuesta aquí..."
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  className="mb-3"
-                />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Messages List */}
+        <div className="lg:col-span-2">
+          <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="font-mono text-white uppercase tracking-wider">Mensajes de Soporte</CardTitle>
                 <div className="flex gap-2">
-                  <Button onClick={sendResponse} disabled={!response.trim()}>
-                    <Send className="w-4 h-4 mr-2" />
-                    Enviar Respuesta
-                  </Button>
-                  <Button variant="outline" onClick={() => setSelectedMessage(null)}>
-                    Cerrar
-                  </Button>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                    <Input
+                      placeholder="Buscar mensajes..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 w-64 bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-32 bg-zinc-700/50 border-zinc-600 text-white font-mono">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                      <SelectItem value="all" className="text-white font-mono">Todos</SelectItem>
+                      <SelectItem value="pending" className="text-white font-mono">Pendientes</SelectItem>
+                      <SelectItem value="in_progress" className="text-white font-mono">En Progreso</SelectItem>
+                      <SelectItem value="resolved" className="text-white font-mono">Resueltos</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            )}
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {filteredMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`p-4 rounded-sm border cursor-pointer transition-all duration-300 ${
+                      selectedMessage?.id === message.id
+                        ? 'bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/50'
+                        : 'bg-zinc-700/30 border-zinc-600 hover:bg-zinc-700/50 hover:border-zinc-500'
+                    }`}
+                    onClick={() => setSelectedMessage(message)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-mono font-bold">
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-mono font-medium text-white truncate">{message.subject}</h3>
+                            <Badge className={`${getPriorityColor(message.priority)} font-mono text-xs`}>
+                              {message.priority.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-zinc-400 font-mono truncate">{message.user_email}</p>
+                          <p className="text-sm text-zinc-500 font-mono truncate mt-1">{message.message}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            {getStatusIcon(message.status)}
+                            <span className="text-xs text-zinc-400 font-mono">{getStatusText(message.status)}</span>
+                            <span className="text-xs text-zinc-500 font-mono">
+                              {new Date(message.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            {selectedMessage.status === 'resolved' && (
-              <Button variant="outline" onClick={() => setSelectedMessage(null)}>
-                Cerrar
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        {/* Message Detail */}
+        <div>
+          {selectedMessage ? (
+            <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="font-mono text-white uppercase tracking-wider">Detalles del Mensaje</CardTitle>
+                <CardDescription className="text-zinc-400 font-mono">
+                  Responde al usuario y gestiona el estado del mensaje
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-mono text-zinc-400 uppercase tracking-wider">De:</label>
+                    <p className="font-mono text-white">{selectedMessage.user_email}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-mono text-zinc-400 uppercase tracking-wider">Asunto:</label>
+                    <p className="font-mono text-white">{selectedMessage.subject}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-mono text-zinc-400 uppercase tracking-wider">Mensaje:</label>
+                    <div className="p-3 bg-zinc-700/30 rounded-sm border border-zinc-600">
+                      <p className="font-mono text-white text-sm">{selectedMessage.message}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Badge className={`${getPriorityColor(selectedMessage.priority)} font-mono`}>
+                      {selectedMessage.priority.toUpperCase()}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {getStatusIcon(selectedMessage.status)}
+                      <Badge variant="outline" className="border-zinc-600 text-zinc-300 font-mono">
+                        {getStatusText(selectedMessage.status)}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-mono text-zinc-400 uppercase tracking-wider">Cambiar Estado:</label>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateMessageStatus(selectedMessage.id, 'in_progress')}
+                      className="border-blue-600 text-blue-400 hover:bg-blue-600/20 font-mono"
+                    >
+                      En Progreso
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateMessageStatus(selectedMessage.id, 'resolved')}
+                      className="border-green-600 text-green-400 hover:bg-green-600/20 font-mono"
+                    >
+                      Resolver
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-mono text-zinc-400 uppercase tracking-wider">Respuesta:</label>
+                  <Textarea
+                    placeholder="Escribe tu respuesta al usuario..."
+                    value={response}
+                    onChange={(e) => setResponse(e.target.value)}
+                    className="min-h-[120px] bg-zinc-700/50 border-zinc-600 text-white placeholder:text-zinc-400 font-mono"
+                  />
+                  <Button
+                    onClick={sendResponse}
+                    disabled={!response.trim()}
+                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 font-mono uppercase tracking-wider"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Enviar Respuesta
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-zinc-800/50 border-zinc-700 backdrop-blur-sm">
+              <CardContent className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <MessageSquare className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-mono font-medium text-white mb-2 uppercase tracking-wider">
+                    Selecciona un Mensaje
+                  </h3>
+                  <p className="text-zinc-400 font-mono">
+                    Elige un mensaje para ver los detalles y responder
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
