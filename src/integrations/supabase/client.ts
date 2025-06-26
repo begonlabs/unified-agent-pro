@@ -5,7 +5,7 @@ import type { Database } from './types';
 
 // Replace these with your self-hosted Supabase instance details
 const SUPABASE_URL = "http://37.27.20.208:8000";
-const SUPABASE_PUBLISHABLE_KEY = "YOUR_SELFHOSTED_SUPABASE_ANON_KEY";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzUwODgxNjAwLCJleHAiOjE5MDg2NDgwMDB9.ESqAMd8u1zWZ1gJgsh8SNcm3SFdmq4Taf14qsgEX7Og";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
