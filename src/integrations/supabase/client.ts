@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Replace these with your self-hosted Supabase instance details
-const SUPABASE_URL = "YOUR_SELFHOSTED_SUPABASE_URL"; // e.g., "https://your-domain.com"
+const SUPABASE_URL = "http://37.27.20.208:8000";
 const SUPABASE_PUBLISHABLE_KEY = "YOUR_SELFHOSTED_SUPABASE_ANON_KEY";
 
 // Import the supabase client like this:
