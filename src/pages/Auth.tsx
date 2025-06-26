@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -18,13 +17,17 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log('Auth component mounted, checking session...');
+    
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('Session check result:', { session: session?.user?.email, error });
       if (session) {
         navigate('/dashboard');
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
       if (event === 'SIGNED_IN' && session) {
         navigate('/dashboard');
       }
@@ -35,24 +38,33 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Attempting sign in with email:', email);
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Calling supabase.auth.signInWithPassword...');
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      console.log('Sign in response:', { data: data?.user?.email, error });
+
+      if (error) {
+        console.error('Sign in error:', error);
+        throw error;
+      }
       
+      console.log('Sign in successful');
       toast({
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión exitosamente.",
       });
     } catch (error: any) {
+      console.error('Sign in catch block:', error);
       toast({
         title: "Error al iniciar sesión",
-        description: error.message,
+        description: error.message || "Error desconocido",
         variant: "destructive",
       });
     } finally {
@@ -62,10 +74,12 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Attempting sign up with email:', email, 'company:', companyName);
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Calling supabase.auth.signUp...');
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -76,16 +90,23 @@ const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('Sign up response:', { data: data?.user?.email, error });
 
+      if (error) {
+        console.error('Sign up error:', error);
+        throw error;
+      }
+
+      console.log('Sign up successful');
       toast({
         title: "¡Registro exitoso!",
         description: "Te has registrado correctamente. Revisa tu email para confirmar tu cuenta.",
       });
     } catch (error: any) {
+      console.error('Sign up catch block:', error);
       toast({
         title: "Error en el registro",
-        description: error.message,
+        description: error.message || "Error desconocido",
         variant: "destructive",
       });
     } finally {
