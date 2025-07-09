@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +19,9 @@ const Auth = () => {
 
   useEffect(() => {
     console.log('Auth component mounted, checking session...');
+    console.log('Supabase URL being used:', import.meta.env.VITE_SUPABASE_URL || 'http://37.27.20.208:8000');
+    console.log('Current location protocol:', window.location.protocol);
+    console.log('Current location origin:', window.location.origin);
     
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('Session check result:', { session: session?.user?.email, error });
@@ -36,13 +40,34 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const testConnection = async () => {
+    console.log('Testing direct connection to Supabase...');
+    try {
+      const response = await fetch('http://37.27.20.208:8000/health');
+      console.log('Direct connection test:', response.status, response.statusText);
+      const text = await response.text();
+      console.log('Response body:', text);
+    } catch (error) {
+      console.error('Direct connection failed:', error);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Attempting sign in with email:', email);
+    console.log('Testing connection first...');
+    await testConnection();
+    
     setLoading(true);
 
     try {
       console.log('Calling supabase.auth.signInWithPassword...');
+      console.log('Request details:', {
+        url: supabase.supabaseUrl,
+        key: supabase.supabaseKey?.substring(0, 20) + '...',
+        email: email
+      });
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -51,7 +76,13 @@ const Auth = () => {
       console.log('Sign in response:', { data: data?.user?.email, error });
 
       if (error) {
-        console.error('Sign in error:', error);
+        console.error('Sign in error details:', {
+          name: error.name,
+          message: error.message,
+          status: error.status,
+          code: error.code,
+          stack: error.stack
+        });
         throw error;
       }
       
@@ -61,10 +92,21 @@ const Auth = () => {
         description: "Has iniciado sesión exitosamente.",
       });
     } catch (error: any) {
-      console.error('Sign in catch block:', error);
+      console.error('Sign in catch block - Full error object:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error constructor:', error.constructor.name);
+      
+      let errorMessage = 'Error desconocido';
+      if (error?.message) {
+        errorMessage = error.message;
+        if (error.message === 'Failed to fetch') {
+          errorMessage = 'No se puede conectar al servidor. Verifica que Supabase esté ejecutándose y accesible desde HTTPS.';
+        }
+      }
+      
       toast({
         title: "Error al iniciar sesión",
-        description: error.message || "Error desconocido",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -165,6 +207,19 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Debug Info */}
+            <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+              <p><strong>Debug Info:</strong></p>
+              <p>Protocol: {window.location.protocol}</p>
+              <p>Supabase URL: http://37.27.20.208:8000</p>
+              <button 
+                onClick={testConnection}
+                className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+              >
+                Test Connection
+              </button>
+            </div>
+
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
