@@ -102,21 +102,32 @@ const AdminDashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
       toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión del panel de administración.",
+        title: "Cerrando sesión de administrador...",
+        description: "Redirigiendo...",
       });
       
-      navigate('/admin/auth');
+      // Usar logout robusto
+      const { robustSignOut } = await import('@/lib/utils');
+      await robustSignOut();
+      
+      // Redirigir específicamente a admin auth
+      setTimeout(() => {
+        window.location.href = '/admin/auth';
+      }, 500);
+      
     } catch (error: any) {
+      console.error('Error during admin sign out:', error);
       toast({
         title: "Error al cerrar sesión",
-        description: error.message,
+        description: "Redirigiendo de todas formas...",
         variant: "destructive",
       });
+      
+      // Forzar redirección incluso si hay error
+      setTimeout(() => {
+        window.location.href = '/admin/auth';
+      }, 1000);
     }
   };
 

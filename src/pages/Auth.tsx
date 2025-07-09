@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Bot, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { prepareForSignIn } from '@/lib/utils';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -42,6 +43,9 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Preparar para login limpio
+      await prepareForSignIn();
+      
       console.log('Calling supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -52,14 +56,34 @@ const Auth = () => {
 
       if (error) {
         console.error('Sign in error:', error);
-        throw error;
+        
+        // Manejo específico de errores
+        let errorMessage = "Error desconocido";
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "Email o contraseña incorrectos";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = "Demasiados intentos. Intenta de nuevo en unos minutos";
+        } else {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      console.log('Sign in successful');
-      toast({
-        title: "¡Bienvenido de vuelta!",
-        description: "Has iniciado sesión exitosamente.",
-      });
+      if (data.user) {
+        console.log('Sign in successful, forcing page reload for clean state');
+        toast({
+          title: "¡Bienvenido de vuelta!",
+          description: "Has iniciado sesión exitosamente.",
+        });
+        
+        // Forzar recarga completa para estado limpio
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 500);
+      }
     } catch (error: any) {
       console.error('Sign in catch block:', error);
       toast({
@@ -78,6 +102,9 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Preparar para registro limpio
+      await prepareForSignIn();
+      
       console.log('Calling supabase.auth.signUp...');
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -94,14 +121,42 @@ const Auth = () => {
 
       if (error) {
         console.error('Sign up error:', error);
-        throw error;
+        
+        // Manejo específico de errores de registro
+        let errorMessage = "Error desconocido";
+        if (error.message.includes('User already registered')) {
+          errorMessage = "Este email ya está registrado. Intenta iniciar sesión";
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = "La contraseña debe tener al menos 6 caracteres";
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = "El formato del email no es válido";
+        } else {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       console.log('Sign up successful');
+      
+      // Mensaje diferente dependiendo si necesita confirmación
+      const needsConfirmation = !data.user?.email_confirmed_at;
+      
       toast({
         title: "¡Registro exitoso!",
-        description: "Te has registrado correctamente. Revisa tu email para confirmar tu cuenta.",
+        description: needsConfirmation 
+          ? "Te has registrado correctamente. Revisa tu email para confirmar tu cuenta."
+          : "Te has registrado correctamente. Puedes iniciar sesión ahora.",
       });
+
+      // Si no necesita confirmación, cambiar a tab de login
+      if (!needsConfirmation) {
+        setTimeout(() => {
+          const signInTab = document.querySelector('[value="signin"]') as HTMLElement;
+          signInTab?.click();
+        }, 1000);
+      }
+      
     } catch (error: any) {
       console.error('Sign up catch block:', error);
       toast({

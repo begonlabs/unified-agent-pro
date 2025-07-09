@@ -42,15 +42,36 @@ const AdminAuth = () => {
     setLoading(true);
 
     try {
+      // Preparar para login limpio de admin
+      const { prepareForSignIn } = await import('@/lib/utils');
+      await prepareForSignIn();
+      
+      console.log('Attempting admin login...');
+      
       // Intentar login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Admin login error:', error);
+        
+        let errorMessage = "Error de autenticación";
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "Credenciales de administrador incorrectas";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Email no confirmado";
+        } else {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
 
       if (data.user) {
+        console.log('Admin login successful, verifying role...');
+        
         // Verificar que el usuario tenga rol de admin
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
@@ -59,26 +80,35 @@ const AdminAuth = () => {
           .eq('role', 'admin')
           .maybeSingle();
 
+        console.log('Admin role check:', { roleData, roleError });
+
         if (roleError) {
           console.error('Error checking admin role:', roleError);
-          throw new Error('Error al verificar permisos');
+          await supabase.auth.signOut();
+          throw new Error('Error al verificar permisos de administrador');
         }
 
         if (!roleData) {
+          console.log('User is not admin, signing out...');
           // No es admin, cerrar sesión inmediatamente
           await supabase.auth.signOut();
-          throw new Error('Acceso denegado. Solo administradores pueden acceder.');
+          throw new Error('Acceso denegado. Solo administradores pueden acceder a este panel.');
         }
 
         // Es admin, redirigir al panel
+        console.log('Admin access granted');
         toast({
           title: "Acceso autorizado",
           description: "Bienvenido al panel de administración.",
         });
 
-        navigate('/admin');
+        // Forzar recarga para estado limpio
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 500);
       }
     } catch (error: any) {
+      console.error('Admin sign in error:', error);
       toast({
         title: "Error de acceso",
         description: error.message,

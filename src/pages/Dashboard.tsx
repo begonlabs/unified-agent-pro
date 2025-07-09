@@ -46,19 +46,27 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
       toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente.",
+        title: "Cerrando sesión...",
+        description: "Redirigiendo...",
       });
+      
+      // Usar logout robusto
+      const { robustSignOut } = await import('@/lib/utils');
+      await robustSignOut();
+      
     } catch (error: any) {
+      console.error('Error during sign out:', error);
       toast({
         title: "Error al cerrar sesión",
-        description: error.message,
+        description: "Redirigiendo de todas formas...",
         variant: "destructive",
       });
+      
+      // Forzar redirección incluso si hay error
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 1000);
     }
   };
 
