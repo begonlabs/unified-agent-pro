@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -63,9 +64,8 @@ const Auth = () => {
     try {
       console.log('Calling supabase.auth.signInWithPassword...');
       console.log('Request details:', {
-        url: supabase.supabaseUrl,
-        key: supabase.supabaseKey?.substring(0, 20) + '...',
-        email: email
+        email: email,
+        timestamp: new Date().toISOString()
       });
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -295,3 +295,4 @@ const Auth = () => {
 };
 
 export default Auth;
+
