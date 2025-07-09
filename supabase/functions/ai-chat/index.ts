@@ -91,42 +91,42 @@ serve(async (req) => {
       `${msg.sender_type === 'client' ? 'Cliente' : 'Asistente'}: ${msg.content}`
     ).join('\n') || '';
 
-    // Prepare AI prompt
-    let systemPrompt = `Eres un asistente de IA para una empresa. Tu objetivo es ayudar a los clientes de manera profesional y eficiente.
-
-INFORMACIÓN DEL CLIENTE:
+    // Build context for AI using the published prompt
+    let contextMessage = `INFORMACIÓN DEL CLIENTE:
 ${clientInfo}
 
 CANAL: ${conversation.channel}`;
 
     if (aiConfig) {
       if (aiConfig.goals) {
-        systemPrompt += `\n\nOBJETIVOS:
+        contextMessage += `\n\nOBJETIVOS ESPECÍFICOS DE LA EMPRESA:
 ${aiConfig.goals}`;
       }
 
       if (aiConfig.restrictions) {
-        systemPrompt += `\n\nRESTRICCIONES:
+        contextMessage += `\n\nRESTRICCIONES ESPECÍFICAS:
 ${aiConfig.restrictions}`;
       }
 
       if (aiConfig.knowledge_base) {
-        systemPrompt += `\n\nBASE DE CONOCIMIENTO:
+        contextMessage += `\n\nBASE DE CONOCIMIENTO DE LA EMPRESA:
 ${aiConfig.knowledge_base}`;
       }
 
       if (aiConfig.faq) {
-        systemPrompt += `\n\nPREGUNTAS FRECUENTES:
+        contextMessage += `\n\nPREGUNTAS FRECUENTES DE LA EMPRESA:
 ${aiConfig.faq}`;
       }
     }
 
-    systemPrompt += `\n\nCONVERSACIÓN RECIENTE:
-${messageHistory}
+    if (messageHistory) {
+      contextMessage += `\n\nCONVERSACIÓN RECIENTE:
+${messageHistory}`;
+    }
 
-Responde de manera natural, útil y profesional. Mantén un tono amigable pero profesional.`;
+    contextMessage += `\n\nCONSULTA ACTUAL: ${message}`;
 
-    // Call OpenAI API
+    // Call OpenAI API using the published prompt
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -136,9 +136,12 @@ Responde de manera natural, útil y profesional. Mantén un tono amigable pero p
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          { role: 'user', content: contextMessage }
         ],
+        prompt: {
+          id: "pmpt_686e04aaad78819682d3089f011531b606b73c746fad9261",
+          version: "2"
+        },
         temperature: 0.7,
         max_tokens: 500,
       }),
