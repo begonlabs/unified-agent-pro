@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseSelect, supabaseInsert, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,78 +130,60 @@ const MessagesView = () => {
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('crm_clients')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const { data } = await supabaseSelect(
+        supabase
+          .from('crm_clients')
+          .select('*')
+          .order('created_at', { ascending: false })
+      );
       setClients(data || []);
     } catch (error: any) {
-      console.error('Error fetching clients:', error);
-      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
+      const errorInfo = handleSupabaseError(error, "No se pudieron cargar los clientes");
       toast({
-        title: "Error de conexión",
-        description: isConnectionError 
-          ? "Problemas de conectividad. Intentando reconectar..." 
-          : "No se pudieron cargar los clientes",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
-      
-      if (isConnectionError) {
-        // Reintentar después de 3 segundos
-        setTimeout(() => {
-          fetchClients();
-        }, 3000);
-      }
     }
   };
 
   const fetchConversations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          crm_clients (*)
-        `)
-        .order('last_message_at', { ascending: false });
-
-      if (error) throw error;
+      const { data } = await supabaseSelect(
+        supabase
+          .from('conversations')
+          .select(`
+            *,
+            crm_clients (*)
+          `)
+          .order('last_message_at', { ascending: false })
+      );
       setConversations(data || []);
     } catch (error: any) {
-      console.error('Error fetching conversations:', error);
-      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
+      const errorInfo = handleSupabaseError(error, "No se pudieron cargar las conversaciones");
       toast({
-        title: "Error de conexión",
-        description: isConnectionError 
-          ? "Problemas de conectividad. Intentando reconectar..." 
-          : "No se pudieron cargar las conversaciones",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
-      
-      if (isConnectionError) {
-        setTimeout(() => {
-          fetchConversations();
-        }, 3000);
-      }
     }
   };
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
+      const { data } = await supabaseSelect(
+        supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true })
+      );
       setMessages(data || []);
     } catch (error: any) {
+      const errorInfo = handleSupabaseError(error, "No se pudieron cargar los mensajes");
       toast({
-        title: "Error",
-        description: "No se pudieron cargar los mensajes",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
     }
@@ -210,25 +193,27 @@ const MessagesView = () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: selectedConversation,
-          content: newMessage,
-          sender_type: 'human',
-          is_automated: false,
-        });
-
-      if (error) throw error;
+      await supabaseInsert(
+        supabase
+          .from('messages')
+          .insert({
+            conversation_id: selectedConversation,
+            content: newMessage,
+            sender_type: 'human',
+            is_automated: false,
+          })
+      );
 
       setNewMessage('');
       fetchMessages(selectedConversation);
       
       // Update conversation last_message_at
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', selectedConversation);
+      await supabaseUpdate(
+        supabase
+          .from('conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', selectedConversation)
+      );
         
       fetchConversations();
       

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseSelect, supabaseInsert, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,37 +42,33 @@ const ChannelsView = () => {
 
   const fetchChannels = async () => {
     try {
-      const { data, error } = await supabase
-        .from('communication_channels')
-        .select('*');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabaseSelect(
+          supabase
+            .from('communication_channels')
+            .select('*')
+            .eq('user_id', user.id)
+        );
+        
+        setChannels(data || []);
 
-      if (error) throw error;
-      setChannels(data || []);
-
-      // Load existing WhatsApp number if exists
-      const whatsappChannel = data?.find(c => c.channel_type === 'whatsapp');
-      if (whatsappChannel?.channel_config && typeof whatsappChannel.channel_config === 'object' && !Array.isArray(whatsappChannel.channel_config)) {
-        const config = whatsappChannel.channel_config as { phone_number?: string };
-        if (config.phone_number) {
-          setWhatsappPhone(config.phone_number);
+        // Load existing WhatsApp number if exists
+        const whatsappChannel = data?.find(c => c.channel_type === 'whatsapp');
+        if (whatsappChannel?.channel_config && typeof whatsappChannel.channel_config === 'object' && !Array.isArray(whatsappChannel.channel_config)) {
+          const config = whatsappChannel.channel_config as { phone_number?: string };
+          if (config.phone_number) {
+            setWhatsappPhone(config.phone_number);
+          }
         }
       }
     } catch (error: any) {
-      console.error('Error fetching channels:', error);
-      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
+      const errorInfo = handleSupabaseError(error, "No se pudieron cargar los canales");
       toast({
-        title: "Error de conexión",
-        description: isConnectionError 
-          ? "Problemas de conectividad con la base de datos. Reintentando..." 
-          : "No se pudieron cargar los canales",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
-      
-      if (isConnectionError) {
-        setTimeout(() => {
-          fetchChannels();
-        }, 3000);
-      }
     }
   };
 
@@ -126,27 +123,27 @@ const ChannelsView = () => {
       const existingChannel = channels.find(c => c.channel_type === 'whatsapp');
 
       if (existingChannel) {
-        const { error } = await supabase
-          .from('communication_channels')
-          .update({
-            channel_config: config,
-            is_connected: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingChannel.id);
-
-        if (error) throw error;
+        await supabaseUpdate(
+          supabase
+            .from('communication_channels')
+            .update({
+              channel_config: config,
+              is_connected: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingChannel.id)
+        );
       } else {
-        const { error } = await supabase
-          .from('communication_channels')
-          .insert({
-            channel_type: 'whatsapp',
-            channel_config: config,
-            is_connected: true,
-            user_id: (await supabase.auth.getUser()).data.user?.id
-          });
-
-        if (error) throw error;
+        await supabaseInsert(
+          supabase
+            .from('communication_channels')
+            .insert({
+              channel_type: 'whatsapp',
+              channel_config: config,
+              is_connected: true,
+              user_id: (await supabase.auth.getUser()).data.user?.id
+            })
+        );
       }
 
       await fetchChannels();

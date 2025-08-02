@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseSelect, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,13 +46,13 @@ const ProfileView = ({ user }: ProfileViewProps) => {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error) throw error;
+      const { data } = await supabaseSelect(
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user?.id)
+          .single()
+      );
       
       setProfile(data);
       setProfileData({
@@ -60,38 +61,29 @@ const ProfileView = ({ user }: ProfileViewProps) => {
         phone: data.phone || ''
       });
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
-      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
+      const errorInfo = handleSupabaseError(error, "No se pudo cargar el perfil");
       toast({
-        title: "Error de conexión",
-        description: isConnectionError 
-          ? "Problemas de conectividad. Reintentando automáticamente..." 
-          : "No se pudo cargar el perfil",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
-      
-      if (isConnectionError) {
-        setTimeout(() => {
-          fetchProfile();
-        }, 3000);
-      }
     }
   };
 
   const updateProfile = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          company_name: profileData.company_name,
-          email: profileData.email,
-          phone: profileData.phone,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
+      await supabaseUpdate(
+        supabase
+          .from('profiles')
+          .update({
+            company_name: profileData.company_name,
+            email: profileData.email,
+            phone: profileData.phone,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user?.id)
+      );
 
       await fetchProfile();
       setEditingProfile(false);

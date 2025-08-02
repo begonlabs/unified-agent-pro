@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseInsert, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,17 +31,17 @@ const SupportView = () => {
         throw new Error('No hay usuario autenticado');
       }
 
-      const { error } = await supabase
-        .from('support_messages')
-        .insert({
-          user_id: user.id,
-          subject: formData.subject,
-          message: formData.message,
-          priority: formData.priority,
-          status: 'pending'
-        });
-
-      if (error) throw error;
+      await supabaseInsert(
+        supabase
+          .from('support_messages')
+          .insert({
+            user_id: user.id,
+            subject: formData.subject,
+            message: formData.message,
+            priority: formData.priority,
+            status: 'pending'
+          })
+      );
 
       toast({
         title: "Mensaje enviado",
@@ -55,9 +56,10 @@ const SupportView = () => {
       });
 
     } catch (error: any) {
+      const errorInfo = handleSupabaseError(error, "No se pudo enviar el mensaje");
       toast({
-        title: "Error al enviar mensaje",
-        description: error.message,
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
     } finally {
