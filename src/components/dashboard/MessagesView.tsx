@@ -137,11 +137,22 @@ const MessagesView = () => {
       if (error) throw error;
       setClients(data || []);
     } catch (error: any) {
+      console.error('Error fetching clients:', error);
+      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
       toast({
-        title: "Error",
-        description: "No se pudieron cargar los clientes",
+        title: "Error de conexión",
+        description: isConnectionError 
+          ? "Problemas de conectividad. Intentando reconectar..." 
+          : "No se pudieron cargar los clientes",
         variant: "destructive",
       });
+      
+      if (isConnectionError) {
+        // Reintentar después de 3 segundos
+        setTimeout(() => {
+          fetchClients();
+        }, 3000);
+      }
     }
   };
 
@@ -158,11 +169,21 @@ const MessagesView = () => {
       if (error) throw error;
       setConversations(data || []);
     } catch (error: any) {
+      console.error('Error fetching conversations:', error);
+      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
       toast({
-        title: "Error",
-        description: "No se pudieron cargar las conversaciones",
+        title: "Error de conexión",
+        description: isConnectionError 
+          ? "Problemas de conectividad. Intentando reconectar..." 
+          : "No se pudieron cargar las conversaciones",
         variant: "destructive",
       });
+      
+      if (isConnectionError) {
+        setTimeout(() => {
+          fetchConversations();
+        }, 3000);
+      }
     }
   };
 

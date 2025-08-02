@@ -63,6 +63,19 @@ const AIAgentView = () => {
       }
     } catch (error: any) {
       console.error('Error fetching AI config:', error);
+      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
+      
+      if (isConnectionError) {
+        toast({
+          title: "Error de conexión",
+          description: "Problemas de conectividad. Reintentando automáticamente...",
+          variant: "destructive",
+        });
+        
+        setTimeout(() => {
+          fetchAIConfig();
+        }, 3000);
+      }
     }
   };
 

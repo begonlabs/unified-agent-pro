@@ -57,11 +57,21 @@ const ChannelsView = () => {
         }
       }
     } catch (error: any) {
+      console.error('Error fetching channels:', error);
+      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
       toast({
-        title: "Error",
-        description: "No se pudieron cargar los canales",
+        title: "Error de conexión",
+        description: isConnectionError 
+          ? "Problemas de conectividad con la base de datos. Reintentando..." 
+          : "No se pudieron cargar los canales",
         variant: "destructive",
       });
+      
+      if (isConnectionError) {
+        setTimeout(() => {
+          fetchChannels();
+        }, 3000);
+      }
     }
   };
 

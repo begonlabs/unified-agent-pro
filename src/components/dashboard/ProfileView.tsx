@@ -60,11 +60,21 @@ const ProfileView = ({ user }: ProfileViewProps) => {
         phone: data.phone || ''
       });
     } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
       toast({
-        title: "Error",
-        description: "No se pudo cargar el perfil",
+        title: "Error de conexión",
+        description: isConnectionError 
+          ? "Problemas de conectividad. Reintentando automáticamente..." 
+          : "No se pudo cargar el perfil",
         variant: "destructive",
       });
+      
+      if (isConnectionError) {
+        setTimeout(() => {
+          fetchProfile();
+        }, 3000);
+      }
     }
   };
 
