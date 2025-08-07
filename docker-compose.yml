@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # Frontend OndAI
+  # Solo Frontend OndAI - Versión simplificada
   ondai-frontend:
     build:
       context: .
@@ -13,22 +11,12 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-    networks:
-      - ondai-network
-    labels:
-      - "com.docker.compose.project=ondai"
-      - "traefik.enable=true"
-      - "traefik.http.routers.ondai-frontend.rule=Host(`ondai.tudominio.com`)"
-      - "traefik.http.routers.ondai-frontend.tls=true"
-      - "traefik.http.routers.ondai-frontend.tls.certresolver=letsencrypt"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    volumes:
-      - nginx-logs:/var/log/nginx
     deploy:
       resources:
         limits:
@@ -37,69 +25,3 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-
-  # Nginx Proxy Manager (opcional para SSL y dominios)
-  nginx-proxy-manager:
-    image: 'jc21/nginx-proxy-manager:latest'
-    container_name: nginx-proxy-manager
-    restart: unless-stopped
-    ports:
-      - '80:80'
-      - '81:81'
-      - '443:443'
-    volumes:
-      - proxy-data:/data
-      - proxy-letsencrypt:/etc/letsencrypt
-    environment:
-      DB_MYSQL_HOST: "db"
-      DB_MYSQL_PORT: 3306
-      DB_MYSQL_USER: "npm"
-      DB_MYSQL_PASSWORD: "npm"
-      DB_MYSQL_NAME: "npm"
-    depends_on:
-      - db
-    networks:
-      - ondai-network
-
-  # Base de datos para Nginx Proxy Manager
-  db:
-    image: 'jc21/mariadb-aria:latest'
-    container_name: npm-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: 'npm'
-      MYSQL_DATABASE: 'npm'
-      MYSQL_USER: 'npm'
-      MYSQL_PASSWORD: 'npm'
-    volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - ondai-network
-
-  # Watchtower para actualizaciones automáticas (opcional)
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
-      - WATCHTOWER_INCLUDE_STOPPED=true
-    networks:
-      - ondai-network
-
-volumes:
-  nginx-logs:
-    driver: local
-  proxy-data:
-    driver: local
-  proxy-letsencrypt:
-    driver: local
-  db-data:
-    driver: local
-
-networks:
-  ondai-network:
-    driver: bridge
