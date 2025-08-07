@@ -38,7 +38,7 @@ const PricingSection = () => {
             PLANES QUE SE ADAPTAN
           </h2>
           <p className="text-lg font-mono text-zinc-600 tracking-wide">
-            Comienza gratis y escala según crezcas
+            Comienza gratis con OndAI y escala según tu negocio crezca
           </p>
         </div>
 

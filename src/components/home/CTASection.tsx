@@ -11,15 +11,15 @@ const CTASection = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-full blur-3xl"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <div className="group cursor-default">
+        <div className="group cursor-default mb-8">
           <h2 className="text-4xl lg:text-6xl font-black uppercase tracking-widest text-white mb-6 transition-all duration-700 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text">
-            CENTRALIZA
-            <br />
-            Y AUTOMATIZA
+            COMIENZA AHORA CON
             <br />
             <span className="text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
-              TUS CONVERSACIONES
+              OndAI
             </span>
+            <br />
+            Y TRANSFORMA TU NEGOCIO
           </h2>
         </div>
         

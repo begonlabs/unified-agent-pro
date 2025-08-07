@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Waves, Sparkles, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 const HeroSection = () => {
   const [isMatrixActive, setIsMatrixActive] = useState(false);
@@ -30,7 +30,7 @@ const HeroSection = () => {
     }, 50);
     return () => clearInterval(interval);
   }, [isMatrixActive]);
-  return <section className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+  return <section className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 sm:px-6 lg:px-8 pt-20 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-zinc-900/50 to-zinc-950"></div>
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
@@ -39,17 +39,36 @@ const HeroSection = () => {
     }}></div>
       
       <div className="max-w-6xl mx-auto text-center relative z-10">
-        <Badge className="mb-8 bg-zinc-800/50 text-blue-400 border-blue-500/30 hover:bg-zinc-700/50 hover:border-blue-400 transition-all duration-300 backdrop-blur-sm">
-          <span className="font-mono text-xs tracking-wider">🚀 7 DÍAS GRATIS + 50% DESCUENTO</span>
+        {/* Logo OndAI en el Hero */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="relative">
+            <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+              <Waves className="h-12 w-12 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1">
+              <Sparkles className="h-6 w-6 text-yellow-400 animate-pulse" />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              OndAI
+            </h1>
+            <p className="text-sm text-gray-400 font-medium">Powered by AI</p>
+          </div>
+        </div>
+
+        <Badge className="mb-8 bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30 hover:border-purple-400 transition-all duration-300 backdrop-blur-sm px-6 py-2">
+          <Zap className="h-4 w-4 mr-2" />
+          <span className="font-mono text-sm tracking-wider">🚀 7 DÍAS GRATIS + 50% DESCUENTO</span>
         </Badge>
         
-        <h1 className="text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-widest text-white mb-8 leading-[0.9] group cursor-default">
+        <h2 className="text-4xl lg:text-6xl xl:text-7xl font-black uppercase tracking-widest text-white mb-8 leading-[0.9] group cursor-default">
           <span className="block transition-all duration-700 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text">CENTRALIZA</span>
-          <span onMouseEnter={() => setIsMatrixActive(true)} className="block text-zinc-400 transition-all duration-700 text-transparent bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text cursor-pointer text-8xl">
+          <span onMouseEnter={() => setIsMatrixActive(true)} className="block text-zinc-400 transition-all duration-700 text-transparent bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text cursor-pointer">
             {matrixText}
           </span>
           <span className="block text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">TUS CONVERSACIONES</span>
-        </h1>
+        </h2>
         
         <p className="text-lg lg:text-xl font-mono text-zinc-300 mb-12 max-w-3xl mx-auto leading-relaxed tracking-wide opacity-80 hover:opacity-100 transition-opacity duration-300">
           Unifica WhatsApp, Facebook e Instagram en una sola plataforma.<br />

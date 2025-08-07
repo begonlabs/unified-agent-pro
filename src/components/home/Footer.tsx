@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Waves, Sparkles } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -8,20 +8,28 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-2 bg-white rounded-sm">
-                <MessageSquare className="h-6 w-6 text-zinc-900" />
+            <div className="flex items-center gap-4 mb-6 group">
+              <div className="relative">
+                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300 transform group-hover:scale-110">
+                  <Waves className="h-6 w-6 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1">
+                  <Sparkles className="h-3 w-3 text-yellow-400 animate-pulse" />
+                </div>
               </div>
-              <span className="text-xl font-black uppercase tracking-widest">
-                CHATBOT AI
-              </span>
+              <div>
+                <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text transition-all duration-300">
+                  OndAI
+                </span>
+                <p className="text-xs text-gray-400 font-medium">Powered by AI</p>
+              </div>
             </div>
             <p className="text-sm font-mono text-zinc-400 mb-6 leading-relaxed tracking-wide max-w-md">
-              La plataforma de mensajería inteligente que centraliza y automatiza 
-              todas tus conversaciones con clientes.
+              La plataforma de comunicación inteligente que centraliza y automatiza 
+              todas tus conversaciones empresariales con IA de última generación.
             </p>
             <div className="text-xs font-mono text-zinc-500 tracking-wider uppercase">
-              © 2024 CHATBOT AI. TODOS LOS DERECHOS RESERVADOS.
+              © 2025 OndAI. TODOS LOS DERECHOS RESERVADOS.
             </div>
           </div>
           

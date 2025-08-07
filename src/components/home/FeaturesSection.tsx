@@ -54,7 +54,7 @@ const FeaturesSection = () => {
             TODO LO QUE NECESITAS
           </h2>
           <p className="text-lg font-mono text-zinc-400 max-w-3xl mx-auto tracking-wide hover:text-zinc-300 transition-colors duration-300">
-            Potencia tu negocio con herramientas avanzadas de comunicación y automatización
+            Potencia tu negocio con herramientas avanzadas de comunicación e IA automatizada
           </p>
         </div>
 

@@ -8,7 +8,7 @@ const TestimonialsSection = () => {
     {
       name: 'MARÍA GONZÁLEZ',
       company: 'E-COMMERCE FASHION',
-      content: 'Aumentamos nuestras ventas un 40% automatizando la atención al cliente. La IA de ChatBot AI es increíble.',
+      content: 'Aumentamos nuestras ventas un 40% automatizando la atención al cliente. La IA de OndAI es increíble.',
       rating: 5
     },
     {
