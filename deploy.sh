@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 # Configuración
 PROJECT_NAME="ondai-frontend"
 CONTAINER_NAME="ondai-frontend"
-COMPOSE_FILE="docker-compose.yml"
+COMPOSE_FILE="docker compose.yml"
 GIT_BRANCH="main"
 BACKUP_DIR="/opt/ondai/backups"
 LOG_FILE="/var/log/ondai-deploy.log"
@@ -73,7 +73,7 @@ check_prerequisites() {
     fi
     
     # Verificar Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
+    if ! command -v docker compose &> /dev/null; then
         log_error "Docker Compose no está instalado"
         exit 1
     fi
@@ -110,7 +110,7 @@ build_image() {
     log "Construyendo nueva imagen Docker..."
     
     # Construir imagen con caché
-    docker-compose -f $COMPOSE_FILE build --no-cache ondai-frontend
+    docker compose -f $COMPOSE_FILE build --no-cache ondai-frontend
     
     log_success "Imagen construida exitosamente"
 }
@@ -121,11 +121,11 @@ deploy_application() {
     
     # Parar contenedores existentes
     log "Deteniendo contenedores existentes..."
-    docker-compose -f $COMPOSE_FILE down
+    docker compose -f $COMPOSE_FILE down
     
     # Iniciar nuevos contenedores
     log "Iniciando nuevos contenedores..."
-    docker-compose -f $COMPOSE_FILE up -d
+    docker compose -f $COMPOSE_FILE up -d
     
     log_success "Aplicación desplegada exitosamente"
 }
@@ -206,10 +206,10 @@ rollback() {
     if [[ -n "$PREVIOUS_IMAGE" ]]; then
         log "Haciendo rollback a imagen: $PREVIOUS_IMAGE"
         
-        # Cambiar la imagen en docker-compose y redesplegar
-        docker-compose -f $COMPOSE_FILE down
+        # Cambiar la imagen en docker compose y redesplegar
+        docker compose -f $COMPOSE_FILE down
         docker tag $PREVIOUS_IMAGE ${PROJECT_NAME}:latest
-        docker-compose -f $COMPOSE_FILE up -d
+        docker compose -f $COMPOSE_FILE up -d
         
         log_success "Rollback completado"
     else
@@ -252,7 +252,7 @@ main() {
         "quick")
             log "Iniciando despliegue rápido (solo restart)..."
             check_prerequisites
-            docker-compose -f $COMPOSE_FILE restart ondai-frontend
+            docker compose -f $COMPOSE_FILE restart ondai-frontend
             health_check
             log_success "Despliegue rápido completado"
             ;;
@@ -263,16 +263,16 @@ main() {
             docker logs $CONTAINER_NAME -f
             ;;
         "status")
-            docker-compose -f $COMPOSE_FILE ps
+            docker compose -f $COMPOSE_FILE ps
             ;;
         "stop")
             log "Deteniendo aplicación..."
-            docker-compose -f $COMPOSE_FILE down
+            docker compose -f $COMPOSE_FILE down
             log_success "Aplicación detenida"
             ;;
         "start")
             log "Iniciando aplicación..."
-            docker-compose -f $COMPOSE_FILE up -d
+            docker compose -f $COMPOSE_FILE up -d
             health_check
             log_success "Aplicación iniciada"
             ;;
