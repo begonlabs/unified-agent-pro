@@ -91,8 +91,21 @@ check_prerequisites() {
 update_code() {
     log "Actualizando código desde Git..."
     
+    # Verificar si estamos en un repositorio Git
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        log_warning "No se detectó repositorio Git. Saltando actualización de código..."
+        log_warning "Para usar Git, asegúrate de estar en un directorio clonado con 'git clone'"
+        return 0
+    fi
+    
+    # Verificar si hay conexión a internet y al remote
+    if ! git ls-remote origin > /dev/null 2>&1; then
+        log_warning "No se puede conectar al repositorio remoto. Saltando actualización..."
+        return 0
+    fi
+    
     # Guardar cambios locales si existen
-    if [[ $(git status --porcelain) ]]; then
+    if [[ $(git status --porcelain 2>/dev/null) ]]; then
         log_warning "Detectados cambios locales, creando stash..."
         git stash push -m "Auto-stash before deploy $(date)"
     fi
@@ -249,6 +262,17 @@ main() {
             cleanup
             show_deploy_info
             ;;
+        "local")
+            log "Iniciando despliegue local (sin Git)..."
+            check_prerequisites
+            create_backup
+            log_warning "Saltando actualización de Git (modo local)"
+            build_image
+            deploy_application
+            health_check
+            cleanup
+            show_deploy_info
+            ;;
         "quick")
             log "Iniciando despliegue rápido (solo restart)..."
             check_prerequisites
@@ -277,10 +301,11 @@ main() {
             log_success "Aplicación iniciada"
             ;;
         *)
-            echo "Uso: $0 {deploy|quick|rollback|logs|status|stop|start}"
+            echo "Uso: $0 {deploy|local|quick|rollback|logs|status|stop|start}"
             echo ""
             echo "Comandos disponibles:"
             echo "  deploy   - Despliegue completo (git pull + build + deploy)"
+            echo "  local    - Despliegue local (sin Git, solo build + deploy)"
             echo "  quick    - Despliegue rápido (solo restart)"
             echo "  rollback - Volver a la versión anterior"
             echo "  logs     - Ver logs en tiempo real"
