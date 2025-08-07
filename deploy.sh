@@ -17,7 +17,8 @@ NC='\033[0m' # No Color
 # Configuración
 PROJECT_NAME="ondai-frontend"
 CONTAINER_NAME="ondai-frontend"
-COMPOSE_FILE="docker compose.yml"
+COMPOSE_FILE="docker-compose.yml"
+COMPOSE_SIMPLE="docker-compose.simple.yml"
 GIT_BRANCH="main"
 BACKUP_DIR="/opt/ondai/backups"
 LOG_FILE="/var/log/ondai-deploy.log"
@@ -273,6 +274,20 @@ main() {
             cleanup
             show_deploy_info
             ;;
+        "simple")
+            log "Iniciando despliegue simple (solo frontend, sin servicios adicionales)..."
+            check_prerequisites
+            create_backup
+            update_code
+            log "Construyendo imagen simple..."
+            docker compose -f $COMPOSE_SIMPLE build --no-cache ondai-frontend
+            log "Desplegando aplicación simple..."
+            docker compose -f $COMPOSE_SIMPLE down
+            docker compose -f $COMPOSE_SIMPLE up -d
+            health_check
+            cleanup
+            show_deploy_info
+            ;;
         "quick")
             log "Iniciando despliegue rápido (solo restart)..."
             check_prerequisites
@@ -301,17 +316,23 @@ main() {
             log_success "Aplicación iniciada"
             ;;
         *)
-            echo "Uso: $0 {deploy|local|quick|rollback|logs|status|stop|start}"
+            echo "Uso: $0 {deploy|local|simple|quick|rollback|logs|status|stop|start}"
             echo ""
             echo "Comandos disponibles:"
-            echo "  deploy   - Despliegue completo (git pull + build + deploy)"
+            echo "  deploy   - Despliegue completo (git pull + build + deploy con todos los servicios)"
             echo "  local    - Despliegue local (sin Git, solo build + deploy)"
+            echo "  simple   - Despliegue simple (solo frontend, evita conflictos de red)"
             echo "  quick    - Despliegue rápido (solo restart)"
             echo "  rollback - Volver a la versión anterior"
             echo "  logs     - Ver logs en tiempo real"
             echo "  status   - Ver estado de contenedores"
             echo "  stop     - Detener aplicación"
             echo "  start    - Iniciar aplicación"
+            echo ""
+            echo "💡 Recomendaciones:"
+            echo "  - Si tienes Supabase u otros servicios Docker corriendo, usa: ./deploy.sh simple"
+            echo "  - Si no tienes Git configurado, usa: ./deploy.sh local"
+            echo "  - Para producción completa: ./deploy.sh deploy"
             exit 1
             ;;
     esac
