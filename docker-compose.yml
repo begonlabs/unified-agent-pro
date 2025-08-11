@@ -5,12 +5,25 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+      args:
+        NODE_ENV: ${NODE_ENV}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_APP_CACHE_VERSION: ${VITE_APP_CACHE_VERSION}
+        VITE_GA_TRACKING_ID: ${VITE_GA_TRACKING_ID}
+        VITE_HOTJAR_ID: ${VITE_HOTJAR_ID}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
+        VITE_APP_NAME: ${VITE_APP_NAME}
+        VITE_APP_VERSION: ${VITE_APP_VERSION}
+        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION}
     container_name: ondai-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
+      NODE_ENV: ${NODE_ENV}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
