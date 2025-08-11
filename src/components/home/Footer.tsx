@@ -28,8 +28,10 @@ const Footer = () => {
               La plataforma de comunicación inteligente que centraliza y automatiza 
               todas tus conversaciones empresariales con IA de última generación.
             </p>
-            <div className="text-xs font-mono text-zinc-500 tracking-wider uppercase">
-              © 2025 OndAI. TODOS LOS DERECHOS RESERVADOS.
+            <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
+              <span>© 2025 OndAI</span>
+              <a href="/privacy" className="hover:text-white underline-offset-4 hover:underline">Política de Privacidad</a>
+              <a href="/terms" className="hover:text-white underline-offset-4 hover:underline">Términos del Servicio</a>
             </div>
           </div>
           
@@ -76,10 +78,10 @@ const Footer = () => {
                   DOCUMENTACIÓN
                 </span>
               </li>
-              <li className="hover:text-white transition-colors duration-300 cursor-pointer">
-                <span className="border-b border-transparent hover:border-white transition-all duration-300">
+              <li className="hover:text-white transition-colors duration-300">
+                <a href="/contact" className="border-b border-transparent hover:border-white transition-all duration-300">
                   CONTACTO
-                </span>
+                </a>
               </li>
               <li className="hover:text-white transition-colors duration-300 cursor-pointer">
                 <span className="border-b border-transparent hover:border-white transition-all duration-300">

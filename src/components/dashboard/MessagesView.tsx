@@ -335,9 +335,22 @@ const MessagesView = () => {
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Page Header */}
+      <div className="px-6 pt-6">
+        <div className="rounded-2xl p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Mensajes y CRM</h1>
+              <p className="text-white/80 text-sm">Gestiona tus conversaciones y clientes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden mt-4">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r flex flex-col">
+      <div className="w-80 bg-white border-r flex flex-col rounded-tr-2xl">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Mensajes/CRM</h2>
@@ -409,7 +422,7 @@ const MessagesView = () => {
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-gray-50"
             />
           </div>
 
@@ -469,9 +482,9 @@ const MessagesView = () => {
                   filteredConversations.map((conversation) => (
                     <Card 
                       key={conversation.id}
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      className={`cursor-pointer transition-all duration-200 hover:shadow-md rounded-xl border ${
                         selectedConversation === conversation.id 
-                          ? 'bg-primary/5 border-primary/20 shadow-sm' 
+                          ? 'bg-blue-50 border-blue-200 shadow-sm' 
                           : 'hover:bg-gray-50'
                       }`}
                       onClick={() => setSelectedConversation(conversation.id)}
@@ -532,7 +545,7 @@ const MessagesView = () => {
                   </div>
                 ) : (
                   filteredClients.map((client) => (
-                    <Card key={client.id} className="hover:shadow-md transition-all duration-200">
+                    <Card key={client.id} className="hover:shadow-md transition-all duration-200 rounded-xl border">
                       <CardContent className="p-3">
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">
@@ -586,15 +599,15 @@ const MessagesView = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col rounded-tl-2xl overflow-hidden">
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b bg-white shadow-sm">
+            <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    <AvatarFallback className="bg-white/20 text-white">
                       {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
                     </AvatarFallback>
                   </Avatar>
@@ -602,7 +615,7 @@ const MessagesView = () => {
                     <h3 className="font-semibold text-lg">
                       {selectedConv?.crm_clients?.name || 'Cliente Anónimo'}
                     </h3>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 text-sm text-white/80">
                       <div className="flex items-center gap-1">
                         {getChannelIcon(selectedConv?.channel || '')}
                         <span className="capitalize">{selectedConv?.channel}</span>
@@ -618,12 +631,15 @@ const MessagesView = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge 
-                    className={getStatusColor(selectedConv?.crm_clients?.status || 'lead')}
+                    className={`bg-white/20 text-white border-white/20 ${getStatusColor(selectedConv?.crm_clients?.status || 'lead')}`}
                     variant="secondary"
                   >
                     {selectedConv?.crm_clients?.status || 'lead'}
                   </Badge>
-                  <Badge variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}>
+                  <Badge 
+                    className="bg-white/20 text-white border-white/20"
+                    variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}
+                  >
                     {selectedConv?.status}
                   </Badge>
                 </div>
@@ -739,6 +755,7 @@ const MessagesView = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
