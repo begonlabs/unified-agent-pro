@@ -95,12 +95,12 @@ const ProfileView = ({ user }: ProfileViewProps) => {
       );
       
       if (data) {
-        setProfile(data);
-        setProfileData({
-          company_name: data.company_name || '',
-          email: data.email || '',
-          phone: data.phone || ''
-        });
+      setProfile(data);
+      setProfileData({
+        company_name: data.company_name || '',
+        email: data.email || '',
+        phone: data.phone || ''
+      });
       }
     } catch (error: any) {
       const errorInfo = handleSupabaseError(error, "No se pudo cargar el perfil");
@@ -292,7 +292,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
               <Badge variant="destructive">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 Inactivo
-              </Badge>
+        </Badge>
             )}
           </div>
         </div>
@@ -343,11 +343,11 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                         <X className="h-4 w-4 mr-1" />
                         Cancelar
                       </Button>
-                      <Button
+              <Button
                         size="sm"
                         onClick={updateProfile}
-                        disabled={loading}
-                      >
+                disabled={loading}
+              >
                         {loading ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
@@ -369,7 +369,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                     >
                       <Edit3 className="h-4 w-4 mr-1" />
                       Editar
-                    </Button>
+              </Button>
                   )}
                 </div>
               </div>
@@ -429,14 +429,14 @@ const ProfileView = ({ user }: ProfileViewProps) => {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   Estado de la Cuenta
                 </CardTitle>
-              </CardHeader>
-              <CardContent>
+            </CardHeader>
+            <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm font-medium">Estado actual:</span>
@@ -461,8 +461,8 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       <span className="text-sm font-medium">Suscripción desde:</span>
                       <span className="text-sm text-gray-600">{formatDate(profile.subscription_start)}</span>
                     </div>
-                  )}
-                </div>
+                )}
+              </div>
               </CardContent>
             </Card>
 
@@ -500,8 +500,8 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
           </div>
         </TabsContent>
 
@@ -525,16 +525,16 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       <div className={`p-3 rounded-lg ${plans.find(p => p.current)?.bgColor} border`}>
                         <PlanIcon className={`h-6 w-6 ${plans.find(p => p.current)?.color}`} />
                       </div>
-                      <div>
+                <div>
                         <h3 className="text-xl font-bold">
                           Plan {profile.plan_type?.charAt(0).toUpperCase()}{profile.plan_type?.slice(1)}
-                        </h3>
+                  </h3>
                         <p className="text-gray-600">
-                          {plans.find(p => p.current)?.description}
-                        </p>
+                    {plans.find(p => p.current)?.description}
+                  </p>
                       </div>
-                    </div>
-                    <div className="text-right">
+                </div>
+                <div className="text-right">
                       <div className="text-3xl font-bold">
                         {plans.find(p => p.current)?.price}
                       </div>
@@ -573,13 +573,13 @@ const ProfileView = ({ user }: ProfileViewProps) => {
 
           {/* Cambiar Plan */}
           <Card>
-            <CardHeader>
+                <CardHeader>
               <CardTitle>Cambiar Plan</CardTitle>
               <CardDescription>
                 Elige el plan que mejor se adapte a las necesidades de tu empresa
               </CardDescription>
-            </CardHeader>
-            <CardContent>
+                </CardHeader>
+                <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {plans.map((plan) => {
                   const Icon = plan.icon;
@@ -614,13 +614,13 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       
                       <CardContent className="space-y-4">
                         <ul className="space-y-3">
-                          {plan.features.map((feature, index) => (
+                    {plan.features.map((feature, index) => (
                             <li key={index} className="flex items-start gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                               <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      </li>
+                    ))}
+                  </ul>
                         
                         <div className="pt-4">
                           {plan.current ? (
@@ -630,15 +630,15 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                             </Button>
                           ) : (
                             <Button className="w-full" variant={plan.name === 'Enterprise' ? 'default' : 'outline'}>
-                              Cambiar a {plan.name}
-                            </Button>
-                          )}
+                      Cambiar a {plan.name}
+                    </Button>
+                  )}
                         </div>
-                      </CardContent>
-                    </Card>
+                </CardContent>
+              </Card>
                   );
                 })}
-              </div>
+          </div>
             </CardContent>
           </Card>
 
@@ -710,7 +710,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       <div className="p-2 bg-green-100 rounded-lg">
                         <Bell className="h-4 w-4 text-green-600" />
                       </div>
-                      <div>
+                <div>
                         <h5 className="font-medium">Nuevos mensajes</h5>
                         <p className="text-sm text-gray-500">Alertas cuando recibas nuevos mensajes de clientes</p>
                       </div>
@@ -752,7 +752,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       <div className="p-2 bg-purple-100 rounded-lg">
                         <Star className="h-4 w-4 text-purple-600" />
                       </div>
-                      <div>
+                <div>
                         <h5 className="font-medium">Actualizaciones del producto</h5>
                         <p className="text-sm text-gray-500">Noticias sobre nuevas funciones y mejoras</p>
                       </div>
@@ -828,7 +828,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       <div className="p-2 bg-green-100 rounded-lg">
                         <Smartphone className="h-4 w-4 text-green-600" />
                       </div>
-                      <div>
+                <div>
                         <h5 className="font-medium">Autenticación de dos factores</h5>
                         <p className="text-sm text-gray-500">Agrega una capa extra de seguridad con 2FA</p>
                         <Badge variant="outline" className="mt-1 text-xs">
@@ -859,7 +859,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                         <div className="p-2 bg-blue-100 rounded-lg">
                           <Globe className="h-4 w-4 text-blue-600" />
                         </div>
-                        <div>
+                <div>
                           <h5 className="font-medium flex items-center gap-2">
                             Navegador Actual
                             <Badge className="bg-green-100 text-green-800 text-xs">Activa</Badge>
@@ -895,7 +895,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                 </h4>
                 <div className="border border-red-200 rounded-lg p-4 bg-red-50">
                   <div className="flex items-start justify-between">
-                    <div>
+                <div>
                       <h5 className="font-medium text-red-900">Eliminar cuenta</h5>
                       <p className="text-sm text-red-700 mt-1">
                         Esta acción eliminará permanentemente tu cuenta y todos los datos asociados.

@@ -195,8 +195,8 @@ const Auth = () => {
         <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-      </div>
-
+          </div>
+          
       {/* Botón de vuelta */}
       <Link 
         to="/" 
@@ -292,11 +292,11 @@ const Auth = () => {
               <div className="flex items-center gap-3 text-gray-300">
                 <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
                 <span>Sin permanencia, cancela cuando quieras</span>
-              </div>
             </div>
           </div>
+        </div>
 
-          {/* Auth Form */}
+        {/* Auth Form */}
           <div className="flex justify-center lg:justify-end">
             <Card className="w-full max-w-md bg-white/95 backdrop-blur-lg shadow-2xl border-0">
               <CardHeader className="text-center space-y-2 pb-8">
@@ -311,11 +311,11 @@ const Auth = () => {
                 </CardTitle>
                 <CardDescription className="text-gray-600">
                   7 días gratis • No se requiere tarjeta de crédito
-                </CardDescription>
-              </CardHeader>
+            </CardDescription>
+          </CardHeader>
               
               <CardContent className="space-y-6">
-                <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100">
                     <TabsTrigger value="signin" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                       Iniciar Sesión
@@ -323,35 +323,35 @@ const Auth = () => {
                     <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                       Registrarse
                     </TabsTrigger>
-                  </TabsList>
-                  
+              </TabsList>
+              
                   <TabsContent value="signin" className="space-y-4 mt-6">
-                    <form onSubmit={handleSignIn} className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
-                            type="email"
+                    <Input
+                      type="email"
                             placeholder="tu@empresa.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                             className="pl-10 h-12 border-gray-200 focus:border-purple-400"
-                            required
-                          />
-                        </div>
+                      required
+                    />
+                  </div>
                       </div>
                       
                       <div className="space-y-2">
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
+                    <Input
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Tu contraseña"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                             className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
-                            required
-                          />
+                      required
+                    />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
@@ -376,53 +376,53 @@ const Auth = () => {
                           <div className="flex items-center gap-2">
                             Iniciar Sesión
                             <ArrowRight className="h-4 w-4" />
-                          </div>
+                  </div>
                         )}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                  
+                  </Button>
+                </form>
+              </TabsContent>
+              
                   <TabsContent value="signup" className="space-y-4 mt-6">
-                    <form onSubmit={handleSignUp} className="space-y-4">
+                <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
                         <div className="relative">
                           <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
-                            type="text"
+                    <Input
+                      type="text"
                             placeholder="Nombre de tu empresa"
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
                             className="pl-10 h-12 border-gray-200 focus:border-purple-400"
-                            required
-                          />
-                        </div>
+                      required
+                    />
+                  </div>
                       </div>
                       
                       <div className="space-y-2">
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
-                            type="email"
+                    <Input
+                      type="email"
                             placeholder="tu@empresa.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                             className="pl-10 h-12 border-gray-200 focus:border-purple-400"
-                            required
-                          />
-                        </div>
+                      required
+                    />
+                  </div>
                       </div>
                       
                       <div className="space-y-2">
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
+                    <Input
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Crea una contraseña segura"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                             className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
-                            required
-                          />
+                      required
+                    />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
@@ -447,12 +447,12 @@ const Auth = () => {
                           <div className="flex items-center gap-2">
                             <Sparkles className="h-4 w-4" />
                             Crear Cuenta Gratis
-                          </div>
+                  </div>
                         )}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                </Tabs>
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
 
                 {/* Trust indicators */}
                 <div className="pt-4 border-t border-gray-100">
@@ -471,9 +471,9 @@ const Auth = () => {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
         </div>
       </div>
 
