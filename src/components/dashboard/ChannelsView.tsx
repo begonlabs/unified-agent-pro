@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, supabaseInsert, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,12 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, Facebook, Instagram, Settings, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface Channel {
-  id: string;
-  channel_type: string;
-  channel_config: any;
-  is_connected: boolean;
-}
+type ChannelType = 'whatsapp' | 'facebook' | 'instagram' | string;
 
 interface WhatsAppConfig {
   phone_number: string;
@@ -28,6 +23,15 @@ interface InstagramConfig {
   accounts: string[];
 }
 
+type ChannelConfig = WhatsAppConfig | FacebookConfig | InstagramConfig | null;
+
+interface Channel {
+  id: string;
+  channel_type: ChannelType;
+  channel_config: ChannelConfig;
+  is_connected: boolean;
+}
+
 const ChannelsView = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [whatsappPhone, setWhatsappPhone] = useState('');
@@ -36,11 +40,7 @@ const ChannelsView = () => {
   const [showVerification, setShowVerification] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchChannels();
-  }, []);
-
-  const fetchChannels = async () => {
+  const fetchChannels = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -50,19 +50,24 @@ const ChannelsView = () => {
             .select('*')
             .eq('user_id', user.id)
         );
-        
-        setChannels(data || []);
 
-        // Load existing WhatsApp number if exists
-        const whatsappChannel = data?.find(c => c.channel_type === 'whatsapp');
-        if (whatsappChannel?.channel_config && typeof whatsappChannel.channel_config === 'object' && !Array.isArray(whatsappChannel.channel_config)) {
-          const config = whatsappChannel.channel_config as { phone_number?: string };
+        setChannels((data as Channel[]) || []);
+
+        const whatsappChannel = (data as Channel[] | null | undefined)?.find(
+          (c) => c.channel_type === 'whatsapp'
+        );
+        if (
+          whatsappChannel?.channel_config &&
+          typeof whatsappChannel.channel_config === 'object' &&
+          !Array.isArray(whatsappChannel.channel_config)
+        ) {
+          const config = whatsappChannel.channel_config as Partial<WhatsAppConfig>;
           if (config.phone_number) {
             setWhatsappPhone(config.phone_number);
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudieron cargar los canales");
       toast({
         title: errorInfo.title,
@@ -70,7 +75,12 @@ const ChannelsView = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchChannels();
+  }, [fetchChannels]);
+
 
   const getChannelStatus = (channelType: string) => {
     const channel = channels.find(c => c.channel_type === channelType);
@@ -153,7 +163,7 @@ const ChannelsView = () => {
         title: "¡Éxito!",
         description: "WhatsApp conectado exitosamente",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "No se pudo conectar WhatsApp",
@@ -162,12 +172,31 @@ const ChannelsView = () => {
     }
   };
 
-  const handleFacebookLogin = () => {
-    // Aquí integrarías Facebook Login SDK
-    toast({
-      title: "Próximamente",
-      description: "La integración con Facebook estará disponible pronto",
-    });
+  const handleFacebookLogin = async () => {
+    try {
+      const META_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
+      const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v23.0';
+      const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
+
+      const redirectUri = `${EDGE_BASE_URL}/functions/v1/meta-oauth`;
+      const scope = [
+        'pages_show_list',
+        'pages_manage_metadata',
+        'pages_messaging',
+        // 'public_profile' is default and not needed explicitly; 'email' is unnecessary for Pages
+      ].join(',');
+
+      const oauthUrl = `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=dev`;
+
+      window.location.href = oauthUrl;
+    } catch (error: unknown) {
+      console.error('Error building Facebook OAuth URL:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo iniciar la conexión con Facebook',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleInstagramLogin = () => {
@@ -178,6 +207,15 @@ const ChannelsView = () => {
     });
   };
 
+  interface ChannelCardProps {
+    title: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    connected: boolean;
+    description: string;
+    children: React.ReactNode;
+  }
+
   const ChannelCard = ({ 
     title, 
     icon: Icon, 
@@ -185,7 +223,7 @@ const ChannelsView = () => {
     connected, 
     description,
     children 
-  }: any) => (
+  }: ChannelCardProps) => (
     <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
