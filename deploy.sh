@@ -4,7 +4,11 @@
 # Autor: OndAI Team
 # Descripción: Automatiza el pull, build y despliegue del frontend en VPS
 
-set -e  # Salir si cualquier comando falla
+set -Eeuo pipefail  # Salir si cualquier comando falla, variables indefinidas y falla en pipes
+
+# Asegurar ejecución desde el directorio del script y rutas absolutas
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 # Colores para logs
 RED='\033[0;31m'
@@ -17,11 +21,15 @@ NC='\033[0m' # No Color
 # Configuración
 PROJECT_NAME="ondai-frontend"
 CONTAINER_NAME="ondai-frontend"
-COMPOSE_FILE="docker-compose.yml"
-COMPOSE_SIMPLE="docker-compose.simple.yml"
+COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
+COMPOSE_SIMPLE="${SCRIPT_DIR}/docker-compose.simple.yml"
+ENV_FILE="${SCRIPT_DIR}/.env"
 GIT_BRANCH="main"
 BACKUP_DIR="/opt/ondai/backups"
 LOG_FILE="/var/log/ondai-deploy.log"
+
+# Asegurar directorio de logs
+mkdir -p "$(dirname "$LOG_FILE")"
 
 # Función para logging
 log() {
@@ -57,9 +65,8 @@ create_backup() {
         log_success "Backup de logs creado: $BACKUP_NAME-logs.tar.gz"
     fi
     
-    # Mantener solo los últimos 5 backups
-    cd $BACKUP_DIR
-    ls -t | tail -n +6 | xargs -r rm --
+    # Mantener solo los últimos 5 backups (no cambiar el cwd del proceso principal)
+    ( cd "$BACKUP_DIR" && ls -t | tail -n +6 | xargs -r rm -- )
     log_success "Limpieza de backups antiguos completada"
 }
 
@@ -88,6 +95,15 @@ check_prerequisites() {
     log_success "Todos los prerequisites están instalados"
 }
 
+# Verificar archivo .env
+ensure_env_file() {
+    if [[ ! -f "$ENV_FILE" ]]; then
+        log_warning ".env no encontrado en $SCRIPT_DIR. Algunas variables podrían no cargarse."
+    else
+        log ".env detectado en $ENV_FILE. Se cargará con docker compose (--env-file)."
+    fi
+}
+
 # Función para actualizar código
 update_code() {
     log "Actualizando código desde Git..."
@@ -105,16 +121,24 @@ update_code() {
         return 0
     fi
     
-    # Guardar cambios locales si existen
+    # Guardar y restaurar cambios locales si existen (incluye deploy.sh)
+    STASHED="0"
     if [[ $(git status --porcelain 2>/dev/null) ]]; then
         log_warning "Detectados cambios locales, creando stash..."
-        git stash push -m "Auto-stash before deploy $(date)"
+        git stash push -u -k -m "Auto-stash before deploy $(date)" || true
+        STASHED="1"
     fi
     
     # Fetch y pull
     git fetch origin
     git checkout $GIT_BRANCH
-    git pull origin $GIT_BRANCH
+    git pull --ff-only origin $GIT_BRANCH || true
+    
+    # Reaplicar cambios locales
+    if [[ "$STASHED" == "1" ]]; then
+        log "Reaplicando cambios locales del stash..."
+        git stash pop || true
+    fi
     
     log_success "Código actualizado desde $GIT_BRANCH"
 }
@@ -123,8 +147,8 @@ update_code() {
 build_image() {
     log "Construyendo nueva imagen Docker..."
     
-    # Construir imagen con caché
-    docker compose -f $COMPOSE_FILE build --no-cache ondai-frontend
+    # Construir imagen sin caché para inyectar variables Vite del .env
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache ondai-frontend
     
     log_success "Imagen construida exitosamente"
 }
@@ -135,11 +159,11 @@ deploy_application() {
     
     # Parar contenedores existentes
     log "Deteniendo contenedores existentes..."
-    docker compose -f $COMPOSE_FILE down
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down --remove-orphans
     
     # Iniciar nuevos contenedores
     log "Iniciando nuevos contenedores..."
-    docker compose -f $COMPOSE_FILE up -d
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate --remove-orphans
     
     log_success "Aplicación desplegada exitosamente"
 }
@@ -255,6 +279,7 @@ main() {
         "deploy")
             log "Iniciando despliegue completo..."
             check_prerequisites
+            ensure_env_file
             create_backup
             update_code
             build_image
@@ -266,6 +291,7 @@ main() {
         "local")
             log "Iniciando despliegue local (sin Git)..."
             check_prerequisites
+            ensure_env_file
             create_backup
             log_warning "Saltando actualización de Git (modo local)"
             build_image
@@ -274,16 +300,26 @@ main() {
             cleanup
             show_deploy_info
             ;;
+        "refresh")
+            log "Actualizando imágenes y reiniciando contenedores..."
+            check_prerequisites
+            ensure_env_file
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull --ignore-pull-failures || true
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate --remove-orphans
+            health_check
+            log_success "Refresh completado"
+            ;;
         "simple")
             log "Iniciando despliegue simple (solo frontend, sin servicios adicionales)..."
             check_prerequisites
+            ensure_env_file
             create_backup
             update_code
             log "Construyendo imagen simple..."
-            docker compose -f $COMPOSE_SIMPLE build --no-cache ondai-frontend
+            docker compose -f "$COMPOSE_SIMPLE" --env-file "$ENV_FILE" build --no-cache ondai-frontend
             log "Desplegando aplicación simple..."
-            docker compose -f $COMPOSE_SIMPLE down
-            docker compose -f $COMPOSE_SIMPLE up -d
+            docker compose -f "$COMPOSE_SIMPLE" --env-file "$ENV_FILE" down --remove-orphans
+            docker compose -f "$COMPOSE_SIMPLE" --env-file "$ENV_FILE" up -d --force-recreate --remove-orphans
             health_check
             cleanup
             show_deploy_info
@@ -291,7 +327,8 @@ main() {
         "quick")
             log "Iniciando despliegue rápido (solo restart)..."
             check_prerequisites
-            docker compose -f $COMPOSE_FILE restart ondai-frontend
+            ensure_env_file
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" restart ondai-frontend
             health_check
             log_success "Despliegue rápido completado"
             ;;
@@ -302,27 +339,29 @@ main() {
             docker logs $CONTAINER_NAME -f
             ;;
         "status")
-            docker compose -f $COMPOSE_FILE ps
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
             ;;
         "stop")
             log "Deteniendo aplicación..."
-            docker compose -f $COMPOSE_FILE down
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down --remove-orphans
             log_success "Aplicación detenida"
             ;;
         "start")
             log "Iniciando aplicación..."
-            docker compose -f $COMPOSE_FILE up -d
+            ensure_env_file
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate --remove-orphans
             health_check
             log_success "Aplicación iniciada"
             ;;
         *)
-            echo "Uso: $0 {deploy|local|simple|quick|rollback|logs|status|stop|start}"
+            echo "Uso: $0 {deploy|local|simple|quick|refresh|rollback|logs|status|stop|start}"
             echo ""
             echo "Comandos disponibles:"
             echo "  deploy   - Despliegue completo (git pull + build + deploy con todos los servicios)"
             echo "  local    - Despliegue local (sin Git, solo build + deploy)"
             echo "  simple   - Despliegue simple (solo frontend, evita conflictos de red)"
             echo "  quick    - Despliegue rápido (solo restart)"
+            echo "  refresh  - Pull de imágenes y reinicio forzado de contenedores"
             echo "  rollback - Volver a la versión anterior"
             echo "  logs     - Ver logs en tiempo real"
             echo "  status   - Ver estado de contenedores"
