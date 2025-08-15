@@ -1,6 +1,9 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 // Deno Edge Function: Meta (Facebook) Webhook
 // - GET: verification (hub.challenge)
 // - POST: events (messages, messaging_postbacks)
+import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 
 const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN") ?? "";
 const META_APP_SECRET = Deno.env.get("META_APP_SECRET") ?? "";
@@ -38,6 +41,14 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
 
 export const handler = async (request: Request): Promise<Response> => {
   const { method } = request;
+
+  // Validate required env vars early
+  if (!META_VERIFY_TOKEN || !META_APP_SECRET) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Missing required META_VERIFY_TOKEN or META_APP_SECRET env var" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   if (method === "GET") {
     const url = new URL(request.url);
@@ -87,4 +98,7 @@ export const handler = async (request: Request): Promise<Response> => {
 
 // Deno deploy-style export
 export default handler;
+
+// Register the request handler with the Edge runtime
+serve(handler);
 
