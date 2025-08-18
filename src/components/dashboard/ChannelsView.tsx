@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Facebook, Instagram, Settings, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 type ChannelType = 'whatsapp' | 'facebook' | 'instagram' | string;
 
@@ -16,7 +17,12 @@ interface WhatsAppConfig {
 }
 
 interface FacebookConfig {
-  pages: string[];
+  page_id: string;
+  page_name: string;
+  page_access_token: string;
+  user_access_token: string;
+  webhook_subscribed: boolean;
+  connected_at: string;
 }
 
 interface InstagramConfig {
@@ -33,6 +39,7 @@ interface Channel {
 }
 
 const ChannelsView = () => {
+  const { user, loading: authLoading } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [whatsappPhone, setWhatsappPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -42,7 +49,6 @@ const ChannelsView = () => {
 
   const fetchChannels = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabaseSelect(
           supabase
@@ -75,11 +81,13 @@ const ChannelsView = () => {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [user, toast]);
 
   useEffect(() => {
-    fetchChannels();
-  }, [fetchChannels]);
+    if (user && !authLoading) {
+      fetchChannels();
+    }
+  }, [user, authLoading, fetchChannels]);
 
 
   const getChannelStatus = (channelType: string) => {
@@ -174,6 +182,20 @@ const ChannelsView = () => {
 
   const handleFacebookLogin = async () => {
     try {
+      console.log('🔍 Iniciando proceso de login de Facebook...');
+      
+      if (!user) {
+        console.error('❌ Usuario no autenticado');
+        toast({
+          title: 'Error',
+          description: 'Debes estar autenticado para conectar Facebook',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      console.log('✅ Usuario autenticado:', user.id);
+
       const META_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
       const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v23.0';
       const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
@@ -186,7 +208,17 @@ const ChannelsView = () => {
         // 'public_profile' is default and not needed explicitly; 'email' is unnecessary for Pages
       ].join(',');
 
-      const oauthUrl = `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=dev`;
+      // Pass user_id in state parameter for the OAuth callback
+      console.log('🔍 User object completo:', user);
+      console.log('🔍 User ID type:', typeof user.id);
+      console.log('🔍 User ID value:', user.id);
+      
+      const state = encodeURIComponent(JSON.stringify({ user_id: user.id }));
+      const oauthUrl = `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+
+      console.log('🔗 OAuth URL construida:', oauthUrl);
+      console.log('👤 User ID:', user.id);
+      console.log('📝 State parameter:', state);
 
       window.location.href = oauthUrl;
     } catch (error: unknown) {
@@ -256,6 +288,38 @@ const ChannelsView = () => {
       </CardContent>
     </Card>
   );
+
+  // Show loading state while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Verificando autenticación...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if user is not authenticated
+  if (!user) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">No autenticado</h2>
+            <p className="text-muted-foreground mb-4">Debes iniciar sesión para acceder a esta página</p>
+            <Button onClick={() => window.location.href = '/auth'}>
+              Ir a Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -370,10 +434,38 @@ const ChannelsView = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-4">
-                <CheckCircle className="h-12 w-12 text-blue-600 mx-auto mb-2" />
-                <p className="font-medium">Facebook conectado</p>
-                <p className="text-sm text-muted-foreground">Páginas sincronizadas</p>
+              <div className="space-y-3">
+                {channels
+                  .filter(c => c.channel_type === 'facebook')
+                  .map((channel) => {
+                    const config = channel.channel_config as FacebookConfig;
+                    return (
+                      <div key={channel.id} className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Facebook className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-blue-900">{config?.page_name || 'Página de Facebook'}</span>
+                          </div>
+                          <Badge variant="default" className="bg-blue-600 text-xs">
+                            Conectado
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-blue-800 space-y-1">
+                          <p>ID: {config?.page_id || 'N/A'}</p>
+                          <p>Webhook: {config?.webhook_subscribed ? '✅ Activo' : '❌ Inactivo'}</p>
+                          <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2 w-full text-blue-600 border-blue-300 hover:bg-blue-100"
+                          onClick={() => handleFacebookLogin()}
+                        >
+                          Reconectar
+                        </Button>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

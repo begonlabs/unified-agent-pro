@@ -2,110 +2,299 @@
 // @ts-nocheck
 // Deno Edge Function: Meta (Facebook) OAuth Redirect Handler
 // Exchanges code -> user_access_token, fetches pages and page_access_tokens.
-import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const META_APP_ID = Deno.env.get("META_APP_ID") ?? "";
-const META_APP_SECRET = Deno.env.get("META_APP_SECRET") ?? "";
-const META_GRAPH_VERSION = Deno.env.get("META_GRAPH_VERSION") ?? "v23.0";
-
-async function fetchJSON(url: string) {
-  const res = await fetch(url, { method: "GET" });
-  const text = await res.text();
-  if (!res.ok) {
-    let details: unknown = text;
-    try {
-      details = JSON.parse(text);
-    } catch (_) {
-      // ignore JSON parse error, keep raw text
-    }
-    throw new Error(`HTTP ${res.status}: ${typeof details === "string" ? details : JSON.stringify(details)}`);
-  }
-  try {
-    return JSON.parse(text);
-  } catch (_) {
-    throw new Error(`Invalid JSON response`);
-  }
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-export const handler = async (request: Request): Promise<Response> => {
-  try {
-    // Validate required env vars
-    if (!META_APP_ID || !META_APP_SECRET || !META_GRAPH_VERSION) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Missing required META_* env vars", env: {
-          META_APP_ID: Boolean(META_APP_ID),
-          META_APP_SECRET: Boolean(META_APP_SECRET),
-          META_GRAPH_VERSION: Boolean(META_GRAPH_VERSION),
-        }}),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
-    }
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
-    const url = new URL(request.url);
-    const code = url.searchParams.get("code");
-    // Prefer explicit redirect URI to avoid proxy/port mismatches. Fallback to forwarded headers, then URL origin
-    const explicitRedirect = Deno.env.get("META_REDIRECT_URI") ?? "";
-    const forwardedProto = request.headers.get("x-forwarded-proto");
-    const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    const publicOrigin = forwardedProto && forwardedHost
-      ? `${forwardedProto}://${forwardedHost}`
-      : url.origin;
-    const redirectUri = explicitRedirect || `${publicOrigin}${url.pathname}`; // current function public URL
+  try {
+    const url = new URL(req.url)
+    const code = url.searchParams.get('code')
+    const state = url.searchParams.get('state')
 
     if (!code) {
-      return new Response("Missing code", { status: 400 });
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: 'Missing authorization code',
+          debug: { request_url: req.url }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
-    // Exchange code for user access token
-    const tokenUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token?client_id=${encodeURIComponent(META_APP_ID)}&client_secret=${encodeURIComponent(META_APP_SECRET)}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${encodeURIComponent(code)}`;
-    const tokenData = await fetchJSON(tokenUrl);
-    if (!tokenData || typeof tokenData !== "object" || !("access_token" in tokenData)) {
-      throw new Error("No access token received from Meta");
+    // Get environment variables
+    const appId = Deno.env.get('META_APP_ID')
+    const appSecret = Deno.env.get('META_APP_SECRET')
+    const redirectUri = Deno.env.get('META_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/meta-oauth'
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0'
+    const verifyToken = Deno.env.get('META_VERIFY_TOKEN')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!appId || !appSecret || !supabaseUrl || !supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: 'Missing required environment variables',
+          debug: { 
+            app_id_present: !!appId,
+            app_secret_present: !!appSecret,
+            supabase_url_present: !!supabaseUrl,
+            service_key_present: !!supabaseServiceKey
+          }
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
-    const userAccessToken = (tokenData as { access_token: string }).access_token as string;
 
-    // Get pages for this user
-    const accountsUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?access_token=${encodeURIComponent(userAccessToken)}`;
-    const accountsData = await fetchJSON(accountsUrl);
-    const pages = (accountsData.data ?? []) as Array<{ id: string; name: string; access_token: string }>; 
+    // Exchange code for access token
+    const tokenResponse = await fetch(
+      `https://graph.facebook.com/${graphVersion}/oauth/access_token?` +
+      `client_id=${appId}&` +
+      `client_secret=${appSecret}&` +
+      `redirect_uri=${redirectUri}&` +
+      `code=${code}`
+    )
 
-    // NOTE: In a full implementation you would:
-    // - let the user pick a page on frontend or auto-select here
-    // - subscribe the page to the webhook
-    // - save page_id, page_name, page_access_token to your DB linked to the current user
-
-    const minimal = pages.map((p) => ({ id: p.id, name: p.name }));
-    return new Response(JSON.stringify({ ok: true, pages: minimal }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error(e);
-    // Include minimal debug context to verify redirect_uri and graph version used server-side
-    let debug: Record<string, unknown> = {};
-    try {
-      const u = new URL(request.url);
-      const forwardedProto = request.headers.get("x-forwarded-proto");
-      const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
-      const publicOrigin = forwardedProto && forwardedHost ? `${forwardedProto}://${forwardedHost}` : u.origin;
-      const explicitRedirect = Deno.env.get("META_REDIRECT_URI") ?? "";
-      debug = {
-        request_url: u.toString(),
-        computed_redirect_uri: (explicitRedirect || `${publicOrigin}${u.pathname}`),
-        graph_version: META_GRAPH_VERSION,
-        app_id_present: Boolean(META_APP_ID),
-      };
-    } catch (_) {
-      // ignore
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text()
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: `Error: HTTP ${tokenResponse.status}: ${errorText}`,
+          debug: {
+            request_url: req.url,
+            computed_redirect_uri: redirectUri,
+            graph_version: graphVersion,
+            app_id_present: !!appId
+          }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
-    return new Response(JSON.stringify({ ok: false, error: String(e), debug }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+
+    const tokenData = await tokenResponse.json()
+    const accessToken = tokenData.access_token
+
+    if (!accessToken) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: 'No access token received',
+          debug: { token_response: tokenData }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Get user's pages
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${accessToken}`
+    )
+
+    if (!pagesResponse.ok) {
+      const errorText = await pagesResponse.text()
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: `Error fetching pages: HTTP ${pagesResponse.status}: ${errorText}`,
+          debug: { access_token_present: !!accessToken }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const pagesData = await pagesResponse.json()
+    const pages = pagesData.data || []
+
+    if (pages.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: 'No Facebook pages found for this user',
+          debug: { user_id: 'extracted_from_token' }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // For now, we'll work with the first page
+    // In a real implementation, you might want to let the user choose
+    const selectedPage = pages[0]
+    const pageId = selectedPage.id
+    const pageName = selectedPage.name
+    const pageAccessToken = selectedPage.access_token
+
+    // Subscribe the page to webhooks
+    const webhookResponse = await fetch(
+      `https://graph.facebook.com/${graphVersion}/${pageId}/subscribed_apps?` +
+      `access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          subscribed_fields: 'messages,messaging_postbacks,messaging_optins,message_deliveries,message_reads,message_echoes'
+        })
+      }
+    )
+
+    if (!webhookResponse.ok) {
+      const errorText = await webhookResponse.text()
+      console.error('Webhook subscription failed:', errorText)
+      // Continue anyway, as the page connection is still valid
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Extract user ID from the state parameter
+    let userId: string | null = null;
+    if (state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        userId = stateData.user_id;
+      } catch (error) {
+        console.error('Error parsing state parameter:', error);
+      }
+    }
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: 'User ID not found in state parameter',
+          debug: { state, parsed_state: state ? JSON.parse(decodeURIComponent(state)) : null }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Save the channel configuration to the database
+    const { error: insertError } = await supabase
+      .from('communication_channels')
+      .insert({
+        user_id: userId,
+        channel_type: 'facebook',
+        channel_config: {
+          page_id: pageId,
+          page_name: pageName,
+          page_access_token: pageAccessToken,
+          user_access_token: accessToken,
+          webhook_subscribed: webhookResponse.ok,
+          connected_at: new Date().toISOString()
+        },
+        is_connected: true
+      })
+
+    if (insertError) {
+      console.error('Database insert error:', insertError)
+      // Return success anyway, as the Facebook connection worked
+    }
+
+    // Redirect to frontend dashboard with success
+    const frontendCallbackUrl = `https://ondai.ai/dashboard/channels?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook`;
+    
+    return new Response(
+      `<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirigiendo...</title>
+    <meta http-equiv="refresh" content="0;url=${frontendCallbackUrl}">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 15px; 
+            backdrop-filter: blur(10px);
+        }
+        .spinner { 
+            border: 3px solid rgba(255,255,255,0.3); 
+            border-top: 3px solid white; 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            animation: spin 1s linear infinite; 
+            margin: 20px auto;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Facebook Conectado Exitosamente</h1>
+        <p>Página: <strong>${pageName}</strong></p>
+        <p>Redirigiendo al dashboard...</p>
+        <div class="spinner"></div>
+        <p><small>Si no eres redirigido automáticamente, <a href="${frontendCallbackUrl}" style="color: #fff; text-decoration: underline;">haz clic aquí</a></small></p>
+    </div>
+    <script>
+        // Redirect after a short delay to ensure the page loads
+        setTimeout(() => {
+            window.location.href = "${frontendCallbackUrl}";
+        }, 2000);
+    </script>
+</body>
+</html>`,
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
+      }
+    )
+
+  } catch (error) {
+    console.error('Error in meta-oauth function:', error)
+    return new Response(
+      JSON.stringify({ 
+        ok: false, 
+        error: `Internal server error: ${error.message}`,
+        debug: { request_url: req.url }
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
   }
-};
-
-// Register the request handler with the Edge runtime
-serve(handler);
-
-export default handler;
+})
