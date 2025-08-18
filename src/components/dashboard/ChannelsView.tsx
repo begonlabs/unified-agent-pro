@@ -60,6 +60,27 @@ const ChannelsView = () => {
         );
 
         console.log('📡 Channels fetched:', data?.length || 0);
+        
+        // Verificar estado de webhook para canales de Facebook
+        if (data) {
+          for (const channel of data) {
+            if (channel.channel_type === 'facebook' && channel.channel_config?.webhook_subscribed) {
+              // Verificar si el webhook está funcionando
+              try {
+                const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
+                const response = await fetch(webhookUrl, { method: 'HEAD' });
+                if (response.ok) {
+                  console.log('✅ Webhook is accessible for channel:', channel.id);
+                } else {
+                  console.warn('⚠️ Webhook not accessible for channel:', channel.id);
+                }
+              } catch (error) {
+                console.warn('⚠️ Could not verify webhook for channel:', channel.id, error);
+              }
+            }
+          }
+        }
+        
         setChannels((data as Channel[]) || []);
 
         const whatsappChannel = (data as Channel[] | null | undefined)?.find(
@@ -473,23 +494,48 @@ const ChannelsView = () => {
                             <Facebook className="h-4 w-4 text-blue-600" />
                             <span className="font-medium text-blue-900">{config?.page_name || 'Página de Facebook'}</span>
                           </div>
-                          <Badge variant="default" className="bg-blue-600 text-xs">
-                            Conectado
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default" className="bg-blue-600 text-xs">
+                              Conectado
+                            </Badge>
+                            <Badge 
+                              variant={config?.webhook_subscribed ? "default" : "secondary"} 
+                              className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
+                            >
+                              {config?.webhook_subscribed ? '✅ Webhook' : '❌ Webhook'}
+                            </Badge>
+                          </div>
                         </div>
                         <div className="text-xs text-blue-800 space-y-1">
                           <p>ID: {config?.page_id || 'N/A'}</p>
                           <p>Webhook: {config?.webhook_subscribed ? '✅ Activo' : '❌ Inactivo'}</p>
                           <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
+                          {config?.webhook_subscribed && (
+                            <p className="text-green-700 font-medium">✓ Recibiendo mensajes automáticamente</p>
+                          )}
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2 w-full text-blue-600 border-blue-300 hover:bg-blue-100"
-                          onClick={() => handleFacebookLogin()}
-                        >
-                          Reconectar
-                        </Button>
+                        <div className="flex gap-2 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-100"
+                            onClick={() => handleFacebookLogin()}
+                          >
+                            Reconectar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs border-gray-300 hover:bg-gray-100"
+                            onClick={() => {
+                              // Verificar webhook
+                              const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
+                              window.open(webhookUrl, '_blank');
+                            }}
+                          >
+                            Test Webhook
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}

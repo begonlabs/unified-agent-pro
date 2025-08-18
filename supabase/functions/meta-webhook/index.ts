@@ -1,21 +1,28 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-// Deno Edge Function: Meta (Facebook) Webhook
-// - GET: verification (hub.challenge)
-// - POST: events (messages, messaging_postbacks)
-import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+// Deno Edge Function: Meta Webhook Handler for Facebook Messenger and Instagram
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { handleMessengerEvent } from './handlers/messenger.ts'
+import { handleInstagramEvent } from './handlers/instagram.ts'
 
-const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN") ?? "";
-const META_APP_SECRET = Deno.env.get("META_APP_SECRET") ?? "";
-
-function toHex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Webhook verification function
+function toHex(bytes: ArrayBuffer): string {
+  return Array.from(new Uint8Array(bytes))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// Safe string comparison to prevent timing attacks
 function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+  if (a.length !== b.length) {
+    return false;
+  }
   let result = 0;
   for (let i = 0; i < a.length; i++) {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -23,82 +30,125 @@ function safeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+// Verify webhook signature for security
 async function isValidSignature(request: Request, rawBody: string): Promise<boolean> {
-  const signatureHeader = request.headers.get("X-Hub-Signature-256");
-  if (!signatureHeader || !META_APP_SECRET) return false;
+  const signature = request.headers.get('x-hub-signature-256');
+  if (!signature) {
+    console.log('No signature header found');
+    return false;
+  }
 
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(META_APP_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
+  const appSecret = Deno.env.get('META_APP_SECRET');
+  if (!appSecret) {
+    console.error('META_APP_SECRET not configured');
+    return false;
+  }
+
+  const expectedSignature = 'sha256=' + toHex(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawBody + appSecret))
   );
-  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
-  const expected = `sha256=${toHex(digest)}`;
-  return safeEqual(expected, signatureHeader);
+
+  return safeEqual(signature, expectedSignature);
 }
 
-export const handler = async (request: Request): Promise<Response> => {
-  const { method } = request;
+interface WebhookEvent {
+  object?: string;
+  entry?: Array<{
+    id?: string;
+    time?: number;
+    messaging?: Array<{
+      sender?: { id: string };
+      recipient?: { id: string };
+      timestamp?: number;
+      message?: {
+        text?: string;
+        mid?: string;
+        is_echo?: boolean;
+        attachments?: Array<{
+          type?: string;
+          payload?: { url?: string };
+        }>;
+      };
+      postback?: {
+        payload?: string;
+        title?: string;
+      };
+      delivery?: {
+        mids?: string[];
+        watermark?: number;
+      };
+      read?: {
+        watermark?: number;
+      };
+    }>;
+  }>;
+}
 
-  // Validate required env vars early
-  if (!META_VERIFY_TOKEN || !META_APP_SECRET) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Missing required META_VERIFY_TOKEN or META_APP_SECRET env var" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
 
-  if (method === "GET") {
-    const url = new URL(request.url);
-    const mode = url.searchParams.get("hub.mode");
-    const verifyToken = url.searchParams.get("hub.verify_token");
-    const challenge = url.searchParams.get("hub.challenge");
+  try {
+    const url = new URL(req.url)
+    const mode = url.searchParams.get('hub.mode')
+    const token = url.searchParams.get('hub.verify_token')
+    const challenge = url.searchParams.get('hub.challenge')
 
-    if (mode === "subscribe" && verifyToken === META_VERIFY_TOKEN && challenge) {
-      return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
-    }
-    return new Response("Forbidden", { status: 403 });
-  }
-
-  if (method === "POST") {
-    const rawBody = await request.text();
-
-    // Verify signature
-    const valid = await isValidSignature(request, rawBody);
-    if (!valid) {
-      return new Response("Invalid signature", { status: 401 });
+    // Webhook verification
+    if (mode === 'subscribe' && token === Deno.env.get('META_VERIFY_TOKEN')) {
+      console.log('Webhook verified successfully');
+      return new Response(challenge, { headers: corsHeaders })
     }
 
-    try {
-      const body = JSON.parse(rawBody);
-      // Basic normalization skeleton
-      if (Array.isArray(body.entry)) {
+    // Process incoming webhook events
+    if (req.method === 'POST') {
+      const rawBody = await req.text()
+      
+      // Verify signature for security
+      if (!(await isValidSignature(req, rawBody))) {
+        console.error('Invalid webhook signature');
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      }
+
+      const body: WebhookEvent = JSON.parse(rawBody)
+      console.log('Webhook received:', JSON.stringify(body, null, 2))
+
+      if (body.object === 'page' && body.entry) {
         for (const entry of body.entry) {
-          const messagingEvents = entry.messaging ?? [];
-          for (const evt of messagingEvents) {
-            const senderId = evt.sender?.id;
-            const pageId = evt.recipient?.id;
-            const text = evt.message?.text ?? evt.postback?.title ?? "";
-            // TODO: Insert conversation/message into your DB using Supabase Service Role client
-            console.log("Incoming message", { pageId, senderId, text });
+          if (entry.messaging) {
+            for (const messagingEvent of entry.messaging) {
+              // Skip echo messages (messages sent by the page)
+              if (messagingEvent.message?.is_echo) {
+                console.log('Skipping echo message');
+                continue;
+              }
+
+              // Process the message
+              await handleMessengerEvent(messagingEvent);
+            }
           }
         }
       }
-      return new Response("EVENT_RECEIVED", { status: 200 });
-    } catch (e) {
-      console.error("Webhook error", e);
-      return new Response("Bad Request", { status: 400 });
+
+      return new Response('OK', { headers: corsHeaders })
     }
+
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+
+  } catch (error) {
+    console.error('Error in meta-webhook function:', error)
+    return new Response(
+      JSON.stringify({ 
+        ok: false, 
+        error: `Internal server error: ${error.message}`,
+        debug: { request_url: req.url }
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
   }
-
-  return new Response("Method Not Allowed", { status: 405 });
-};
-
-// Deno deploy-style export
-export default handler;
-
-// Register the request handler with the Edge runtime
-serve(handler);
-
+})

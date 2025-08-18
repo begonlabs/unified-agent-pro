@@ -214,7 +214,7 @@ const MessagesView = () => {
       // Verificar que la conversación pertenezca al usuario
       const { data: conversationCheck } = await supabase
         .from('conversations')
-        .select('user_id')
+        .select('user_id, channel')
         .eq('id', selectedConversation)
         .eq('user_id', user.id)
         .single();
@@ -228,8 +228,48 @@ const MessagesView = () => {
         return;
       }
 
-      console.log('📤 Sending message for user:', user.id, 'conversation:', selectedConversation);
+      console.log('📤 Sending message for user:', user.id, 'conversation:', selectedConversation, 'channel:', conversationCheck.channel);
       
+      // Si es Facebook Messenger, enviar a través de la API
+      if (conversationCheck.channel === 'facebook') {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/send-message`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              conversation_id: selectedConversation,
+              message: newMessage,
+              user_id: user.id
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al enviar mensaje a Facebook');
+          }
+
+          const result = await response.json();
+          console.log('✅ Message sent to Facebook:', result);
+          
+          toast({
+            title: "Mensaje enviado",
+            description: "Tu mensaje ha sido enviado a Facebook Messenger",
+          });
+
+        } catch (facebookError) {
+          console.error('Error sending to Facebook:', facebookError);
+          toast({
+            title: "Error al enviar a Facebook",
+            description: "El mensaje se guardó localmente pero no se pudo enviar a Facebook",
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Guardar mensaje en la base de datos local
       await supabaseInsert(
         supabase
           .from('messages')
@@ -254,10 +294,13 @@ const MessagesView = () => {
         
       fetchConversations();
       
-      toast({
-        title: "Mensaje enviado",
-        description: "Tu mensaje ha sido enviado exitosamente",
-      });
+      // Solo mostrar toast de éxito si no es Facebook (ya se mostró arriba)
+      if (conversationCheck.channel !== 'facebook') {
+        toast({
+          title: "Mensaje enviado",
+          description: "Tu mensaje ha sido enviado exitosamente",
+        });
+      }
     } catch (error: unknown) {
       toast({
         title: "Error",
