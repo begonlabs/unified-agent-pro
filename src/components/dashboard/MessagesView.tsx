@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, supabaseInsert, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Button } from '@/components/ui/button';
@@ -85,59 +85,30 @@ const MessagesView = () => {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchClients();
-    fetchConversations();
-    
-    // Set up real-time subscription for conversations
-    const conversationsChannel = supabase
-      .channel('conversations-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'conversations'
-      }, () => {
-        fetchConversations();
-      })
-      .subscribe();
+  // Mover estos useEffect después de las declaraciones de funciones
 
-    // Set up real-time subscription for messages
-    const messagesChannel = supabase
-      .channel('messages-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages'
-      }, (payload) => {
-        if (selectedConversation && payload.new && 
-            (payload.new as any).conversation_id === selectedConversation) {
-          fetchMessages(selectedConversation);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(conversationsChannel);
-      supabase.removeChannel(messagesChannel);
-    };
-  }, [selectedConversation]);
-
-  useEffect(() => {
-    if (selectedConversation) {
-      fetchMessages(selectedConversation);
-    }
-  }, [selectedConversation]);
-
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
+      // Verificar que el usuario esté autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        console.error('❌ No user authenticated for fetching clients');
+        return;
+      }
+
+      console.log('🔍 Fetching clients for user:', user.id);
+      
       const { data } = await supabaseSelect(
         supabase
           .from('crm_clients')
           .select('*')
+          .eq('user_id', user.id)  // ✅ Filtrar por usuario
           .order('created_at', { ascending: false })
       );
+      
+      console.log('👥 Clients fetched:', data?.length || 0);
       setClients(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudieron cargar los clientes");
       toast({
         title: errorInfo.title,
@@ -145,10 +116,19 @@ const MessagesView = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
+      // Verificar que el usuario esté autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        console.error('❌ No user authenticated for fetching conversations');
+        return;
+      }
+
+      console.log('🔍 Fetching conversations for user:', user.id);
+      
       const { data } = await supabaseSelect(
         supabase
           .from('conversations')
@@ -156,10 +136,13 @@ const MessagesView = () => {
             *,
             crm_clients (*)
           `)
+          .eq('user_id', user.id)  // ✅ Filtrar por usuario
           .order('last_message_at', { ascending: false })
       );
+      
+      console.log('💬 Conversations fetched:', data?.length || 0);
       setConversations(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudieron cargar las conversaciones");
       toast({
         title: errorInfo.title,
@@ -167,10 +150,32 @@ const MessagesView = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string) => {
     try {
+      // Verificar que el usuario esté autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        console.error('❌ No user authenticated for fetching messages');
+        return;
+      }
+
+      // Verificar que la conversación pertenezca al usuario
+      const { data: conversationCheck } = await supabase
+        .from('conversations')
+        .select('user_id')
+        .eq('id', conversationId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!conversationCheck) {
+        console.error('❌ Conversation does not belong to user:', conversationId);
+        return;
+      }
+
+      console.log('🔍 Fetching messages for conversation:', conversationId, 'user:', user.id);
+      
       const { data } = await supabaseSelect(
         supabase
           .from('messages')
@@ -178,8 +183,10 @@ const MessagesView = () => {
           .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true })
       );
+      
+      console.log('💬 Messages fetched:', data?.length || 0);
       setMessages(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudieron cargar los mensajes");
       toast({
         title: errorInfo.title,
@@ -187,12 +194,42 @@ const MessagesView = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
+      // Verificar que el usuario esté autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast({
+          title: "Error de autenticación",
+          description: "Debes estar autenticado para enviar mensajes",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar que la conversación pertenezca al usuario
+      const { data: conversationCheck } = await supabase
+        .from('conversations')
+        .select('user_id')
+        .eq('id', selectedConversation)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!conversationCheck) {
+        toast({
+          title: "Error de permisos",
+          description: "No tienes permisos para enviar mensajes en esta conversación",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('📤 Sending message for user:', user.id, 'conversation:', selectedConversation);
+      
       await supabaseInsert(
         supabase
           .from('messages')
@@ -221,7 +258,7 @@ const MessagesView = () => {
         title: "Mensaje enviado",
         description: "Tu mensaje ha sido enviado exitosamente",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje",
@@ -232,11 +269,24 @@ const MessagesView = () => {
 
   const createClient = async () => {
     try {
+      // Verificar que el usuario esté autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast({
+          title: "Error de autenticación",
+          description: "Debes estar autenticado para crear clientes",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('👤 Creating client for user:', user.id);
+      
       const { data, error } = await supabase
         .from('crm_clients')
         .insert([{
           ...newClient,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: user.id
         }])
         .select()
         .single();
@@ -251,7 +301,7 @@ const MessagesView = () => {
         title: "Cliente creado",
         description: "El cliente ha sido añadido exitosamente",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "No se pudo crear el cliente",
@@ -262,10 +312,41 @@ const MessagesView = () => {
 
   const updateClientStatus = async (clientId: string, status: string) => {
     try {
+      // Verificar que el usuario esté autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast({
+          title: "Error de autenticación",
+          description: "Debes estar autenticado para actualizar clientes",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar que el cliente pertenezca al usuario
+      const { data: clientCheck } = await supabase
+        .from('crm_clients')
+        .select('user_id')
+        .eq('id', clientId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!clientCheck) {
+        toast({
+          title: "Error de permisos",
+          description: "No tienes permisos para actualizar este cliente",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('🔄 Updating client status for user:', user.id, 'client:', clientId);
+      
       const { error } = await supabase
         .from('crm_clients')
         .update({ status })
-        .eq('id', clientId);
+        .eq('id', clientId)
+        .eq('user_id', user.id);  // ✅ Doble verificación de seguridad
 
       if (error) throw error;
 
@@ -277,7 +358,7 @@ const MessagesView = () => {
         title: "Estado actualizado",
         description: "El estado del cliente ha sido actualizado",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado",
@@ -333,6 +414,51 @@ const MessagesView = () => {
   });
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
+
+  // useEffect para inicializar datos y suscripciones
+  useEffect(() => {
+    fetchClients();
+    fetchConversations();
+    
+    // Set up real-time subscription for conversations
+    const conversationsChannel = supabase
+      .channel('conversations-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'conversations'
+      }, () => {
+        fetchConversations();
+      })
+      .subscribe();
+
+    // Set up real-time subscription for messages
+    const messagesChannel = supabase
+      .channel('messages-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        if (selectedConversation && payload.new && 
+            (payload.new as { conversation_id: string }).conversation_id === selectedConversation) {
+          fetchMessages(selectedConversation);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(conversationsChannel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [fetchClients, fetchConversations, fetchMessages, selectedConversation]);
+
+  // useEffect para cargar mensajes cuando cambia la conversación seleccionada
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation);
+    }
+  }, [selectedConversation, fetchMessages]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">

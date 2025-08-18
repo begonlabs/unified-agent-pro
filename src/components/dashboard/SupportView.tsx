@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseInsert, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,38 @@ const SupportView = () => {
     priority: 'normal'
   });
   const [loading, setLoading] = useState(false);
+  const [userMessages, setUserMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const { toast } = useToast();
+
+  // Función para cargar mensajes de soporte del usuario
+  const fetchUserMessages = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return;
+
+      setLoadingMessages(true);
+      console.log('🔍 Fetching support messages for user:', user.id);
+      
+      const { data } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      setUserMessages(data || []);
+      console.log('📧 Support messages loaded:', data?.length || 0);
+    } catch (error) {
+      console.error('Error loading support messages:', error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, []);
+
+  // Cargar mensajes cuando se monta el componente
+  React.useEffect(() => {
+    fetchUserMessages();
+  }, [fetchUserMessages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +86,7 @@ const SupportView = () => {
         priority: 'normal'
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudo enviar el mensaje");
       toast({
         title: errorInfo.title,

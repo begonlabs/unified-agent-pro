@@ -44,6 +44,35 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Handle URL parameters for automatic view switching
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get('view');
+    const successParam = urlParams.get('success');
+    
+    if (viewParam && ['messages', 'stats', 'channels', 'profile', 'support', 'ai-agent'].includes(viewParam)) {
+      setCurrentView(viewParam);
+      
+      // If this is a successful OAuth callback, show success message
+      if (successParam === 'true') {
+        const pageId = urlParams.get('page_id');
+        const pageName = urlParams.get('page_name');
+        const channel = urlParams.get('channel');
+        
+        if (pageId && pageName && channel) {
+          toast({
+            title: "✅ Conexión exitosa",
+            description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} conectado: ${pageName}`,
+          });
+        }
+        
+        // Clean up URL parameters
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [toast]);
+
   const handleSignOut = async () => {
     try {
       toast({
@@ -55,8 +84,9 @@ const Dashboard = () => {
       const { robustSignOut } = await import('@/lib/utils');
       await robustSignOut();
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error during sign out:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al cerrar sesión';
       toast({
         title: "Error al cerrar sesión",
         description: "Redirigiendo de todas formas...",

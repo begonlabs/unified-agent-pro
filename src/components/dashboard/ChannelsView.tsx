@@ -49,7 +49,9 @@ const ChannelsView = () => {
 
   const fetchChannels = useCallback(async () => {
     try {
-      if (user) {
+      if (user && user.id) {
+        console.log('🔍 Fetching channels for user:', user.id);
+        
         const { data } = await supabaseSelect(
           supabase
             .from('communication_channels')
@@ -57,6 +59,7 @@ const ChannelsView = () => {
             .eq('user_id', user.id)
         );
 
+        console.log('📡 Channels fetched:', data?.length || 0);
         setChannels((data as Channel[]) || []);
 
         const whatsappChannel = (data as Channel[] | null | undefined)?.find(
@@ -88,6 +91,30 @@ const ChannelsView = () => {
       fetchChannels();
     }
   }, [user, authLoading, fetchChannels]);
+
+  // Check for success parameters in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const successParam = urlParams.get('success');
+    
+    if (successParam === 'true') {
+      // Refresh channels to show the newly connected one
+      setTimeout(() => {
+        fetchChannels();
+      }, 1000);
+      
+      // Show success message
+      const pageName = urlParams.get('page_name');
+      const channel = urlParams.get('channel');
+      
+      if (pageName && channel) {
+        toast({
+          title: "✅ Canal reconectado exitosamente",
+          description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} actualizado: ${pageName}`,
+        });
+      }
+    }
+  }, [fetchChannels, toast]);
 
 
   const getChannelStatus = (channelType: string) => {

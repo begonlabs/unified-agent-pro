@@ -1,21 +1,25 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, MessageSquare, Users, Bot, Phone, Facebook, Instagram } from 'lucide-react';
+import { TrendingUp, MessageSquare, Users, Bot, Phone, Facebook, Instagram, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const StatsView = () => {
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('7d');
-
-  // Datos de ejemplo - en producción vendrían de la base de datos
-  const stats = {
-    totalMessages: 2847,
-    automatedMessages: 1902,
-    humanMessages: 945,
-    responseRate: 94.5,
-    newLeads: 156,
-    totalClients: 847
-  };
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalMessages: 0,
+    automatedMessages: 0,
+    humanMessages: 0,
+    responseRate: 0,
+    newLeads: 0,
+    totalClients: 0
+  });
 
   const channelData = [
     { name: 'WhatsApp', messages: 1456, leads: 89, color: '#25D366' },
@@ -38,7 +42,76 @@ const StatsView = () => {
     { name: 'Humanos', value: stats.humanMessages, color: '#3B82F6' }
   ];
 
-  const StatCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
+  // Función para cargar estadísticas del usuario
+  const fetchUserStats = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      setLoading(true);
+      console.log('🔍 Fetching stats for user:', user.id);
+      
+      // Obtener estadísticas del usuario desde la base de datos
+      const { data: statsData } = await supabase
+        .from('statistics')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(30); // Últimos 30 días
+      
+      if (statsData && statsData.length > 0) {
+        // Calcular totales
+        const totalStats = statsData.reduce((acc, stat) => ({
+          totalMessages: acc.totalMessages + (stat.total_messages || 0),
+          automatedMessages: acc.automatedMessages + (stat.automated_messages || 0),
+          humanMessages: acc.humanMessages + (stat.human_messages || 0),
+          newLeads: acc.newLeads + (stat.new_leads || 0),
+          totalClients: acc.totalClients + (stat.leads_converted || 0)
+        }), {
+          totalMessages: 0,
+          automatedMessages: 0,
+          humanMessages: 0,
+          newLeads: 0,
+          totalClients: 0
+        });
+        
+        // Calcular tasa de respuesta
+        const responseRate = totalStats.totalMessages > 0 
+          ? ((totalStats.automatedMessages + totalStats.humanMessages) / totalStats.totalMessages) * 100
+          : 0;
+        
+        setStats({
+          ...totalStats,
+          responseRate: Math.round(responseRate * 100) / 100
+        });
+      }
+      
+      console.log('📊 Stats loaded for user:', user.id);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      toast({
+        title: "Error al cargar estadísticas",
+        description: "No se pudieron cargar las estadísticas",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, toast]);
+
+  // Cargar estadísticas cuando el usuario esté autenticado
+  useEffect(() => {
+    if (user && !authLoading) {
+      fetchUserStats();
+    }
+  }, [user, authLoading, fetchUserStats]);
+
+  const StatCard = ({ title, value, icon: Icon, color, subtitle }: { 
+    title: string; 
+    value: string | number; 
+    icon: React.ComponentType<{ className?: string }>; 
+    color: string; 
+    subtitle?: string; 
+  }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -51,10 +124,38 @@ const StatsView = () => {
     </Card>
   );
 
+  // Mostrar loading mientras se verifica autenticación
+  if (authLoading) {
+    return (
+      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Verificando autenticación...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error si el usuario no está autenticado
+  if (!user) {
+    return (
+      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">No autenticado</h2>
+            <p className="text-muted-foreground mb-4">Debes iniciar sesión para ver las estadísticas</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Estadísticas</h1>
+        <h1 className="text-3xl font-bold">Estadísticas de {user.email}</h1>
         <div className="flex gap-2">
           {['24h', '7d', '30d', '90d'].map((range) => (
             <button
@@ -72,8 +173,19 @@ const StatsView = () => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-muted-foreground">Cargando estadísticas...</p>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Mensajes Totales"
           value={stats.totalMessages.toLocaleString()}
@@ -102,7 +214,8 @@ const StatsView = () => {
           color="text-emerald-600"
           subtitle="Automatización"
         />
-      </div>
+        </div>
+      )}
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

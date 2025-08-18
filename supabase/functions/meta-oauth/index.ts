@@ -199,30 +199,67 @@ serve(async (req) => {
       )
     }
 
-    // Save the channel configuration to the database
-    const { error: insertError } = await supabase
+    // Check if channel already exists for this user
+    const { data: existingChannel, error: checkError } = await supabase
       .from('communication_channels')
-      .insert({
-        user_id: userId,
-        channel_type: 'facebook',
-        channel_config: {
-          page_id: pageId,
-          page_name: pageName,
-          page_access_token: pageAccessToken,
-          user_access_token: accessToken,
-          webhook_subscribed: webhookResponse.ok,
-          connected_at: new Date().toISOString()
-        },
-        is_connected: true
-      })
+      .select('id')
+      .eq('user_id', userId)
+      .eq('channel_type', 'facebook')
+      .maybeSingle();
 
-    if (insertError) {
-      console.error('Database insert error:', insertError)
+    if (checkError) {
+      console.error('Error checking existing channel:', checkError);
+      // Continue anyway, as the Facebook connection worked
+    }
+
+    let dbError;
+    if (existingChannel) {
+      // Update existing channel
+      console.log('Updating existing Facebook channel for user:', userId);
+      const { error: updateError } = await supabase
+        .from('communication_channels')
+        .update({
+          channel_config: {
+            page_id: pageId,
+            page_name: pageName,
+            page_access_token: pageAccessToken,
+            user_access_token: accessToken,
+            webhook_subscribed: webhookResponse.ok,
+            connected_at: new Date().toISOString()
+          },
+          is_connected: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingChannel.id);
+      dbError = updateError;
+    } else {
+      // Create new channel
+      console.log('Creating new Facebook channel for user:', userId);
+      const { error: insertError } = await supabase
+        .from('communication_channels')
+        .insert({
+          user_id: userId,
+          channel_type: 'facebook',
+          channel_config: {
+            page_id: pageId,
+            page_name: pageName,
+            page_access_token: pageAccessToken,
+            user_access_token: accessToken,
+            webhook_subscribed: webhookResponse.ok,
+            connected_at: new Date().toISOString()
+          },
+          is_connected: true
+        });
+      dbError = insertError;
+    }
+
+    if (dbError) {
+      console.error('Database operation error:', dbError)
       // Return success anyway, as the Facebook connection worked
     }
 
     // Redirect to frontend dashboard with success
-    const frontendCallbackUrl = `https://ondai.ai/dashboard/channels?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook`;
+    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook&view=channels`;
     
     return new Response(
       `<!DOCTYPE html>
