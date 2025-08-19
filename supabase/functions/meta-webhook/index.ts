@@ -98,7 +98,6 @@ serve(async (req) => {
 
     // Webhook verification
     if (mode === 'subscribe' && token === Deno.env.get('META_VERIFY_TOKEN')) {
-      console.log('Webhook verified successfully');
       return new Response(challenge, { headers: corsHeaders })
     }
 
@@ -113,7 +112,6 @@ serve(async (req) => {
       }
 
       const body: WebhookEvent = JSON.parse(rawBody)
-      console.log('Webhook received:', JSON.stringify(body, null, 2))
 
       if (body.object === 'page' && body.entry) {
         for (const entry of body.entry) {
@@ -121,7 +119,6 @@ serve(async (req) => {
             for (const messagingEvent of entry.messaging) {
               // Skip echo messages (messages sent by the page)
               if (messagingEvent.message?.is_echo) {
-                console.log('Skipping echo message');
                 continue;
               }
 

@@ -153,22 +153,34 @@ serve(async (req) => {
     const pageName = selectedPage.name
     const pageAccessToken = selectedPage.access_token
 
-    // Subscribe the page to webhooks
-    const webhookResponse = await fetch(
-      `https://graph.facebook.com/${graphVersion}/${pageId}/subscribed_apps?` +
-      `access_token=${pageAccessToken}`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          subscribed_fields: 'messages,messaging_postbacks,messaging_optins,message_deliveries,message_reads,message_echoes'
-        })
-      }
-    )
+    // Subscribe the page to webhooks with proper format
+    let webhookSubscribed = false;
+    try {
+      const webhookResponse = await fetch(
+        `https://graph.facebook.com/${graphVersion}/${pageId}/subscribed_apps?` +
+        `access_token=${pageAccessToken}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            subscribed_fields: ['messages', 'messaging_postbacks', 'messaging_optins', 'message_deliveries', 'message_reads', 'message_echoes']
+          })
+        }
+      )
 
-    if (!webhookResponse.ok) {
-      const errorText = await webhookResponse.text()
-      console.error('Webhook subscription failed:', errorText)
-      // Continue anyway, as the page connection is still valid
+      if (webhookResponse.ok) {
+        webhookSubscribed = true;
+        console.log('Webhook subscription successful for page:', pageId);
+      } else {
+        const errorText = await webhookResponse.text();
+        console.error('Webhook subscription failed:', errorText);
+        // Continue anyway, as the page connection is still valid
+      }
+    } catch (webhookError) {
+      console.error('Webhook subscription error:', webhookError);
+      // Continue anyway
     }
 
     // Initialize Supabase client
@@ -224,7 +236,7 @@ serve(async (req) => {
             page_name: pageName,
             page_access_token: pageAccessToken,
             user_access_token: accessToken,
-            webhook_subscribed: webhookResponse.ok,
+            webhook_subscribed: webhookSubscribed,
             connected_at: new Date().toISOString()
           },
           is_connected: true,
@@ -245,7 +257,7 @@ serve(async (req) => {
             page_name: pageName,
             page_access_token: pageAccessToken,
             user_access_token: accessToken,
-            webhook_subscribed: webhookResponse.ok,
+            webhook_subscribed: webhookSubscribed,
             connected_at: new Date().toISOString()
           },
           is_connected: true
@@ -315,7 +327,7 @@ serve(async (req) => {
 </body>
 </html>`,
       { 
-        status: 200, 
+      status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
       }
     )
@@ -329,7 +341,7 @@ serve(async (req) => {
         debug: { request_url: req.url }
       }),
       { 
-        status: 500, 
+      status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
