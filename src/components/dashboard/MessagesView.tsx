@@ -296,10 +296,10 @@ const MessagesView = () => {
       
       // Solo mostrar toast de éxito si no es Facebook (ya se mostró arriba)
       if (conversationCheck.channel !== 'facebook') {
-        toast({
-          title: "Mensaje enviado",
-          description: "Tu mensaje ha sido enviado exitosamente",
-        });
+      toast({
+        title: "Mensaje enviado",
+        description: "Tu mensaje ha sido enviado exitosamente",
+      });
       }
     } catch (error: unknown) {
       toast({

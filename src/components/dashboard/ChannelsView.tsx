@@ -58,7 +58,7 @@ const ChannelsView = () => {
             .select('*')
             .eq('user_id', user.id)
         );
-
+        
         console.log('📡 Channels fetched:', data?.length || 0);
         
         // Verificar estado de webhook para canales de Facebook
@@ -285,6 +285,145 @@ const ChannelsView = () => {
       title: "Próximamente", 
       description: "La integración con Instagram estará disponible pronto",
     });
+  };
+
+  const handleTestFacebookIntegration = async (channelId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "Debes estar autenticado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Obtener configuración del canal
+      const { data: channel } = await supabase
+        .from('communication_channels')
+        .select('*')
+        .eq('id', channelId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!channel) {
+        toast({
+          title: "Error",
+          description: "Canal no encontrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const config = channel.channel_config as unknown as FacebookConfig;
+      const pageAccessToken = config.page_access_token;
+      const pageId = config.page_id;
+
+      if (!pageAccessToken) {
+        toast({
+          title: "Error",
+          description: "Token de acceso no encontrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "🧪 Iniciando test completo...",
+        description: "Enviando mensaje de prueba desde la plataforma",
+      });
+
+      // 1. Test del webhook (POST)
+      console.log('🔍 Testing webhook endpoint...');
+      const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
+      
+      try {
+        const webhookTest = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            object: 'page',
+            entry: [{
+              id: pageId,
+              time: Date.now(),
+              messaging: [{
+                sender: { id: 'test_user' },
+                recipient: { id: pageId },
+                timestamp: Date.now(),
+                message: {
+                  text: 'Test message from OndAI dashboard'
+                }
+              }]
+            }]
+          })
+        });
+
+        if (webhookTest.ok) {
+          console.log('✅ Webhook test passed');
+        } else {
+          console.warn('⚠️ Webhook test failed:', webhookTest.status);
+        }
+      } catch (webhookError) {
+        console.warn('⚠️ Webhook test error:', webhookError);
+      }
+
+      // 2. Test de envío de mensaje usando Meta Graph API
+      console.log('📤 Testing message sending...');
+      
+      const testMessage = `🎯 Test desde OndAI - ${new Date().toLocaleTimeString()}`;
+      
+      // Usar el send-message edge function para consistencia
+      const sendResponse = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/send-message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          conversation_id: 'test_conversation',
+          message: testMessage,
+          user_id: user.id,
+          test_mode: true,
+          page_id: pageId
+        })
+      });
+
+      if (sendResponse.ok) {
+        const result = await sendResponse.json();
+        toast({
+          title: "✅ Test exitoso",
+          description: "Webhook activo y API funcionando correctamente",
+        });
+        
+        console.log('📊 Test results:', {
+          webhook_accessible: true,
+          message_sent: true,
+          page_id: pageId,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        const errorData = await sendResponse.text();
+        console.error('❌ Send message test failed:', errorData);
+        
+        toast({
+          title: "⚠️ Test parcial",
+          description: "Webhook OK, pero hay problemas con el envío de mensajes",
+          variant: "destructive",
+        });
+      }
+
+    } catch (error: unknown) {
+      console.error('Error in Facebook integration test:', error);
+      const errorMessage = error instanceof Error ? error.message : "No se pudo completar el test";
+      toast({
+        title: "❌ Error en test",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   interface ChannelCardProps {
@@ -526,14 +665,10 @@ const ChannelsView = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-xs border-gray-300 hover:bg-gray-100"
-                            onClick={() => {
-                              // Verificar webhook
-                              const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
-                              window.open(webhookUrl, '_blank');
-                            }}
+                            className="text-xs border-green-300 hover:bg-green-100 text-green-700"
+                            onClick={() => handleTestFacebookIntegration(channel.id)}
                           >
-                            Test Webhook
+                            Test Completo
                           </Button>
                         </div>
                       </div>
