@@ -96,8 +96,20 @@ serve(async (req) => {
     const token = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
 
+    // Log all incoming requests
+    console.log('🔔 Webhook Request Received:', {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries()),
+      timestamp: new Date().toISOString(),
+      mode,
+      token: token ? '***' : undefined,
+      challenge: challenge ? '***' : undefined
+    });
+
     // Webhook verification
     if (mode === 'subscribe' && token === Deno.env.get('META_VERIFY_TOKEN')) {
+      console.log('✅ Webhook verification successful');
       return new Response(challenge, { headers: corsHeaders })
     }
 
@@ -105,28 +117,69 @@ serve(async (req) => {
     if (req.method === 'POST') {
       const rawBody = await req.text()
       
+      // Log the raw webhook payload
+      console.log('📥 Raw Webhook Payload:', {
+        body_length: rawBody.length,
+        raw_body: rawBody,
+        timestamp: new Date().toISOString()
+      });
+      
       // Verify signature for security
       if (!(await isValidSignature(req, rawBody))) {
-        console.error('Invalid webhook signature');
+        console.error('❌ Invalid webhook signature');
         return new Response('Unauthorized', { status: 401, headers: corsHeaders })
       }
 
+      console.log('✅ Webhook signature verified successfully');
       const body: WebhookEvent = JSON.parse(rawBody)
 
       if (body.object === 'page' && body.entry) {
+        console.log('📋 Processing Facebook page events:', {
+          object: body.object,
+          entry_count: body.entry.length,
+          timestamp: new Date().toISOString()
+        });
+
         for (const entry of body.entry) {
+          console.log('📝 Processing entry:', {
+            entry_id: entry.id,
+            entry_time: entry.time,
+            messaging_count: entry.messaging?.length || 0
+          });
+
           if (entry.messaging) {
             for (const messagingEvent of entry.messaging) {
+              console.log('💬 Processing messaging event:', {
+                sender_id: messagingEvent.sender?.id,
+                recipient_id: messagingEvent.recipient?.id,
+                timestamp: messagingEvent.timestamp,
+                has_message: !!messagingEvent.message,
+                has_postback: !!messagingEvent.postback,
+                has_delivery: !!messagingEvent.delivery,
+                has_read: !!messagingEvent.read,
+                message_text: messagingEvent.message?.text,
+                is_echo: messagingEvent.message?.is_echo
+              });
+
               // Skip echo messages (messages sent by the page)
               if (messagingEvent.message?.is_echo) {
+                console.log('⏭️ Skipping echo message');
                 continue;
               }
 
               // Process the message
+              console.log('🔄 Calling handleMessengerEvent...');
               await handleMessengerEvent(messagingEvent);
+              console.log('✅ handleMessengerEvent completed');
             }
           }
         }
+      } else {
+        console.log('⚠️ Unexpected webhook format:', {
+          object: body.object,
+          has_entries: !!body.entry,
+          entry_count: body.entry?.length || 0
+        });
       }
 
       return new Response('OK', { headers: corsHeaders })

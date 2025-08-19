@@ -68,7 +68,19 @@ interface Message {
 
 export async function handleMessengerEvent(event: MessengerEvent): Promise<void> {
   try {
-    console.log('Processing Messenger event:', JSON.stringify(event, null, 2));
+    console.log('🎯 handleMessengerEvent called with:', {
+      event_type: event.message ? 'message' : event.postback ? 'postback' : event.delivery ? 'delivery' : event.read ? 'read' : 'unknown',
+      sender_id: event.sender?.id,
+      recipient_id: event.recipient?.id,
+      timestamp: event.timestamp,
+      message_text: event.message?.text,
+      message_id: event.message?.mid,
+      postback_payload: event.postback?.payload,
+      postback_title: event.postback?.title,
+      delivery_mids: event.delivery?.mids,
+      read_watermark: event.read?.watermark,
+      full_event: event
+    });
 
     // Skip if no message content
     if (!event.message?.text && !event.postback) {

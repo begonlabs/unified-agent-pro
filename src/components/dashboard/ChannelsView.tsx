@@ -45,6 +45,7 @@ const ChannelsView = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
+  const [showWebhookMonitor, setShowWebhookMonitor] = useState(false);
   const { toast } = useToast();
 
   const fetchChannels = useCallback(async () => {
@@ -670,6 +671,14 @@ const ChannelsView = () => {
                           >
                             Test Completo
                           </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs border-purple-300 hover:bg-purple-100 text-purple-700"
+                            onClick={() => setShowWebhookMonitor(true)}
+                          >
+                            📊 Monitorear
+                          </Button>
                         </div>
                       </div>
                     );
@@ -752,6 +761,67 @@ const ChannelsView = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Monitor de Webhook en tiempo real */}
+      {showWebhookMonitor && (
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                📊 Monitor de Webhook en Tiempo Real
+              </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowWebhookMonitor(false)}
+              >
+                Cerrar
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Monitorea los eventos que recibe tu webhook de Facebook
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">📋 Instrucciones para monitorear:</h4>
+                <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                  <li>Mantén esta ventana abierta</li>
+                  <li>Envía un mensaje a tu página de Facebook</li>
+                  <li>Observa los logs en tu terminal de Docker</li>
+                  <li>Los eventos aparecerán en tiempo real</li>
+                </ol>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">🔍 Comando para ver logs:</h4>
+                <code className="text-sm bg-blue-100 p-2 rounded block">
+                  docker logs &lt;contenedor_supabase&gt; -f | grep -E "(🔔|📥|💬|🎯|✅|❌)"
+                </code>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-medium text-green-800 mb-2">🧪 Test rápido:</h4>
+                <p className="text-sm text-green-700 mb-2">
+                  Haz clic en "Test Completo" para enviar un mensaje de prueba y ver cómo se procesa
+                </p>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    const facebookChannel = channels.find(c => c.channel_type === 'facebook');
+                    if (facebookChannel) {
+                      handleTestFacebookIntegration(facebookChannel.id);
+                    }
+                  }}
+                >
+                  Ejecutar Test
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
