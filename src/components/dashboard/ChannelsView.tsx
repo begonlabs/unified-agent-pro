@@ -288,7 +288,7 @@ const ChannelsView = () => {
     });
   };
 
-  const handleTestFacebookIntegration = async (channelId: string) => {
+  const handleTestWebhook = async (channelId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) {
@@ -331,8 +331,8 @@ const ChannelsView = () => {
       }
 
       toast({
-        title: "🧪 Iniciando test completo...",
-        description: "Enviando mensaje de prueba desde la plataforma",
+        title: "🧪 Probando webhook...",
+        description: "Enviando mensaje de prueba para verificar el procesamiento",
       });
 
       // 1. Test del webhook (POST)
@@ -371,47 +371,54 @@ const ChannelsView = () => {
         console.warn('⚠️ Webhook test error:', webhookError);
       }
 
-      // 2. Test de envío de mensaje usando Meta Graph API
-      console.log('📤 Testing message sending...');
+      // 2. Test del webhook con un mensaje de prueba
+      console.log('🧪 Testing webhook with test message...');
       
       const testMessage = `🎯 Test desde OndAI - ${new Date().toLocaleTimeString()}`;
       
-      // Usar el send-message edge function para consistencia
-      const sendResponse = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/send-message`, {
+      // Enviar un mensaje de prueba al webhook para verificar que funciona
+      const webhookTestMessage = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
-          conversation_id: 'test_conversation',
-          message: testMessage,
-          user_id: user.id,
-          test_mode: true,
-          page_id: pageId
+          object: 'page',
+          entry: [{
+            id: pageId,
+            time: Date.now(),
+            messaging: [{
+              sender: { id: 'test_user_123' },
+              recipient: { id: pageId },
+              timestamp: Date.now(),
+              message: {
+                text: testMessage,
+                mid: 'test_message_' + Date.now()
+              }
+            }]
+          }]
         })
       });
 
-      if (sendResponse.ok) {
-        const result = await sendResponse.json();
+      if (webhookTestMessage.ok) {
         toast({
-          title: "✅ Test exitoso",
-          description: "Webhook activo y API funcionando correctamente",
+          title: "✅ Webhook funcionando",
+          description: "El webhook está activo y procesando mensajes correctamente",
         });
         
-        console.log('📊 Test results:', {
+        console.log('📊 Webhook test results:', {
           webhook_accessible: true,
-          message_sent: true,
+          webhook_test_message: true,
           page_id: pageId,
           timestamp: new Date().toISOString()
         });
       } else {
-        const errorData = await sendResponse.text();
-        console.error('❌ Send message test failed:', errorData);
+        const errorData = await webhookTestMessage.text();
+        console.error('❌ Webhook test failed:', errorData);
         
         toast({
-          title: "⚠️ Test parcial",
-          description: "Webhook OK, pero hay problemas con el envío de mensajes",
+          title: "⚠️ Problema en webhook",
+          description: "El webhook es accesible, pero hay problemas al procesar mensajes",
           variant: "destructive",
         });
       }
@@ -667,9 +674,9 @@ const ChannelsView = () => {
                             variant="outline" 
                             size="sm" 
                             className="text-xs border-green-300 hover:bg-green-100 text-green-700"
-                            onClick={() => handleTestFacebookIntegration(channel.id)}
+                            onClick={() => handleTestWebhook(channel.id)}
                           >
-                            Test Completo
+                            Test Webhook
                           </Button>
                           <Button 
                             variant="outline" 
@@ -779,7 +786,7 @@ const ChannelsView = () => {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Monitorea los eventos que recibe tu webhook de Facebook
+              Monitorea los eventos que recibe tu webhook de Facebook (logs en consola)
             </p>
           </CardHeader>
           <CardContent>
@@ -791,27 +798,31 @@ const ChannelsView = () => {
                   <li>Envía un mensaje a tu página de Facebook</li>
                   <li>Observa los logs en tu terminal de Docker</li>
                   <li>Los eventos aparecerán en tiempo real</li>
+                  <li>Usa "Test Webhook" para probar la funcionalidad</li>
                 </ol>
               </div>
               
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-800 mb-2">🔍 Comando para ver logs:</h4>
                 <code className="text-sm bg-blue-100 p-2 rounded block">
-                  docker logs &lt;contenedor_supabase&gt; -f | grep -E "(🔔|📥|💬|🎯|✅|❌)"
+                  docker logs &lt;contenedor_supabase&gt; -f | grep -E "(webhook|messenger|facebook)"
                 </code>
+                <p className="text-xs text-blue-600 mt-2">
+                  Los logs detallados se muestran en la consola del contenedor
+                </p>
               </div>
 
               <div className="bg-green-50 p-4 rounded-lg">
                 <h4 className="font-medium text-green-800 mb-2">🧪 Test rápido:</h4>
                 <p className="text-sm text-green-700 mb-2">
-                  Haz clic en "Test Completo" para enviar un mensaje de prueba y ver cómo se procesa
+                  Haz clic en "Test Webhook" para simular un mensaje entrante y verificar el procesamiento
                 </p>
                 <Button 
                   size="sm"
                   onClick={() => {
                     const facebookChannel = channels.find(c => c.channel_type === 'facebook');
                     if (facebookChannel) {
-                      handleTestFacebookIntegration(facebookChannel.id);
+                      handleTestWebhook(facebookChannel.id);
                     }
                   }}
                 >

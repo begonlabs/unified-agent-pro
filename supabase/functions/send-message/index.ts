@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     const body: SendMessageRequest = await req.json()
-    const { conversation_id, message, user_id, test_mode, page_id } = body
+    const { conversation_id, message, user_id } = body
 
     if (!conversation_id || !message || !user_id) {
       return new Response(
@@ -67,82 +67,6 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Handle test mode
-    if (test_mode) {
-      console.log('🧪 Test mode activated');
-      
-      // Get Facebook channel for this user
-      const { data: channels, error: channelError } = await supabase
-        .from('communication_channels')
-        .select('*')
-        .eq('user_id', user_id)
-        .eq('channel_type', 'facebook')
-        .eq('is_connected', true)
-        .single()
-
-      if (channelError || !channels) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Facebook channel not found',
-            test_mode: true,
-            status: 'channel_not_found'
-          }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      const channel = channels
-      const pageAccessToken = channel.channel_config.page_access_token
-
-      // Test message to page's own inbox (for testing purposes)
-      const testRecipientId = page_id || channel.channel_config.page_id
-
-      // Send test message to Facebook Messenger
-      const messengerResponse = await fetch(
-        `https://graph.facebook.com/v23.0/me/messages?access_token=${pageAccessToken}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            recipient: { id: testRecipientId },
-            message: { text: message },
-            messaging_type: 'RESPONSE'
-          })
-        }
-      )
-
-      if (!messengerResponse.ok) {
-        const errorData = await messengerResponse.text()
-        console.error('Facebook API error in test mode:', errorData)
-        
-        return new Response(
-          JSON.stringify({ 
-            error: 'Facebook API error',
-            details: errorData,
-            test_mode: true,
-            status: 'facebook_api_error'
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      const result = await messengerResponse.json()
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          test_mode: true,
-          facebook_response: result,
-          message_sent: message,
-          recipient_id: testRecipientId,
-          timestamp: new Date().toISOString()
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Get conversation details
     const { data: conversation, error: convError } = await supabase
@@ -205,7 +129,6 @@ serve(async (req) => {
     }
 
     const messengerResult = await messengerResponse.json()
-    console.log('Facebook API response:', messengerResult)
 
     // Save message to database
     const { error: messageError } = await supabase
