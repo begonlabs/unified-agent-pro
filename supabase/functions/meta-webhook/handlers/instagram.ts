@@ -120,7 +120,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     
     console.log('🔍 Echo detection:', {
       isEcho,
-      hasIsEcho: message.hasOwnProperty('is_echo'),
+      hasIsEcho: Object.prototype.hasOwnProperty.call(message, 'is_echo'),
       isEchoValue: message.is_echo,
       senderId,
       pageId

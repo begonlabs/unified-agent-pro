@@ -36,6 +36,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeConversations } from '@/hooks/useRealtimeConversations';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
+import { useDebounce, useMessageSender } from '@/hooks/useDebounce';
 
 interface Client {
   id: string;
@@ -88,6 +89,9 @@ const MessagesView = () => {
     tags: [] as string[]
   });
   const { toast } = useToast();
+  
+  // Hook para prevenir mensajes duplicados
+  const { isDuplicateMessage } = useMessageSender();
 
   // Usar los nuevos hooks de realtime
   const { 
@@ -133,14 +137,36 @@ const MessagesView = () => {
     }
   }, [user?.id, toast]);
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user?.id || isSending) return;
+  // Función principal de envío (sin debouncing directo)
+  const sendMessageCore = async () => {
+    if (!newMessage.trim() || !selectedConversation || !user?.id || isSending) {
+      console.log('🚫 SendMessage: Condiciones no cumplidas', {
+        hasMessage: !!newMessage.trim(),
+        hasConversation: !!selectedConversation,
+        hasUser: !!user?.id,
+        isSending
+      });
+      return;
+    }
+
+    const messageContent = newMessage.trim();
+    
+    // Verificar duplicados
+    if (isDuplicateMessage(messageContent, selectedConversation)) {
+      console.log('🚫 Mensaje duplicado detectado, cancelando envío');
+      return;
+    }
 
     setIsSending(true);
-    const messageContent = newMessage.trim();
+    console.log('📤 Iniciando envío de mensaje:', {
+      content: messageContent.substring(0, 50) + '...',
+      conversationId: selectedConversation,
+      userId: user.id
+    });
     
     // Limpiar input inmediatamente para mejor UX
     setNewMessage('');
+    let tempId: string | null = null;
 
     try {
       // Verificar que la conversación pertenezca al usuario
@@ -152,16 +178,11 @@ const MessagesView = () => {
         .single();
 
       if (!conversationCheck) {
-        toast({
-          title: "Error de permisos",
-          description: "No tienes permisos para enviar mensajes en esta conversación",
-          variant: "destructive",
-        });
-        return;
+        throw new Error('No tienes permisos para enviar mensajes en esta conversación');
       }
 
       // Enviar mensaje optimista (aparece inmediatamente en la UI)
-      const tempId = sendOptimisticMessage({
+      tempId = sendOptimisticMessage({
         conversation_id: selectedConversation,
         content: messageContent,
         sender_type: 'human',
@@ -169,9 +190,33 @@ const MessagesView = () => {
         is_automated: false
       });
 
-      console.log('📤 Sending message for user:', user.id, 'conversation:', selectedConversation, 'channel:', conversationCheck.channel);
+      console.log('✅ Mensaje optimista creado:', tempId);
       
-      // Si es Facebook Messenger, enviar a través de la API
+      // Guardar mensaje en la base de datos local PRIMERO
+      const { data: savedMessage, error: dbError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: selectedConversation,
+          content: messageContent,
+          sender_type: 'human',
+          is_automated: false,
+          sender_name: 'Tú'
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      console.log('💾 Mensaje guardado en DB:', savedMessage.id);
+
+      // Actualizar el mensaje optimista con el real
+      if (savedMessage && tempId) {
+        updateMessageStatus(tempId, savedMessage);
+      }
+      
+      // Si es Facebook Messenger, enviar a través de la API externa
       if (conversationCheck.channel === 'facebook') {
         try {
           const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/send-message`, {
@@ -189,47 +234,17 @@ const MessagesView = () => {
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Error al enviar mensaje a Facebook');
+            console.warn('⚠️ Error en Facebook API:', errorData);
+            // No lanzar error, el mensaje ya se guardó localmente
+          } else {
+            const result = await response.json();
+            console.log('✅ Message sent to Facebook:', result);
           }
 
-          const result = await response.json();
-          console.log('✅ Message sent to Facebook:', result);
-          
-          toast({
-            title: "Mensaje enviado",
-            description: "Tu mensaje ha sido enviado a Facebook Messenger",
-          });
-
         } catch (facebookError) {
-          console.error('Error sending to Facebook:', facebookError);
-          toast({
-            title: "Error al enviar a Facebook",
-            description: "El mensaje se guardó localmente pero no se pudo enviar a Facebook",
-            variant: "destructive",
-          });
+          console.warn('⚠️ Facebook API error:', facebookError);
+          // No lanzar error, el mensaje ya se guardó localmente
         }
-      }
-
-      // Guardar mensaje en la base de datos local
-      const { data: savedMessage, error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: selectedConversation,
-          content: messageContent,
-          sender_type: 'human',
-          is_automated: false,
-          sender_name: 'Tú'
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Actualizar el mensaje optimista con el real
-      if (savedMessage) {
-        updateMessageStatus(tempId, savedMessage);
       }
       
       // Update conversation last_message_at
@@ -240,15 +255,10 @@ const MessagesView = () => {
           .eq('id', selectedConversation)
       );
       
-      // Solo mostrar toast de éxito si no es Facebook (ya se mostró arriba)
-      if (conversationCheck.channel !== 'facebook') {
-        toast({
-          title: "Mensaje enviado",
-          description: "Tu mensaje ha sido enviado exitosamente",
-        });
-      }
+      console.log('✅ Mensaje enviado exitosamente');
+      
     } catch (error: unknown) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       
       // Restaurar el mensaje en el input si hubo error
       setNewMessage(messageContent);
@@ -262,6 +272,9 @@ const MessagesView = () => {
       setIsSending(false);
     }
   };
+
+  // Función con debouncing para uso en el UI
+  const sendMessage = useDebounce(sendMessageCore, 500);
 
   const createClient = async () => {
     try {
@@ -832,12 +845,22 @@ const MessagesView = () => {
                     onClick={sendMessage} 
                     disabled={!newMessage.trim() || isSending}
                     size="lg"
-                    className="h-[60px] px-6"
+                    className={`h-[60px] px-6 transition-all duration-200 ${
+                      isSending 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                    }`}
                   >
                     {isSending ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                        <span className="text-xs">Enviando...</span>
+                      </div>
                     ) : (
-                      <Send className="h-5 w-5" />
+                      <div className="flex items-center gap-2">
+                        <Send className="h-5 w-5" />
+                        <span className="text-xs hidden sm:inline">Enviar</span>
+                      </div>
                     )}
                   </Button>
                 </div>

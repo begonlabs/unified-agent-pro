@@ -84,9 +84,10 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       console.log('💬 Conversations loaded:', data?.length || 0);
       setConversations(data || []);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Error fetching conversations:', err);
-      setError(err.message || 'Error loading conversations');
+      const errorMessage = err instanceof Error ? err.message : 'Error loading conversations';
+      setError(errorMessage);
       
       toast({
         title: "Error de conexión",
@@ -99,13 +100,13 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
   }, [userId, toast]);
 
   // Función para manejar cambios en tiempo real
-  const handleRealtimeChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
-    console.log('🔄 Realtime conversation change:', payload.eventType, payload.new?.id);
+  const handleRealtimeChange = useCallback((payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+    console.log('🔄 Realtime conversation change:', payload.eventType, (payload.new as Conversation)?.id);
 
     setConversations(prevConversations => {
       switch (payload.eventType) {
         case 'INSERT': {
-          const newConversation = payload.new as Conversation;
+          const newConversation = payload.new as unknown as Conversation;
           
           // Verificar que la conversación pertenece al usuario actual
           if (newConversation.user_id !== userId) {
@@ -123,7 +124,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         }
 
         case 'UPDATE': {
-          const updatedConversation = payload.new as Conversation;
+          const updatedConversation = payload.new as unknown as Conversation;
           
           if (updatedConversation.user_id !== userId) {
             return prevConversations;
@@ -149,9 +150,37 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     });
   }, [userId]);
 
-  // Función para establecer suscripción realtime
+  // Función para limpiar suscripciones
+  const cleanupSubscription = useCallback(() => {
+    if (channelRef.current) {
+      console.log('🧹 Cleaning up realtime subscription');
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
+    }
+
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    setConnectionStatus({
+      isConnected: false,
+      isConnecting: false,
+      reconnectAttempts: 0
+    });
+  }, []);
+
+  // Función para establecer suscripción realtime (con prevención de duplicados)
   const setupRealtimeSubscription = useCallback(() => {
-    if (!userId || channelRef.current) {
+    // Verificar condiciones previas
+    if (!userId) {
+      console.log('🚫 No userId provided for realtime subscription');
+      return;
+    }
+
+    // Evitar múltiples suscripciones
+    if (channelRef.current) {
+      console.log('🔄 Realtime subscription already exists, skipping setup');
       return;
     }
 
@@ -160,8 +189,11 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     try {
       console.log('🔌 Setting up realtime subscription for user:', userId);
 
+      // Crear canal con nombre único basado en timestamp para evitar colisiones
+      const channelName = `conversations:user:${userId}:${Date.now()}`;
+      
       const channel = supabase
-        .channel(`conversations:user:${userId}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -170,10 +202,13 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
             table: 'conversations',
             filter: `user_id=eq.${userId}` // Filtro específico por usuario
           },
-          handleRealtimeChange
+          (payload) => {
+            console.log('📡 Conversations realtime event:', payload.eventType, payload.new);
+            handleRealtimeChange(payload);
+          }
         )
         .subscribe((status) => {
-          console.log('📡 Subscription status:', status);
+          console.log('📡 Conversations subscription status:', status);
           
           if (status === 'SUBSCRIBED') {
             setConnectionStatus({
@@ -194,12 +229,36 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
               isConnecting: false
             }));
             
-            // Intentar reconectar automáticamente
-            attemptReconnect();
+            // Limpiar referencia del canal
+            if (channelRef.current === channel) {
+              channelRef.current = null;
+            }
+            
+            // Intentar reconectar automáticamente con delay
+            setTimeout(() => {
+              cleanupSubscription();
+              setTimeout(() => {
+                setupRealtimeSubscription();
+              }, 2000);
+            }, 1000);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Channel error, cleaning up and retrying');
+            setConnectionStatus(prev => ({
+              ...prev,
+              isConnected: false,
+              isConnecting: false
+            }));
+            
+            // Limpiar referencia del canal
+            if (channelRef.current === channel) {
+              channelRef.current = null;
+            }
           }
         });
 
       channelRef.current = channel;
+      console.log('✅ Realtime subscription established:', channelName);
+      
     } catch (error) {
       console.error('❌ Error setting up realtime:', error);
       setConnectionStatus(prev => ({
@@ -207,8 +266,11 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         isConnecting: false,
         isConnected: false
       }));
+      
+      // Limpiar en caso de error
+      channelRef.current = null;
     }
-  }, [userId, handleRealtimeChange, toast]);
+  }, [userId, handleRealtimeChange, toast, cleanupSubscription]);
 
   // Función para intentar reconectar
   const attemptReconnect = useCallback(() => {
@@ -244,26 +306,6 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       };
     });
   }, [setupRealtimeSubscription, toast]);
-
-  // Función para limpiar suscripciones
-  const cleanupSubscription = useCallback(() => {
-    if (channelRef.current) {
-      console.log('🧹 Cleaning up realtime subscription');
-      channelRef.current.unsubscribe();
-      channelRef.current = null;
-    }
-
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    setConnectionStatus({
-      isConnected: false,
-      isConnecting: false,
-      reconnectAttempts: 0
-    });
-  }, []);
 
   // Función pública para refrescar conversaciones
   const refreshConversations = useCallback(async () => {

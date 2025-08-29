@@ -186,7 +186,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     
     console.log('🔍 Echo detection:', {
       isEcho,
-      hasIsEcho: event.message?.hasOwnProperty('is_echo'),
+      hasIsEcho: event.message ? Object.prototype.hasOwnProperty.call(event.message, 'is_echo') : false,
       isEchoValue: event.message?.is_echo,
       senderId,
       recipientId

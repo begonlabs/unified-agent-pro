@@ -124,14 +124,40 @@ export const useRealtimeMessages = (
             }
           }
 
-          // Evitar duplicados
-          const exists = prevMessages.some(msg => msg.id === newData.id);
-          if (exists) {
+          // Evitar duplicados por ID
+          const existsById = prevMessages.some(msg => msg.id === newData.id);
+          if (existsById) {
+            console.log('🔄 Message already exists by ID:', newData.id);
+            return prevMessages;
+          }
+
+          // Evitar duplicados por contenido (anti-spam)
+          const duplicateByContent = prevMessages.find(msg => {
+            const timeDiff = Math.abs(
+              new Date(msg.created_at).getTime() - new Date(newData.created_at).getTime()
+            );
+            return msg.content === newData.content &&
+                   msg.sender_type === newData.sender_type &&
+                   timeDiff < 3000; // 3 segundos
+          });
+
+          if (duplicateByContent) {
+            console.log('🚫 Duplicate content detected, ignoring:', {
+              content: newData.content.substring(0, 30) + '...',
+              existingId: duplicateByContent.id,
+              newId: newData.id,
+              timeDiff: Math.abs(
+                new Date(duplicateByContent.created_at).getTime() - 
+                new Date(newData.created_at).getTime()
+              )
+            });
             return prevMessages;
           }
 
           console.log('➕ Adding new message:', newData.id);
-          return [...prevMessages, newData];
+          return [...prevMessages, newData].sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         }
 
         case 'UPDATE': {
@@ -204,9 +230,28 @@ export const useRealtimeMessages = (
     setIsConnected(false);
   }, []);
 
-  // Función para enviar mensaje optimista (UI instantáneo)
+  // Función para enviar mensaje optimista (UI instantáneo) con anti-duplicados
   const sendOptimisticMessage = useCallback((messageData: Omit<Message, 'id' | 'created_at'>) => {
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const now = Date.now();
+    
+    // Verificar duplicados recientes (2 segundos)
+    const recentOptimistic = Array.from(optimisticMessagesRef.current.values())
+      .filter(msg => {
+        const msgTime = new Date(msg.created_at).getTime();
+        return (now - msgTime) < 2000 &&
+               msg.content === messageData.content &&
+               msg.conversation_id === messageData.conversation_id;
+      });
+
+    if (recentOptimistic.length > 0) {
+      console.log('🚫 Mensaje optimista duplicado detectado, ignorando:', {
+        content: messageData.content.substring(0, 30) + '...',
+        duplicatesFound: recentOptimistic.length
+      });
+      return tempId; // Retornar ID para mantener compatibilidad
+    }
+
     const optimisticMessage: Message = {
       ...messageData,
       id: tempId,
@@ -217,7 +262,22 @@ export const useRealtimeMessages = (
     optimisticMessagesRef.current.set(tempId, optimisticMessage);
 
     // Agregar inmediatamente a la UI
-    setMessages(prev => [...prev, optimisticMessage]);
+    setMessages(prev => {
+      // Verificación adicional en el estado actual
+      const existingRecent = prev.find(msg => {
+        const msgTime = new Date(msg.created_at).getTime();
+        return (now - msgTime) < 2000 &&
+               msg.content === messageData.content &&
+               msg.conversation_id === messageData.conversation_id;
+      });
+
+      if (existingRecent) {
+        console.log('🚫 Mensaje duplicado en estado actual, ignorando');
+        return prev;
+      }
+
+      return [...prev, optimisticMessage];
+    });
 
     console.log('⚡ Optimistic message added:', tempId);
     return tempId;
