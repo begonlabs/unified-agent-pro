@@ -155,36 +155,62 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get channel by page_id
-    console.log('🔍 Looking for channel with page_id:', recipientId);
+    // Determine if this is an echo message early
+    const isEcho = event.message?.is_echo || false;
+
+    // Determine the page ID based on echo status
+    // For echo messages: sender = page, recipient = user → page_id = sender
+    // For normal messages: sender = user, recipient = page → page_id = recipient
+    const pageId = isEcho ? senderId : recipientId;
+    
+    console.log('🔍 Looking for channel with page_id:', pageId, {
+      isEcho,
+      senderId,
+      recipientId,
+      logic: isEcho ? 'echo: using senderId as pageId' : 'normal: using recipientId as pageId'
+    });
+    
     const { data: channel, error: channelError } = await supabase
       .from('communication_channels')
       .select('*')
-      .eq('channel_config->>page_id', recipientId)
+      .eq('channel_config->>page_id', pageId)
       .eq('channel_type', 'facebook')
       .single();
 
     if (channelError || !channel) {
-      console.error('❌ No channel found for page:', recipientId, channelError?.message);
+      console.error('❌ No channel found for page:', pageId, channelError?.message);
       return;
     }
 
     console.log('✅ Found channel:', { id: channel.id, user_id: channel.user_id });
-
-    // Determine if this is an echo message early
-    const isEcho = event.message?.is_echo || false;
+    
+    console.log('🔍 Echo detection:', {
+      isEcho,
+      hasIsEcho: event.message?.hasOwnProperty('is_echo'),
+      isEchoValue: event.message?.is_echo,
+      senderId,
+      recipientId
+    });
 
     // Find or create client (handle echo messages)
     let client: CRMClient;
     
-    // For echo messages, we might need to find client by recipient instead of sender
-    const clientId = isEcho ? recipientId : senderId;
+    // For Facebook messages:
+    // - Normal message: sender = user, recipient = page → client = sender
+    // - Echo message: sender = page, recipient = user → client = recipient
+    const realUserId = isEcho ? recipientId : senderId;
+    
+    console.log('👤 Client identification:', {
+      isEcho,
+      realUserId,
+      logic: isEcho ? 'echo: using recipient as user' : 'normal: using sender as user'
+    });
     
     const { data: existingClient, error: clientSearchError } = await supabase
       .from('crm_clients')
       .select('*')
       .eq('user_id', channel.user_id)
-      .eq('phone', clientId)
+      .eq('phone', realUserId)
       .single();
 
     if (existingClient && !clientSearchError) {
@@ -192,16 +218,14 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       console.log('✅ Found existing client:', client.id);
     } else {
       // Create new client
-      const clientName = isEcho 
-        ? `Facebook User ${clientId.slice(-4)}` 
-        : `Facebook User ${clientId.slice(-4)}`;
+      const clientName = `Facebook User ${realUserId.slice(-4)}`;
         
       const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')
         .insert({
           user_id: channel.user_id,
           name: clientName,
-          phone: clientId,
+          phone: realUserId,
           status: 'active',
           source: 'facebook'
         })
@@ -219,7 +243,14 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
     // Find or create conversation (use consistent thread ID)
     let conversation: Conversation;
-    const threadId = isEcho ? recipientId : senderId; // Use recipient for echo, sender for normal
+    // Thread ID should always be the real user ID for consistency
+    const threadId = realUserId;
+    
+    console.log('💬 Conversation identification:', {
+      threadId,
+      realUserId,
+      clientId: client.id
+    });
     
     const { data: existingConv, error: convSearchError } = await supabase
       .from('conversations')
@@ -260,6 +291,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     // Determine sender type based on echo status
     const senderType = isEcho ? 'agent' : 'client'; // Echo = outgoing (agent), Not echo = incoming (client)
     const senderName = isEcho ? 'Agente' : client.name;
+    
+    console.log('📋 Message classification:', {
+      isEcho,
+      senderType,
+      senderName,
+      logic: isEcho ? 'Echo message → agent (outgoing)' : 'Normal message → client (incoming)'
+    });
 
     // Save message with new structure (Option 2)
     const messageData = {

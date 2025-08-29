@@ -89,36 +89,63 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get channel by page_id
-    console.log('🔍 Looking for Instagram channel with page_id:', pageId);
+    // Determine if this is an echo message early
+    const isEcho = message.is_echo || false;
+    
+    // Determine the page ID based on echo status
+    // For echo messages: sender = page, recipient = user → page_id = sender
+    // For normal messages: sender = user, recipient = page → page_id = recipient
+    const actualPageId = isEcho ? senderId : pageId;
+    
+    console.log('🔍 Looking for Instagram channel with page_id:', actualPageId, {
+      isEcho,
+      senderId,
+      pageId,
+      logic: isEcho ? 'echo: using senderId as pageId' : 'normal: using pageId'
+    });
+    
     const { data: channel, error: channelError } = await supabase
       .from('communication_channels')
       .select('*')
-      .eq('channel_config->>page_id', pageId)
+      .eq('channel_config->>page_id', actualPageId)
       .eq('channel_type', 'instagram')
       .single();
 
     if (channelError || !channel) {
-      console.error('❌ No Instagram channel found for page:', pageId, channelError?.message);
+      console.error('❌ No Instagram channel found for page:', actualPageId, channelError?.message);
       return;
     }
 
     console.log('✅ Found Instagram channel:', { id: channel.id, user_id: channel.user_id });
-
-    // Determine if this is an echo message early
-    const isEcho = message.is_echo || false;
+    
+    console.log('🔍 Echo detection:', {
+      isEcho,
+      hasIsEcho: message.hasOwnProperty('is_echo'),
+      isEchoValue: message.is_echo,
+      senderId,
+      pageId
+    });
 
     // Find or create client (handle echo messages)
     let client: CRMClient;
     
-    // For echo messages, we might need to find client by recipient instead of sender
-    const clientId = isEcho ? pageId : senderId;
+    // For Instagram messages:
+    // - Normal message: sender = user, recipient = page → client = sender
+    // - Echo message: sender = page, recipient = user → client = recipient (pageId)
+    // BUT: pageId is recipient in normal messages, so for echo we need recipient which is pageId
+    const realUserId = isEcho ? pageId : senderId;
+    
+    console.log('👤 Client identification:', {
+      isEcho,
+      realUserId,
+      logic: isEcho ? 'echo: using pageId as user' : 'normal: using sender as user'
+    });
     
     const { data: existingClient, error: clientSearchError } = await supabase
       .from('crm_clients')
       .select('*')
       .eq('user_id', channel.user_id)
-      .eq('phone', clientId)
+      .eq('phone', realUserId)
       .single();
 
     if (existingClient && !clientSearchError) {
@@ -126,16 +153,14 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       console.log('✅ Found existing client:', client.id);
     } else {
       // Create new client
-      const clientName = isEcho 
-        ? `Instagram User ${clientId.slice(-4)}` 
-        : `Instagram User ${clientId.slice(-4)}`;
+      const clientName = `Instagram User ${realUserId.slice(-4)}`;
         
       const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')
         .insert({
           user_id: channel.user_id,
           name: clientName,
-          phone: clientId,
+          phone: realUserId,
           status: 'active',
           source: 'instagram'
         })
@@ -153,7 +178,14 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
 
     // Find or create conversation (use consistent thread ID)
     let conversation: Conversation;
-    const threadId = isEcho ? pageId : senderId; // Use pageId for echo, senderId for normal
+    // Thread ID should always be the real user ID for consistency
+    const threadId = realUserId;
+    
+    console.log('💬 Conversation identification:', {
+      threadId,
+      realUserId,
+      clientId: client.id
+    });
     
     const { data: existingConv, error: convSearchError } = await supabase
       .from('conversations')
@@ -194,6 +226,13 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     // Determine sender type based on echo status
     const senderType = isEcho ? 'agent' : 'client'; // Echo = outgoing (agent), Not echo = incoming (client)
     const senderName = isEcho ? 'Agente' : client.name;
+    
+    console.log('📋 Message classification:', {
+      isEcho,
+      senderType,
+      senderName,
+      logic: isEcho ? 'Echo message → agent (outgoing)' : 'Normal message → client (incoming)'
+    });
 
     // Save message with new structure (Option 2)
     const messageData = {

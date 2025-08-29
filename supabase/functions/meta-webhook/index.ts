@@ -165,11 +165,11 @@ serve(async (req) => {
               // Log the full event structure for debugging
               console.log('🔍 Full messaging event:', JSON.stringify(messagingEvent, null, 2));
               
-              // Skip echo messages (messages sent by the page)
-              if (messagingEvent.message?.is_echo) {
-                console.log('⏭️ Skipping echo message');
-                continue;
-              }
+              // Echo messages are now processed to save outgoing agent messages
+              // if (messagingEvent.message?.is_echo) {
+              //   console.log('⏭️ Skipping echo message');
+              //   continue;
+              // }
 
               // Only process events with actual content
               const hasContent = messagingEvent.message?.text || 

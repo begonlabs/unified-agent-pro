@@ -32,6 +32,10 @@ import {
   Tag
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealtimeConversations } from '@/hooks/useRealtimeConversations';
+import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
+import { ConversationConnectionStatus } from '@/components/ui/connection-status';
 
 interface Client {
   id: string;
@@ -66,16 +70,16 @@ interface Message {
 }
 
 const MessagesView = () => {
+  const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('conversations');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
@@ -85,24 +89,35 @@ const MessagesView = () => {
   });
   const { toast } = useToast();
 
-  // Mover estos useEffect después de las declaraciones de funciones
+  // Usar los nuevos hooks de realtime
+  const { 
+    conversations, 
+    loading: conversationsLoading, 
+    connectionStatus,
+    refreshConversations 
+  } = useRealtimeConversations(user?.id || null);
 
+  const {
+    messages,
+    loading: messagesLoading,
+    isConnected: messagesConnected,
+    refreshMessages,
+    sendOptimisticMessage,
+    updateMessageStatus
+  } = useRealtimeMessages(selectedConversation, user?.id || null);
+
+  // Función para obtener clientes (conservamos solo esta)
   const fetchClients = useCallback(async () => {
-    try {
-      // Verificar que el usuario esté autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        console.error('❌ No user authenticated for fetching clients');
-        return;
-      }
+    if (!user?.id) return;
 
+    try {
       console.log('🔍 Fetching clients for user:', user.id);
       
       const { data } = await supabaseSelect(
         supabase
           .from('crm_clients')
           .select('*')
-          .eq('user_id', user.id)  // ✅ Filtrar por usuario
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
       );
       
@@ -116,101 +131,18 @@ const MessagesView = () => {
         variant: "destructive",
       });
     }
-  }, [toast]);
-
-  const fetchConversations = useCallback(async () => {
-    try {
-      // Verificar que el usuario esté autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        console.error('❌ No user authenticated for fetching conversations');
-        return;
-      }
-
-      console.log('🔍 Fetching conversations for user:', user.id);
-      
-      const { data } = await supabaseSelect(
-        supabase
-          .from('conversations')
-          .select(`
-            *,
-            crm_clients (*)
-          `)
-          .eq('user_id', user.id)  // ✅ Filtrar por usuario
-          .order('last_message_at', { ascending: false })
-      );
-      
-      console.log('💬 Conversations fetched:', data?.length || 0);
-      setConversations(data || []);
-    } catch (error: unknown) {
-      const errorInfo = handleSupabaseError(error, "No se pudieron cargar las conversaciones");
-      toast({
-        title: errorInfo.title,
-        description: errorInfo.description,
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  const fetchMessages = useCallback(async (conversationId: string) => {
-    try {
-      // Verificar que el usuario esté autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        console.error('❌ No user authenticated for fetching messages');
-        return;
-      }
-
-      // Verificar que la conversación pertenezca al usuario
-      const { data: conversationCheck } = await supabase
-        .from('conversations')
-        .select('user_id')
-        .eq('id', conversationId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (!conversationCheck) {
-        console.error('❌ Conversation does not belong to user:', conversationId);
-        return;
-      }
-
-      console.log('🔍 Fetching messages for conversation:', conversationId, 'user:', user.id);
-      
-      const { data } = await supabaseSelect(
-        supabase
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', conversationId)
-          .order('created_at', { ascending: true })
-      );
-      
-      console.log('💬 Messages fetched:', data?.length || 0);
-      setMessages(data || []);
-    } catch (error: unknown) {
-      const errorInfo = handleSupabaseError(error, "No se pudieron cargar los mensajes");
-      toast({
-        title: errorInfo.title,
-        description: errorInfo.description,
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+  }, [user?.id, toast]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversation || !user?.id || isSending) return;
+
+    setIsSending(true);
+    const messageContent = newMessage.trim();
+    
+    // Limpiar input inmediatamente para mejor UX
+    setNewMessage('');
 
     try {
-      // Verificar que el usuario esté autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        toast({
-          title: "Error de autenticación",
-          description: "Debes estar autenticado para enviar mensajes",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Verificar que la conversación pertenezca al usuario
       const { data: conversationCheck } = await supabase
         .from('conversations')
@@ -228,6 +160,15 @@ const MessagesView = () => {
         return;
       }
 
+      // Enviar mensaje optimista (aparece inmediatamente en la UI)
+      const tempId = sendOptimisticMessage({
+        conversation_id: selectedConversation,
+        content: messageContent,
+        sender_type: 'human',
+        sender_name: 'Tú',
+        is_automated: false
+      });
+
       console.log('📤 Sending message for user:', user.id, 'conversation:', selectedConversation, 'channel:', conversationCheck.channel);
       
       // Si es Facebook Messenger, enviar a través de la API
@@ -241,7 +182,7 @@ const MessagesView = () => {
             },
             body: JSON.stringify({
               conversation_id: selectedConversation,
-              message: newMessage,
+              message: messageContent,
               user_id: user.id
             })
           });
@@ -270,19 +211,26 @@ const MessagesView = () => {
       }
 
       // Guardar mensaje en la base de datos local
-      await supabaseInsert(
-        supabase
-          .from('messages')
-          .insert({
-            conversation_id: selectedConversation,
-            content: newMessage,
-            sender_type: 'human',
-            is_automated: false,
-          })
-      );
+      const { data: savedMessage, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: selectedConversation,
+          content: messageContent,
+          sender_type: 'human',
+          is_automated: false,
+          sender_name: 'Tú'
+        })
+        .select()
+        .single();
 
-      setNewMessage('');
-      fetchMessages(selectedConversation);
+      if (error) {
+        throw error;
+      }
+
+      // Actualizar el mensaje optimista con el real
+      if (savedMessage) {
+        updateMessageStatus(tempId, savedMessage);
+      }
       
       // Update conversation last_message_at
       await supabaseUpdate(
@@ -291,22 +239,27 @@ const MessagesView = () => {
           .update({ last_message_at: new Date().toISOString() })
           .eq('id', selectedConversation)
       );
-        
-      fetchConversations();
       
       // Solo mostrar toast de éxito si no es Facebook (ya se mostró arriba)
       if (conversationCheck.channel !== 'facebook') {
-      toast({
-        title: "Mensaje enviado",
-        description: "Tu mensaje ha sido enviado exitosamente",
-      });
+        toast({
+          title: "Mensaje enviado",
+          description: "Tu mensaje ha sido enviado exitosamente",
+        });
       }
     } catch (error: unknown) {
+      console.error('Error sending message:', error);
+      
+      // Restaurar el mensaje en el input si hubo error
+      setNewMessage(messageContent);
+      
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje",
         variant: "destructive",
       });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -458,50 +411,12 @@ const MessagesView = () => {
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 
-  // useEffect para inicializar datos y suscripciones
+  // useEffect para inicializar clientes
   useEffect(() => {
-    fetchClients();
-    fetchConversations();
-    
-    // Set up real-time subscription for conversations
-    const conversationsChannel = supabase
-      .channel('conversations-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'conversations'
-      }, () => {
-        fetchConversations();
-      })
-      .subscribe();
-
-    // Set up real-time subscription for messages
-    const messagesChannel = supabase
-      .channel('messages-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages'
-      }, (payload) => {
-        if (selectedConversation && payload.new && 
-            (payload.new as { conversation_id: string }).conversation_id === selectedConversation) {
-          fetchMessages(selectedConversation);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(conversationsChannel);
-      supabase.removeChannel(messagesChannel);
-    };
-  }, [fetchClients, fetchConversations, fetchMessages, selectedConversation]);
-
-  // useEffect para cargar mensajes cuando cambia la conversación seleccionada
-  useEffect(() => {
-    if (selectedConversation) {
-      fetchMessages(selectedConversation);
+    if (user?.id) {
+      fetchClients();
     }
-  }, [selectedConversation, fetchMessages]);
+  }, [user?.id, fetchClients]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -522,7 +437,13 @@ const MessagesView = () => {
       <div className="w-80 bg-white border-r flex flex-col rounded-tr-2xl">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Mensajes/CRM</h2>
+            <div>
+              <h2 className="text-xl font-bold">Mensajes/CRM</h2>
+              <ConversationConnectionStatus 
+                status={connectionStatus}
+                onReconnect={refreshConversations}
+              />
+            </div>
             <Dialog open={isNewClientDialogOpen} onOpenChange={setIsNewClientDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -795,6 +716,16 @@ const MessagesView = () => {
                       {selectedConv?.crm_clients?.phone && (
                         <span>{selectedConv.crm_clients.phone}</span>
                       )}
+                      {/* Estado de conexión de mensajes */}
+                      <div className="flex items-center gap-1">
+                        {messagesConnected ? (
+                          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">🟢 En vivo</span>
+                        ) : messagesLoading ? (
+                          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">🔄 Cargando...</span>
+                        ) : (
+                          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">🔴 Sin conexión</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -899,11 +830,15 @@ const MessagesView = () => {
                   </div>
                   <Button 
                     onClick={sendMessage} 
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || isSending}
                     size="lg"
                     className="h-[60px] px-6"
                   >
-                    <Send className="h-5 w-5" />
+                    {isSending ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
                   </Button>
                 </div>
               </div>
