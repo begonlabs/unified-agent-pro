@@ -272,11 +272,11 @@ const ChannelsView = () => {
       window.location.href = oauthUrl;
     } catch (error: unknown) {
       console.error('Error building Facebook OAuth URL:', error);
-      toast({
+    toast({
         title: 'Error',
         description: 'No se pudo iniciar la conexión con Facebook',
         variant: 'destructive',
-      });
+    });
     }
   };
 

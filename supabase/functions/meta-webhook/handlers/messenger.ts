@@ -66,166 +66,230 @@ interface Message {
   sender_name?: string;
 }
 
+
 export async function handleMessengerEvent(event: MessengerEvent): Promise<void> {
   try {
-    console.log('🎯 handleMessengerEvent called with:', {
-      event_type: event.message ? 'message' : event.postback ? 'postback' : event.delivery ? 'delivery' : event.read ? 'read' : 'unknown',
+    console.log('🎯 Processing Messenger event:', {
+      has_message: !!event.message,
+      has_postback: !!event.postback,
+      has_delivery: !!event.delivery,
+      has_read: !!event.read,
       sender_id: event.sender?.id,
-      recipient_id: event.recipient?.id,
-      timestamp: event.timestamp,
-      message_text: event.message?.text,
-      message_id: event.message?.mid,
-      postback_payload: event.postback?.payload,
-      postback_title: event.postback?.title,
-      delivery_mids: event.delivery?.mids,
-      read_watermark: event.read?.watermark,
-      full_event: event
+      recipient_id: event.recipient?.id
     });
 
-    // Skip if no message content
-    if (!event.message?.text && !event.postback) {
-      console.log('No message content or postback, skipping');
-      return;
+    // Determine the type of content and extract relevant data
+    let messageText: string | undefined;
+    let eventType: string = 'unknown';
+    let shouldProcess: boolean = false;
+    let messageId: string | undefined;
+    
+    if (event.message?.text) {
+      messageText = event.message.text;
+      messageId = event.message.mid;
+      eventType = event.message.is_echo ? 'echo_message' : 'text_message';
+      shouldProcess = true;
+    } else if (event.postback?.payload) {
+      messageText = event.postback.title || event.postback.payload;
+      eventType = 'postback';
+      shouldProcess = true;
+    } else if (event.delivery?.mids?.length > 0) {
+      messageText = `Message delivered: ${event.delivery.mids.length} message(s)`;
+      eventType = 'delivery';
+      shouldProcess = false; // Don't save delivery events to DB
+    } else if (event.read?.watermark) {
+      messageText = `Message read at ${new Date(event.read.watermark * 1000).toISOString()}`;
+      eventType = 'read';
+      shouldProcess = false; // Don't save read events to DB
     }
 
     const senderId = event.sender?.id;
     const recipientId = event.recipient?.id;
-    const messageText = event.message?.text || event.postback?.title || 'Postback received';
-    const messageId = event.message?.mid || `postback_${Date.now()}`;
 
-    if (!senderId || !recipientId) {
-      console.error('Missing sender or recipient ID');
+    if (!messageText || !senderId || !recipientId) {
+      console.log('⚠️ Missing required fields:', {
+        messageText: !!messageText,
+        senderId: !!senderId,
+        recipientId: !!recipientId,
+        eventType
+      });
       return;
     }
 
-    // Initialize Supabase client
+    console.log('📝 Event details:', {
+      eventType,
+      messageText,
+      senderId,
+      recipientId,
+      messageId,
+      timestamp: event.timestamp,
+      shouldProcess
+    });
+
+    // Only process events that should be saved to database
+    if (!shouldProcess) {
+      console.log('📊 Logging event (not saving to DB):', {
+        event_type: eventType,
+        sender_id: senderId,
+        page_id: recipientId,
+        content: messageText
+      });
+      return;
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
+
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase environment variables');
+      console.error('❌ Missing Supabase environment variables:', {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey
+      });
       return;
     }
+
+    console.log('🔧 Supabase connection details:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseServiceKey
+    });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find the communication channel for this page
-    const { data: channels, error: channelError } = await supabase
+    // Get channel by page_id
+    console.log('🔍 Looking for channel with page_id:', recipientId);
+    const { data: channel, error: channelError } = await supabase
       .from('communication_channels')
       .select('*')
+      .eq('channel_config->>page_id', recipientId)
       .eq('channel_type', 'facebook')
-      .eq('is_connected', true)
-      .filter('channel_config->>page_id', 'eq', recipientId);
+      .single();
 
-    if (channelError || !channels || channels.length === 0) {
-      console.error('No Facebook channel found for page:', recipientId);
+    if (channelError || !channel) {
+      console.error('❌ No channel found for page:', recipientId, channelError?.message);
       return;
     }
 
-    const channel = channels[0];
-    console.log('Found channel:', channel.id, 'for user:', channel.user_id);
+    console.log('✅ Found channel:', { id: channel.id, user_id: channel.user_id });
 
-    // Find or create CRM client
-    let client: CRMClient | null = null;
-    const { data: existingClients, error: clientSearchError } = await supabase
+    // Determine if this is an echo message early
+    const isEcho = event.message?.is_echo || false;
+
+    // Find or create client (handle echo messages)
+    let client: CRMClient;
+    
+    // For echo messages, we might need to find client by recipient instead of sender
+    const clientId = isEcho ? recipientId : senderId;
+    
+    const { data: existingClient, error: clientSearchError } = await supabase
       .from('crm_clients')
       .select('*')
       .eq('user_id', channel.user_id)
-      .eq('phone', senderId)
-      .maybeSingle();
+      .eq('phone', clientId)
+      .single();
 
-    if (clientSearchError && clientSearchError.code !== 'PGRST116') {
-      console.error('Error searching for client:', clientSearchError);
-      return;
-    }
-
-    if (existingClients) {
-      client = existingClients;
-      console.log('Found existing client:', client.id);
+    if (existingClient && !clientSearchError) {
+      client = existingClient;
+      console.log('✅ Found existing client:', client.id);
     } else {
       // Create new client
-      const { data: newClient, error: createClientError } = await supabase
+      const clientName = isEcho 
+        ? `Facebook User ${clientId.slice(-4)}` 
+        : `Facebook User ${clientId.slice(-4)}`;
+        
+      const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')
         .insert({
           user_id: channel.user_id,
-          name: `Cliente Facebook ${senderId.slice(-4)}`,
-          phone: senderId,
-          status: 'lead',
-          last_interaction: new Date().toISOString()
+          name: clientName,
+          phone: clientId,
+          status: 'active',
+          source: 'facebook'
         })
         .select()
         .single();
 
-      if (createClientError) {
-        console.error('Error creating client:', createClientError);
+      if (clientCreateError || !newClient) {
+        console.error('❌ Error creating client:', clientCreateError);
         return;
       }
 
       client = newClient;
-      console.log('Created new client:', client.id);
+      console.log('✅ Created new client:', client.id);
     }
 
-    // Find or create conversation
-    let conversation: Conversation | null = null;
-    const { data: existingConversations, error: convSearchError } = await supabase
+    // Find or create conversation (use consistent thread ID)
+    let conversation: Conversation;
+    const threadId = isEcho ? recipientId : senderId; // Use recipient for echo, sender for normal
+    
+    const { data: existingConv, error: convSearchError } = await supabase
       .from('conversations')
       .select('*')
       .eq('user_id', channel.user_id)
       .eq('client_id', client.id)
       .eq('channel', 'facebook')
-      .eq('channel_thread_id', senderId)
-      .maybeSingle();
+      .eq('channel_thread_id', threadId)
+      .single();
 
-    if (convSearchError && convSearchError.code !== 'PGRST116') {
-      console.error('Error searching for conversation:', convSearchError);
-      return;
-    }
-
-    if (existingConversations) {
-      conversation = existingConversations;
-      console.log('Found existing conversation:', conversation.id);
+    if (existingConv && !convSearchError) {
+      conversation = existingConv;
+      console.log('✅ Found existing conversation:', conversation.id);
     } else {
       // Create new conversation
-      const { data: newConversation, error: createConvError } = await supabase
+      const { data: newConv, error: convCreateError } = await supabase
         .from('conversations')
         .insert({
           user_id: channel.user_id,
           client_id: client.id,
           channel: 'facebook',
-          channel_thread_id: senderId,
+          channel_thread_id: threadId,
           status: 'open',
           last_message_at: new Date().toISOString()
         })
         .select()
         .single();
 
-      if (createConvError) {
-        console.error('Error creating conversation:', createConvError);
+      if (convCreateError || !newConv) {
+        console.error('❌ Error creating conversation:', convCreateError);
         return;
       }
 
-      conversation = newConversation;
-      console.log('Created new conversation:', conversation.id);
+      conversation = newConv;
+      console.log('✅ Created new conversation:', conversation.id);
     }
 
-    // Save the incoming message
+    // Determine sender type based on echo status
+    const senderType = isEcho ? 'agent' : 'client'; // Echo = outgoing (agent), Not echo = incoming (client)
+    const senderName = isEcho ? 'Agente' : client.name;
+
+    // Save message with new structure (Option 2)
+    const messageData = {
+      conversation_id: conversation.id,
+      content: messageText,
+      sender_type: senderType,
+      is_automated: false, // Could be automated if it's a bot message
+      sender_name: senderName,
+      platform_message_id: messageId, // Facebook message ID
+      metadata: {
+        platform: 'facebook',
+        sender_id: senderId,
+        recipient_id: recipientId,
+        timestamp: event.timestamp,
+        event_type: eventType,
+        is_echo: isEcho
+      }
+    };
+
     const { error: messageError } = await supabase
       .from('messages')
-      .insert({
-        conversation_id: conversation.id,
-        content: messageText,
-        sender_type: 'client',
-        is_automated: false,
-        sender_name: `Cliente ${senderId.slice(-4)}`
-      });
+      .insert(messageData);
 
     if (messageError) {
-      console.error('Error saving message:', messageError);
+      console.error('❌ Error saving message:', messageError);
       return;
     }
 
     // Update conversation last_message_at
-    const { error: updateConvError } = await supabase
+    await supabase
       .from('conversations')
       .update({ 
         last_message_at: new Date().toISOString(),
@@ -233,28 +297,16 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       })
       .eq('id', conversation.id);
 
-    if (updateConvError) {
-      console.error('Error updating conversation:', updateConvError);
-    }
-
-    // Update client last_interaction
-    const { error: updateClientError } = await supabase
-      .from('crm_clients')
-      .update({ 
-        last_interaction: new Date().toISOString()
-      })
-      .eq('id', client.id);
-
-    if (updateClientError) {
-      console.error('Error updating client:', updateClientError);
-    }
-
-    console.log('Successfully processed Messenger event');
-    console.log('- Client:', client.id);
-    console.log('- Conversation:', conversation.id);
-    console.log('- Message saved');
+    console.log('✅ Message saved successfully:', {
+      conversation_id: conversation.id,
+      sender_type: messageData.sender_type,
+      platform_message_id: messageId,
+      event_type: eventType,
+      is_echo: isEcho,
+      direction: isEcho ? 'outgoing' : 'incoming'
+    });
 
   } catch (error) {
-    console.error('Error in handleMessengerEvent:', error);
+    console.error('Critical error in handleMessengerEvent:', error);
   }
 }

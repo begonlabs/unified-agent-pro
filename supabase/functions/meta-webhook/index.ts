@@ -11,7 +11,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Webhook verification function
+// Utility function to convert ArrayBuffer to hex string
 function toHex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes))
     .map(b => b.toString(16).padStart(2, '0'))
@@ -32,23 +32,39 @@ function safeEqual(a: string, b: string): boolean {
 
 // Verify webhook signature for security
 async function isValidSignature(request: Request, rawBody: string): Promise<boolean> {
-  const signature = request.headers.get('x-hub-signature-256');
-  if (!signature) {
+  const signatureHeader = request.headers.get("x-hub-signature-256");
+  const appSecret = Deno.env.get("META_APP_SECRET");
+
+  if (!signatureHeader || !appSecret) {
+    console.error('Missing signature header or META_APP_SECRET');
     return false;
   }
 
-  const appSecret = Deno.env.get('META_APP_SECRET');
-  if (!appSecret) {
-    console.error('META_APP_SECRET not configured');
-    return false;
-  }
+  console.log('🔐 Verifying signature:', {
+    hasSignature: !!signatureHeader,
+    hasAppSecret: !!appSecret,
+    bodyLength: rawBody.length
+  });
 
-  // Facebook uses rawBody + appSecret for signature calculation
-  const expectedSignature = 'sha256=' + toHex(
-    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawBody + appSecret))
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(appSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
   );
-
-  return safeEqual(signature, expectedSignature);
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+  
+  const expectedSignature = `sha256=${toHex(digest)}`;
+  
+  const isValid = safeEqual(expectedSignature, signatureHeader);
+  console.log('🔐 Signature verification result:', {
+    isValid,
+    expectedLength: expectedSignature.length,
+    receivedLength: signatureHeader.length
+  });
+  
+  return isValid;
 }
 
 interface WebhookEvent {
@@ -105,28 +121,96 @@ serve(async (req) => {
     if (req.method === 'POST') {
       const rawBody = await req.text()
       
-      // Verify signature for security
-      if (!(await isValidSignature(req, rawBody))) {
-        console.error('Invalid webhook signature');
-        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
-      }
+              // Verify signature for security
+        console.log('🔍 Verifying webhook signature...');
+        if (!(await isValidSignature(req, rawBody))) {
+          console.error('❌ Invalid webhook signature');
+          return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+        }
+        console.log('✅ Webhook signature verified successfully');
 
       const body: WebhookEvent = JSON.parse(rawBody)
+      
+      // Log the complete webhook payload first
+      console.log('📦 Complete webhook payload:', JSON.stringify(body, null, 2));
 
       if (body.object === 'page' && body.entry) {
+        console.log('📋 Processing Facebook page events:', {
+          object: body.object,
+          entry_count: body.entry.length
+        });
+        
         for (const entry of body.entry) {
           if (entry.messaging) {
+            console.log('💬 Processing messaging events:', {
+              entry_id: entry.id,
+              messaging_count: entry.messaging.length
+            });
+            
+            // Log all messaging events first
+            entry.messaging.forEach((event, index) => {
+              console.log(`📋 Event ${index + 1}/${entry.messaging.length}:`, {
+                has_message: !!event.message,
+                message_text: event.message?.text,
+                is_echo: event.message?.is_echo,
+                has_postback: !!event.postback,
+                has_delivery: !!event.delivery,
+                has_read: !!event.read,
+                sender_id: event.sender?.id,
+                recipient_id: event.recipient?.id
+              });
+            });
+            
             for (const messagingEvent of entry.messaging) {
+              // Log the full event structure for debugging
+              console.log('🔍 Full messaging event:', JSON.stringify(messagingEvent, null, 2));
+              
               // Skip echo messages (messages sent by the page)
               if (messagingEvent.message?.is_echo) {
+                console.log('⏭️ Skipping echo message');
                 continue;
               }
 
+              // Only process events with actual content
+              const hasContent = messagingEvent.message?.text || 
+                               messagingEvent.postback?.payload || 
+                               messagingEvent.delivery?.mids?.length > 0 ||
+                               messagingEvent.read?.watermark;
+
+              if (!hasContent) {
+                console.log('⏭️ Skipping event without content:', {
+                  has_message: !!messagingEvent.message,
+                  has_postback: !!messagingEvent.postback,
+                  has_delivery: !!messagingEvent.delivery,
+                  has_read: !!messagingEvent.read,
+                  message_text: messagingEvent.message?.text,
+                  postback_payload: messagingEvent.postback?.payload
+                });
+                continue;
+              }
+
+              console.log('🔄 Processing messaging event:', {
+                sender_id: messagingEvent.sender?.id,
+                recipient_id: messagingEvent.recipient?.id,
+                has_message: !!messagingEvent.message,
+                message_text: messagingEvent.message?.text,
+                has_postback: !!messagingEvent.postback,
+                postback_payload: messagingEvent.postback?.payload,
+                has_delivery: !!messagingEvent.delivery,
+                has_read: !!messagingEvent.read
+              });
+
               // Process the message
               await handleMessengerEvent(messagingEvent);
+              console.log('✅ Event processed successfully');
             }
           }
         }
+      } else {
+        console.log('⚠️ Unexpected webhook format:', {
+          object: body.object,
+          has_entries: !!body.entry
+        });
       }
 
       return new Response('OK', { headers: corsHeaders })
