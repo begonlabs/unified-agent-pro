@@ -2,6 +2,7 @@
 // @ts-nocheck
 // Deno Edge Function: Facebook Messenger Event Handler
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { generateAIResponse, shouldAIRespond } from '../../../_shared/openai.ts';
 
 interface MessengerEvent {
   sender?: { id: string };
@@ -66,6 +67,66 @@ interface Message {
   sender_name?: string;
 }
 
+
+/**
+ * Send AI response to Facebook Messenger
+ */
+async function sendAIResponseToFacebook(
+  message: string, 
+  pageId: string, 
+  recipientId: string
+): Promise<boolean> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Obtener token de acceso de la página
+    const { data: channel } = await supabase
+      .from('communication_channels')
+      .select('channel_config')
+      .eq('channel_type', 'facebook')
+      .like('channel_config->page_id', pageId)
+      .single();
+
+    if (!channel?.channel_config?.page_access_token) {
+      console.error('❌ No se encontró token de acceso para la página:', pageId);
+      return false;
+    }
+
+    const pageAccessToken = channel.channel_config.page_access_token;
+
+    // Enviar mensaje a Facebook Messenger API
+    const response = await fetch(
+      `https://graph.facebook.com/v23.0/me/messages?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipient: { id: recipientId },
+          message: { text: message },
+          messaging_type: 'RESPONSE'
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('❌ Error enviando mensaje de IA a Facebook:', response.status, errorData);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log('✅ Mensaje de IA enviado a Facebook:', result.message_id);
+    return true;
+
+  } catch (error) {
+    console.error('❌ Error en sendAIResponseToFacebook:', error);
+    return false;
+  }
+}
 
 export async function handleMessengerEvent(event: MessengerEvent): Promise<void> {
   try {
@@ -343,6 +404,81 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       is_echo: isEcho,
       direction: isEcho ? 'outgoing' : 'incoming'
     });
+
+    // 🤖 GENERAR RESPUESTA AUTOMÁTICA DE IA (solo para mensajes entrantes)
+    if (!isEcho && eventType === 'text_message' && conversation.ai_enabled) {
+      try {
+        console.log('🤖 Generando respuesta automática de IA para conversación:', conversation.id);
+        
+        // Obtener configuración de IA del usuario
+        const { data: aiConfig } = await supabase
+          .from('ai_configurations')
+          .select('*')
+          .eq('user_id', conversation.user_id)
+          .single();
+
+        if (!aiConfig) {
+          console.log('⚠️ No se encontró configuración de IA para el usuario:', conversation.user_id);
+          return;
+        }
+
+        // Verificar si la IA debe responder a este mensaje
+        if (!shouldAIRespond(messageText, aiConfig)) {
+          console.log('🤖 IA decide no responder a este mensaje');
+          return;
+        }
+
+        // Obtener historial reciente de la conversación para contexto
+        const { data: recentMessages } = await supabase
+          .from('messages')
+          .select('content, sender_type')
+          .eq('conversation_id', conversation.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        const conversationHistory = recentMessages?.map(msg => msg.content) || [];
+
+        // Generar respuesta de IA
+        const aiResponse = await generateAIResponse(messageText, aiConfig, conversationHistory);
+
+        if (aiResponse.success && aiResponse.response) {
+          console.log('🤖 Respuesta de IA generada exitosamente');
+
+          // Guardar respuesta de IA en la base de datos
+          const { error: aiMessageError } = await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversation.id,
+              content: aiResponse.response,
+              sender_type: 'ai',
+              sender_name: 'IA Assistant',
+              is_automated: true,
+              platform_message_id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              metadata: {
+                confidence_score: aiResponse.confidence_score,
+                ai_model: 'gpt-4o-mini',
+                response_time: aiConfig.response_time || 0
+              }
+            });
+
+          if (aiMessageError) {
+            console.error('❌ Error guardando mensaje de IA:', aiMessageError);
+            return;
+          }
+
+          // Enviar respuesta de IA a Facebook Messenger
+          await sendAIResponseToFacebook(aiResponse.response, recipientId, senderId);
+
+          console.log('✅ Respuesta de IA enviada y guardada exitosamente');
+
+        } else {
+          console.error('❌ Error generando respuesta de IA:', aiResponse.error);
+        }
+
+      } catch (error) {
+        console.error('❌ Error en proceso de IA automática:', error);
+      }
+    }
 
   } catch (error) {
     console.error('Critical error in handleMessengerEvent:', error);

@@ -88,6 +88,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          ai_enabled: boolean | null
           channel: string
           channel_thread_id: string | null
           client_id: string | null
@@ -98,6 +99,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_enabled?: boolean | null
           channel: string
           channel_thread_id?: string | null
           client_id?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_enabled?: boolean | null
           channel?: string
           channel_thread_id?: string | null
           client_id?: string | null

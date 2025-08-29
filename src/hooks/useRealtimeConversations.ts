@@ -12,6 +12,7 @@ interface Conversation {
   channel_thread_id?: string;
   created_at: string;
   user_id: string;
+  ai_enabled: boolean | null;
   crm_clients?: {
     id: string;
     name: string;

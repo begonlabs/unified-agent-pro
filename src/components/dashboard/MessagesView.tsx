@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { 
   Search, 
   Plus, 
@@ -59,6 +60,7 @@ interface Conversation {
   channel_thread_id?: string;
   created_at: string;
   crm_clients?: Client;
+  ai_enabled: boolean | null;
 }
 
 interface Message {
@@ -275,6 +277,41 @@ const MessagesView = () => {
 
   // Función con debouncing para uso en el UI
   const sendMessage = useDebounce(sendMessageCore, 500);
+
+  // Función para habilitar/deshabilitar IA en una conversación
+  const toggleConversationAI = async (conversationId: string, aiEnabled: boolean) => {
+    if (!user?.id) return;
+
+    try {
+      console.log('🤖 Toggle AI para conversación:', conversationId, 'Nuevo estado:', aiEnabled);
+
+      const { error } = await supabase
+        .from('conversations')
+        .update({ ai_enabled: aiEnabled })
+        .eq('id', conversationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: aiEnabled ? "🤖 IA Activada" : "👤 IA Desactivada",
+        description: aiEnabled 
+          ? "La IA responderá automáticamente a los nuevos mensajes" 
+          : "Solo tú responderás a los mensajes",
+      });
+
+      // Refrescar conversaciones para mostrar el nuevo estado
+      refreshConversations();
+
+    } catch (error: unknown) {
+      console.error('❌ Error toggling AI:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado de la IA",
+        variant: "destructive",
+      });
+    }
+  };
 
   const createClient = async () => {
     try {
@@ -742,7 +779,16 @@ const MessagesView = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                    <Bot className="h-4 w-4 text-white" />
+                    <span className="text-xs text-white">IA</span>
+                    <Switch
+                      checked={selectedConv?.ai_enabled || false}
+                      onCheckedChange={(checked) => toggleConversationAI(selectedConv?.id || '', checked)}
+                      className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/20"
+                    />
+                  </div>
                   <Badge 
                     className={`bg-white/20 text-white border-white/20 ${getStatusColor(selectedConv?.crm_clients?.status || 'lead')}`}
                     variant="secondary"

@@ -3,6 +3,7 @@
 // supabase-project/volumes/meta-webhook/handlers/instagram.ts
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { generateAIResponse, shouldAIRespond } from '../../../_shared/openai.ts';
 
 // interface for Instagram event
 interface InstagramEvent {
@@ -276,6 +277,81 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       is_echo: isEcho,
       direction: isEcho ? 'outgoing' : 'incoming'
     });
+
+    // 🤖 GENERAR RESPUESTA AUTOMÁTICA DE IA (solo para mensajes entrantes)
+    if (!isEcho && conversation.ai_enabled && event.message?.text) {
+      try {
+        console.log('🤖 Generando respuesta automática de IA para Instagram:', conversation.id);
+        
+        // Obtener configuración de IA del usuario
+        const { data: aiConfig } = await supabase
+          .from('ai_configurations')
+          .select('*')
+          .eq('user_id', conversation.user_id)
+          .single();
+
+        if (!aiConfig) {
+          console.log('⚠️ No se encontró configuración de IA para el usuario:', conversation.user_id);
+          return;
+        }
+
+        // Verificar si la IA debe responder a este mensaje
+        if (!shouldAIRespond(messageText, aiConfig)) {
+          console.log('🤖 IA decide no responder a este mensaje de Instagram');
+          return;
+        }
+
+        // Obtener historial reciente de la conversación para contexto
+        const { data: recentMessages } = await supabase
+          .from('messages')
+          .select('content, sender_type')
+          .eq('conversation_id', conversation.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        const conversationHistory = recentMessages?.map(msg => msg.content) || [];
+
+        // Generar respuesta de IA
+        const aiResponse = await generateAIResponse(messageText, aiConfig, conversationHistory);
+
+        if (aiResponse.success && aiResponse.response) {
+          console.log('🤖 Respuesta de IA generada exitosamente para Instagram');
+
+          // Guardar respuesta de IA en la base de datos
+          const { error: aiMessageError } = await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversation.id,
+              content: aiResponse.response,
+              sender_type: 'ai',
+              sender_name: 'IA Assistant',
+              is_automated: true,
+              platform_message_id: `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              metadata: {
+                confidence_score: aiResponse.confidence_score,
+                ai_model: 'gpt-4o-mini',
+                response_time: aiConfig.response_time || 0,
+                platform: 'instagram'
+              }
+            });
+
+          if (aiMessageError) {
+            console.error('❌ Error guardando mensaje de IA para Instagram:', aiMessageError);
+            return;
+          }
+
+          console.log('✅ Respuesta de IA para Instagram guardada exitosamente');
+          // Nota: Instagram Direct no soporta envío automático de mensajes como Facebook Messenger
+          // Los mensajes se mostrarán solo en la interfaz de usuario
+
+        } else {
+          console.error('❌ Error generando respuesta de IA para Instagram:', aiResponse.error);
+        }
+
+      } catch (error) {
+        console.error('❌ Error en proceso de IA automática para Instagram:', error);
+      }
+    }
 
   } catch (error) {
     console.error('Critical error in handleInstagramEvent:', error instanceof Error ? error.message : error);
