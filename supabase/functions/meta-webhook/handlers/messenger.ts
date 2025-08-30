@@ -2,7 +2,7 @@
 // @ts-nocheck
 // Deno Edge Function: Facebook Messenger Event Handler
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { generateAIResponse, shouldAIRespond } from '../../../_shared/openai.ts';
+import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
 
 interface MessengerEvent {
   sender?: { id: string };
@@ -445,21 +445,22 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           console.log('🤖 Respuesta de IA generada exitosamente');
 
           // Guardar respuesta de IA en la base de datos
-          const { error: aiMessageError } = await supabase
-            .from('messages')
-            .insert({
-              conversation_id: conversation.id,
-              content: aiResponse.response,
-              sender_type: 'ai',
-              sender_name: 'IA Assistant',
-              is_automated: true,
-              platform_message_id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              metadata: {
-                confidence_score: aiResponse.confidence_score,
-                ai_model: 'gpt-4o-mini',
-                response_time: aiConfig.response_time || 0
-              }
-            });
+                     const { error: aiMessageError } = await supabase
+             .from('messages')
+             .insert({
+               conversation_id: conversation.id,
+               content: aiResponse.response,
+               sender_type: 'ia', // Usar 'ia' según implementación del usuario
+               sender_name: 'IA Assistant',
+               is_automated: true,
+               platform_message_id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+               metadata: {
+                 confidence_score: aiResponse.confidence_score,
+                 ai_model: 'gpt-4o-mini',
+                 response_time: aiConfig.response_time || 0,
+                 platform: 'facebook'
+               }
+             });
 
           if (aiMessageError) {
             console.error('❌ Error guardando mensaje de IA:', aiMessageError);

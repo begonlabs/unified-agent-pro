@@ -15,6 +15,8 @@ interface SendMessageRequest {
   user_id: string;
   test_mode?: boolean;
   page_id?: string;
+  sender_type?: 'agent' | 'ia' | 'client'; // Option 2: agent or ia messages
+  sender_name?: string;
 }
 
 interface Conversation {
@@ -45,7 +47,7 @@ serve(async (req) => {
     }
 
     const body: SendMessageRequest = await req.json()
-    const { conversation_id, message, user_id } = body
+    const { conversation_id, message, user_id, sender_type = 'agent', sender_name } = body
 
     if (!conversation_id || !message || !user_id) {
       return new Response(
@@ -130,16 +132,24 @@ serve(async (req) => {
 
     const messengerResult = await messengerResponse.json()
 
-    // Save message to database
+    // Save message to database with new structure (Option 2)
+    const messageData = {
+      conversation_id: conversation_id,
+      content: message,
+      sender_type: sender_type, // 'agent' or 'ia' based on request
+      is_automated: sender_type === 'ia', // true for IA, false for agent
+      sender_name: sender_name || (sender_type === 'ia' ? 'IA Assistant' : sender_type === 'agent' ? 'Agente' : 'Cliente'),
+      platform_message_id: messengerResult.message_id, // Facebook message ID
+      metadata: {
+        platform: 'facebook',
+        facebook_message_id: messengerResult.message_id,
+        timestamp: new Date().toISOString()
+      }
+    };
+
     const { error: messageError } = await supabase
       .from('messages')
-      .insert({
-        conversation_id: conversation_id,
-        content: message,
-        sender_type: 'human',
-        is_automated: false,
-        sender_name: 'Usuario'
-      })
+      .insert(messageData)
 
     if (messageError) {
       console.error('Error saving message to database:', messageError)

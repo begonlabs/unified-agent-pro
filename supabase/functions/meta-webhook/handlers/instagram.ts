@@ -3,7 +3,7 @@
 // supabase-project/volumes/meta-webhook/handlers/instagram.ts
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { generateAIResponse, shouldAIRespond } from '../../../_shared/openai.ts';
+import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
 
 // interface for Instagram event
 interface InstagramEvent {
@@ -279,7 +279,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     });
 
     // 🤖 GENERAR RESPUESTA AUTOMÁTICA DE IA (solo para mensajes entrantes)
-    if (!isEcho && conversation.ai_enabled && event.message?.text) {
+    if (!isEcho && event.message?.text && conversation.ai_enabled) {
       try {
         console.log('🤖 Generando respuesta automática de IA para Instagram:', conversation.id);
         
@@ -318,22 +318,22 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           console.log('🤖 Respuesta de IA generada exitosamente para Instagram');
 
           // Guardar respuesta de IA en la base de datos
-          const { error: aiMessageError } = await supabase
-            .from('messages')
-            .insert({
-              conversation_id: conversation.id,
-              content: aiResponse.response,
-              sender_type: 'ai',
-              sender_name: 'IA Assistant',
-              is_automated: true,
-              platform_message_id: `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              metadata: {
-                confidence_score: aiResponse.confidence_score,
-                ai_model: 'gpt-4o-mini',
-                response_time: aiConfig.response_time || 0,
-                platform: 'instagram'
-              }
-            });
+                     const { error: aiMessageError } = await supabase
+             .from('messages')
+             .insert({
+               conversation_id: conversation.id,
+               content: aiResponse.response,
+               sender_type: 'ia', // Usar 'ia' según implementación del usuario
+               sender_name: 'IA Assistant',
+               is_automated: true,
+               platform_message_id: `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+               metadata: {
+                 confidence_score: aiResponse.confidence_score,
+                 ai_model: 'gpt-4o-mini',
+                 response_time: aiConfig.response_time || 0,
+                 platform: 'instagram'
+               }
+             });
 
           if (aiMessageError) {
             console.error('❌ Error guardando mensaje de IA para Instagram:', aiMessageError);
