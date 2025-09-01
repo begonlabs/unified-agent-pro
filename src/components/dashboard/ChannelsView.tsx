@@ -26,7 +26,13 @@ interface FacebookConfig {
 }
 
 interface InstagramConfig {
-  accounts: string[];
+  page_id: string;
+  page_name: string;
+  page_access_token: string;
+  user_access_token: string;
+  instagram_business_account_id: string;
+  webhook_subscribed: boolean;
+  connected_at: string;
 }
 
 type ChannelConfig = WhatsAppConfig | FacebookConfig | InstagramConfig | null;
@@ -280,12 +286,59 @@ const ChannelsView = () => {
     }
   };
 
-  const handleInstagramLogin = () => {
-    // Similar a Facebook
-    toast({
-      title: "Próximamente", 
-      description: "La integración con Instagram estará disponible pronto",
-    });
+  const handleInstagramLogin = async () => {
+    try {
+      console.log('🔍 Iniciando proceso de login de Instagram...');
+      
+      if (!user) {
+        console.error('❌ Usuario no autenticado');
+        toast({
+          title: 'Error',
+          description: 'Debes estar autenticado para conectar Instagram',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      console.log('✅ Usuario autenticado:', user.id);
+
+      const META_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
+      const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v23.0';
+      const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
+
+      const redirectUri = `${EDGE_BASE_URL}/functions/v1/meta-oauth`;
+      const scope = [
+        'instagram_basic',
+        'instagram_manage_messages',
+        'pages_show_list',
+        'pages_manage_metadata',
+        'pages_messaging'
+      ].join(',');
+
+      // Pass user_id and platform in state parameter for the OAuth callback
+      console.log('🔍 User object completo:', user);
+      console.log('🔍 User ID type:', typeof user.id);
+      console.log('🔍 User ID value:', user.id);
+      
+      const state = encodeURIComponent(JSON.stringify({ 
+        user_id: user.id, 
+        platform: 'instagram' 
+      }));
+      const oauthUrl = `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+
+      console.log('🔗 Instagram OAuth URL construida:', oauthUrl);
+      console.log('👤 User ID:', user.id);
+      console.log('📝 State parameter:', state);
+
+      window.location.href = oauthUrl;
+    } catch (error: unknown) {
+      console.error('Error building Instagram OAuth URL:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo iniciar la conexión con Instagram',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleTestWebhook = async (channelId: string) => {
@@ -317,7 +370,7 @@ const ChannelsView = () => {
         return;
       }
 
-      const config = channel.channel_config as unknown as FacebookConfig;
+      const config = channel.channel_config as unknown as (FacebookConfig | InstagramConfig);
       const pageAccessToken = config.page_access_token;
       const pageId = config.page_id;
 
@@ -724,10 +777,59 @@ const ChannelsView = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-4">
-                <CheckCircle className="h-12 w-12 text-pink-600 mx-auto mb-2" />
-                <p className="font-medium">Instagram conectado</p>
-                <p className="text-sm text-muted-foreground">Cuentas sincronizadas</p>
+              <div className="space-y-3">
+                {channels
+                  .filter(c => c.channel_type === 'instagram')
+                  .map((channel) => {
+                    const config = channel.channel_config as InstagramConfig;
+                    return (
+                      <div key={channel.id} className="bg-pink-50 p-3 rounded-lg border border-pink-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Instagram className="h-4 w-4 text-pink-600" />
+                            <span className="font-medium text-pink-900">{config?.page_name || 'Cuenta de Instagram'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default" className="bg-pink-600 text-xs">
+                              Conectado
+                            </Badge>
+                            <Badge 
+                              variant={config?.webhook_subscribed ? "default" : "secondary"} 
+                              className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
+                            >
+                              {config?.webhook_subscribed ? '✅ Webhook' : '❌ Webhook'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-xs text-pink-800 space-y-1">
+                          <p>Business Account ID: {config?.instagram_business_account_id || 'N/A'}</p>
+                          <p>Webhook: {config?.webhook_subscribed ? '✅ Activo' : '❌ Inactivo'}</p>
+                          <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
+                          {config?.webhook_subscribed && (
+                            <p className="text-green-700 font-medium">✓ Recibiendo mensajes automáticamente</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-pink-600 border-pink-300 hover:bg-pink-100"
+                            onClick={() => handleInstagramLogin()}
+                          >
+                            Reconectar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs border-green-300 hover:bg-green-100 text-green-700"
+                            onClick={() => handleTestWebhook(channel.id)}
+                          >
+                            Test Webhook
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

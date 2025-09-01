@@ -153,6 +153,62 @@ serve(async (req) => {
     const pageName = selectedPage.name
     const pageAccessToken = selectedPage.access_token
 
+    // If platform is Instagram, get Instagram Business Account
+    let instagramBusinessAccountId = null;
+    let finalPageName = pageName;
+    
+    if (platform === 'instagram') {
+      try {
+        console.log('Fetching Instagram Business Account for page:', pageId);
+        const igAccountResponse = await fetch(
+          `https://graph.facebook.com/${graphVersion}/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
+        );
+        
+        if (igAccountResponse.ok) {
+          const igAccountData = await igAccountResponse.json();
+          if (igAccountData.instagram_business_account) {
+            instagramBusinessAccountId = igAccountData.instagram_business_account.id;
+            console.log('Found Instagram Business Account:', instagramBusinessAccountId);
+            
+            // Get Instagram account info for better naming
+            const igInfoResponse = await fetch(
+              `https://graph.facebook.com/${graphVersion}/${instagramBusinessAccountId}?fields=username,name&access_token=${pageAccessToken}`
+            );
+            
+            if (igInfoResponse.ok) {
+              const igInfo = await igInfoResponse.json();
+              finalPageName = `@${igInfo.username}` || igInfo.name || pageName;
+            }
+          } else {
+            return new Response(
+              JSON.stringify({ 
+                ok: false, 
+                error: `No Instagram Business Account found for page "${pageName}". Please connect an Instagram Business Account to this Facebook Page first.`,
+                debug: { page_id: pageId, page_name: pageName }
+              }),
+              { 
+                status: 400, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
+          }
+        }
+      } catch (igError) {
+        console.error('Error fetching Instagram Business Account:', igError);
+        return new Response(
+          JSON.stringify({ 
+            ok: false, 
+            error: 'Failed to fetch Instagram Business Account information',
+            debug: { error: igError.message }
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
     // Subscribe the page to webhooks with proper format
     let webhookSubscribed = false;
     try {
@@ -165,7 +221,9 @@ serve(async (req) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            subscribed_fields: ['messages', 'messaging_postbacks', 'messaging_optins', 'message_deliveries', 'message_reads', 'message_echoes']
+            subscribed_fields: platform === 'instagram' 
+              ? ['messages', 'messaging_postbacks', 'messaging_optins', 'message_deliveries', 'message_reads', 'message_echoes', 'messaging_handovers']
+              : ['messages', 'messaging_postbacks', 'messaging_optins', 'message_deliveries', 'message_reads', 'message_echoes']
           })
         }
       )
@@ -186,12 +244,14 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Extract user ID from the state parameter
+    // Extract user ID and platform from the state parameter
     let userId: string | null = null;
+    let platform: string = 'facebook'; // default to facebook
     if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
         userId = stateData.user_id;
+        platform = stateData.platform || 'facebook';
       } catch (error) {
         console.error('Error parsing state parameter:', error);
       }
@@ -216,7 +276,7 @@ serve(async (req) => {
       .from('communication_channels')
       .select('id')
       .eq('user_id', userId)
-      .eq('channel_type', 'facebook')
+      .eq('channel_type', platform)
       .maybeSingle();
 
     if (checkError) {
@@ -224,21 +284,32 @@ serve(async (req) => {
       // Continue anyway, as the Facebook connection worked
     }
 
+    // Prepare channel config based on platform
+    const channelConfig = platform === 'instagram' ? {
+      page_id: pageId,
+      page_name: finalPageName,
+      page_access_token: pageAccessToken,
+      user_access_token: accessToken,
+      instagram_business_account_id: instagramBusinessAccountId,
+      webhook_subscribed: webhookSubscribed,
+      connected_at: new Date().toISOString()
+    } : {
+      page_id: pageId,
+      page_name: finalPageName,
+      page_access_token: pageAccessToken,
+      user_access_token: accessToken,
+      webhook_subscribed: webhookSubscribed,
+      connected_at: new Date().toISOString()
+    };
+
     let dbError;
     if (existingChannel) {
       // Update existing channel
-      console.log('Updating existing Facebook channel for user:', userId);
+      console.log(`Updating existing ${platform} channel for user:`, userId);
       const { error: updateError } = await supabase
         .from('communication_channels')
         .update({
-          channel_config: {
-            page_id: pageId,
-            page_name: pageName,
-            page_access_token: pageAccessToken,
-            user_access_token: accessToken,
-            webhook_subscribed: webhookSubscribed,
-            connected_at: new Date().toISOString()
-          },
+          channel_config: channelConfig,
           is_connected: true,
           updated_at: new Date().toISOString()
         })
@@ -246,20 +317,13 @@ serve(async (req) => {
       dbError = updateError;
     } else {
       // Create new channel
-      console.log('Creating new Facebook channel for user:', userId);
+      console.log(`Creating new ${platform} channel for user:`, userId);
       const { error: insertError } = await supabase
         .from('communication_channels')
         .insert({
           user_id: userId,
-          channel_type: 'facebook',
-          channel_config: {
-            page_id: pageId,
-            page_name: pageName,
-            page_access_token: pageAccessToken,
-            user_access_token: accessToken,
-            webhook_subscribed: webhookSubscribed,
-            connected_at: new Date().toISOString()
-          },
+          channel_type: platform,
+          channel_config: channelConfig,
           is_connected: true
         });
       dbError = insertError;
@@ -271,7 +335,13 @@ serve(async (req) => {
     }
 
     // Redirect to frontend dashboard with success
-    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook&view=channels`;
+    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(finalPageName)}&channel=${platform}&view=channels`;
+    
+    const platformName = platform === 'instagram' ? 'Instagram' : 'Facebook';
+    const platformColor = platform === 'instagram' ? '#E1306C' : '#1877F2';
+    const gradientBg = platform === 'instagram' 
+      ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     
     return new Response(
       `<!DOCTYPE html>
@@ -284,7 +354,7 @@ serve(async (req) => {
             font-family: Arial, sans-serif; 
             text-align: center; 
             padding: 50px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: ${gradientBg};
             color: white;
         }
         .container { 
@@ -308,12 +378,18 @@ serve(async (req) => {
             0% { transform: rotate(0deg); } 
             100% { transform: rotate(360deg); } 
         }
+        .platform-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>✅ Facebook Conectado Exitosamente</h1>
-        <p>Página: <strong>${pageName}</strong></p>
+        <div class="platform-icon">${platform === 'instagram' ? '📸' : '📘'}</div>
+        <h1>✅ ${platformName} Conectado Exitosamente</h1>
+        <p>Cuenta: <strong>${finalPageName}</strong></p>
+        ${platform === 'instagram' ? `<p>Instagram Business ID: <small>${instagramBusinessAccountId}</small></p>` : ''}
         <p>Redirigiendo al dashboard...</p>
         <div class="spinner"></div>
         <p><small>Si no eres redirigido automáticamente, <a href="${frontendCallbackUrl}" style="color: #fff; text-decoration: underline;">haz clic aquí</a></small></p>
