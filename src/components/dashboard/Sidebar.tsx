@@ -1,6 +1,9 @@
 
 import React from 'react';
+import { User as UserType } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   MessageSquare, 
   BarChart3, 
@@ -13,16 +16,23 @@ import {
   Instagram,
   Facebook,
   Waves,
-  Sparkles
+  Sparkles,
+  Shield,
+  Crown
 } from 'lucide-react';
+import { useAdmin } from '@/hooks/useAdmin';
 
 interface SidebarProps {
   currentView: string;
   setCurrentView: (view: string) => void;
   onSignOut: () => void;
+  user: UserType | null;
 }
 
-const Sidebar = ({ currentView, setCurrentView, onSignOut }: SidebarProps) => {
+const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps) => {
+  const navigate = useNavigate();
+  const { isAdmin, loading: adminLoading } = useAdmin(user);
+  
   const menuItems = [
     { id: 'messages', label: 'Mensajes/CRM', icon: MessageSquare },
     { id: 'stats', label: 'Estadísticas', icon: BarChart3 },
@@ -31,6 +41,10 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut }: SidebarProps) => {
     { id: 'support', label: 'Soporte', icon: HelpCircle },
     { id: 'ai-agent', label: 'Mi Agente IA', icon: Bot },
   ];
+
+  const handleAdminAccess = () => {
+    navigate('/admin');
+  };
 
   return (
     <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
@@ -71,6 +85,31 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut }: SidebarProps) => {
           );
         })}
       </nav>
+
+      {/* Admin Access Section */}
+      {!adminLoading && isAdmin && (
+        <div className="p-4 border-t border-orange-200 bg-gradient-to-b from-orange-50 to-orange-100">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-orange-700 flex items-center gap-2">
+              <Crown className="h-4 w-4 text-orange-600" />
+              Panel Admin
+            </h3>
+            <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
+              Administrador
+            </Badge>
+          </div>
+          <Button
+            onClick={handleAdminAccess}
+            className="w-full justify-start gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          >
+            <Shield className="h-4 w-4" />
+            Dashboard Admin
+          </Button>
+          <p className="text-xs text-orange-600 mt-2 leading-relaxed">
+            Acceso completo a la gestión de la plataforma
+          </p>
+        </div>
+      )}
 
       {/* Quick Channel Status */}
       <div className="p-4 border-t bg-gradient-to-b from-gray-50 to-white">

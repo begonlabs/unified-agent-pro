@@ -133,6 +133,7 @@ const Dashboard = () => {
         currentView={currentView} 
         setCurrentView={setCurrentView}
         onSignOut={handleSignOut}
+        user={user}
       />
       <main className="flex-1 overflow-hidden">
         {renderView()}
