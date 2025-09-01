@@ -92,6 +92,61 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
 
     // Determine if this is an echo message early
     const isEcho = message.is_echo || false;
+
+    // Skip echo messages from application-sent messages (IA responses and frontend messages)
+    if (isEcho) {
+      console.log('🔍 Instagram echo message detected, checking if should be skipped:', {
+        senderId,
+        pageId,
+        text,
+        messageId
+      });
+      
+      // First check if this exact platform_message_id was already processed
+      if (messageId) {
+        const { data: existingMessage } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('platform_message_id', messageId)
+          .limit(1)
+          .single();
+        
+        if (existingMessage) {
+          console.log('⏭️ Skipping Instagram echo message - platform_message_id already exists:', messageId);
+          return;
+        }
+      }
+      
+      // Check if there's a recent IA message with the same content (last 60 seconds)
+      const { data: recentIAMessage } = await supabase
+        .from('messages')
+        .select('id, created_at')
+        .eq('content', text)
+        .eq('sender_type', 'ia')
+        .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
+        .limit(1)
+        .single();
+      
+      if (recentIAMessage) {
+        console.log('⏭️ Skipping Instagram echo message - corresponds to recent IA response:', recentIAMessage.id);
+        return;
+      }
+      
+      // Check if there's a recent agent message with same content (from frontend)
+      const { data: recentAgentMessage } = await supabase
+        .from('messages')
+        .select('id, created_at, sender_type')
+        .eq('content', text)
+        .eq('sender_type', 'agent')
+        .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
+        .limit(1)
+        .single();
+      
+      if (recentAgentMessage) {
+        console.log('⏭️ Skipping Instagram echo message - corresponds to recent agent message from frontend:', recentAgentMessage.id);
+        return;
+      }
+    }
     
     // Determine the page ID based on echo status
     // For echo messages: sender = page, recipient = user → page_id = sender
@@ -279,7 +334,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     });
 
     // 🤖 GENERAR RESPUESTA AUTOMÁTICA DE IA (solo para mensajes entrantes)
-    if (!isEcho && event.message?.text && conversation.ai_enabled) {
+    if (!isEcho && text && conversation.ai_enabled) {
       try {
         console.log('🤖 Generando respuesta automática de IA para Instagram:', conversation.id);
         
@@ -296,7 +351,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         }
 
         // Verificar si la IA debe responder a este mensaje
-        if (!shouldAIRespond(messageText, aiConfig)) {
+        if (!shouldAIRespond(text, aiConfig)) {
           console.log('🤖 IA decide no responder a este mensaje de Instagram');
           return;
         }
@@ -312,7 +367,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         const conversationHistory = recentMessages?.map(msg => msg.content) || [];
 
         // Generar respuesta de IA
-        const aiResponse = await generateAIResponse(messageText, aiConfig, conversationHistory);
+        const aiResponse = await generateAIResponse(text, aiConfig, conversationHistory);
 
         if (aiResponse.success && aiResponse.response) {
           console.log('🤖 Respuesta de IA generada exitosamente para Instagram');

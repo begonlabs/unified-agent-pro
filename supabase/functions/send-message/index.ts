@@ -132,6 +132,27 @@ serve(async (req) => {
 
     const messengerResult = await messengerResponse.json()
 
+    // Check if message already exists (avoid duplicates)
+    const { data: existingMessage } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('platform_message_id', messengerResult.message_id)
+      .limit(1)
+      .single();
+
+    if (existingMessage) {
+      console.log('⚠️ Message already exists with platform_message_id:', messengerResult.message_id);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message_id: messengerResult.message_id,
+          conversation_id: conversation_id,
+          note: 'Message already exists'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Save message to database with new structure (Option 2)
     const messageData = {
       conversation_id: conversation_id,
@@ -143,7 +164,8 @@ serve(async (req) => {
       metadata: {
         platform: 'facebook',
         facebook_message_id: messengerResult.message_id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        sent_via: 'send-message-function' // Mark messages sent via this function
       }
     };
 

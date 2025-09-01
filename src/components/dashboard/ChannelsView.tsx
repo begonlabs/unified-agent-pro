@@ -68,6 +68,20 @@ const ChannelsView = () => {
         
         console.log('📡 Channels fetched:', data?.length || 0);
         
+        // Debug: Mostrar información detallada de los canales
+        if (data && data.length > 0) {
+          console.log('🔍 Channel Status Debug:');
+          data.forEach(channel => {
+            console.log(`📱 ${channel.channel_type.toUpperCase()}:`, {
+              id: channel.id,
+              is_connected: channel.is_connected,
+              config: channel.channel_config,
+              has_config: Boolean(channel.channel_config),
+              config_keys: channel.channel_config ? Object.keys(channel.channel_config) : []
+            });
+          });
+        }
+        
         // Verificar estado de webhook para canales de Facebook
         if (data) {
           for (const channel of data) {
@@ -147,7 +161,76 @@ const ChannelsView = () => {
 
   const getChannelStatus = (channelType: string) => {
     const channel = channels.find(c => c.channel_type === channelType);
-    return channel?.is_connected || false;
+    
+    if (!channel || !channel.channel_config) {
+      console.log(`❌ ${channelType}: No channel or config found`);
+      return false;
+    }
+
+    // Verificación específica por tipo de canal
+    switch (channelType) {
+      case 'whatsapp': {
+        const config = channel.channel_config as WhatsAppConfig;
+        const hasPhone = Boolean(config?.phone_number);
+        const isConnected = Boolean(channel.is_connected);
+        const status = hasPhone && isConnected;
+        
+        console.log(`📱 WHATSAPP Status:`, {
+          hasPhone,
+          phone: config?.phone_number,
+          isConnected,
+          finalStatus: status
+        });
+        
+        return status;
+      }
+      
+      case 'facebook': {
+        const config = channel.channel_config as FacebookConfig;
+        const hasPageId = Boolean(config?.page_id);
+        const hasPageToken = Boolean(config?.page_access_token);
+        const hasUserToken = Boolean(config?.user_access_token);
+        const isConnected = Boolean(channel.is_connected);
+        const status = hasPageId && hasPageToken && hasUserToken && isConnected;
+        
+        console.log(`📘 FACEBOOK Status:`, {
+          hasPageId,
+          hasPageToken: hasPageToken ? '✅' : '❌',
+          hasUserToken: hasUserToken ? '✅' : '❌',
+          isConnected,
+          pageName: config?.page_name,
+          finalStatus: status
+        });
+        
+        return status;
+      }
+      
+      case 'instagram': {
+        const config = channel.channel_config as InstagramConfig;
+        const hasPageId = Boolean(config?.page_id);
+        const hasPageToken = Boolean(config?.page_access_token);
+        const hasUserToken = Boolean(config?.user_access_token);
+        const hasIgBusinessId = Boolean(config?.instagram_business_account_id);
+        const isConnected = Boolean(channel.is_connected);
+        const status = hasPageId && hasPageToken && hasUserToken && hasIgBusinessId && isConnected;
+        
+        console.log(`📷 INSTAGRAM Status:`, {
+          hasPageId,
+          hasPageToken: hasPageToken ? '✅' : '❌',
+          hasUserToken: hasUserToken ? '✅' : '❌',
+          hasIgBusinessId,
+          isConnected,
+          pageName: config?.page_name,
+          finalStatus: status
+        });
+        
+        return status;
+      }
+      
+      default:
+        // Para otros tipos de canal, usar la lógica anterior
+        return channel?.is_connected || false;
+    }
   };
 
   const handleWhatsAppVerification = async () => {

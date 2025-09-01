@@ -219,6 +219,64 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     // Determine if this is an echo message early
     const isEcho = event.message?.is_echo || false;
 
+    // Skip echo messages from application-sent messages (IA responses and frontend messages)
+    // Echo messages have sender = page_id, recipient = user_id
+    // We only want to process echo messages that represent outgoing messages from agents via frontend
+    if (isEcho) {
+      console.log('🔍 Echo message detected, checking if should be skipped:', {
+        senderId,
+        recipientId,
+        messageText,
+        messageId
+      });
+      
+      // First check if this exact platform_message_id was already processed
+      if (messageId) {
+        const { data: existingMessage } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('platform_message_id', messageId)
+          .limit(1)
+          .single();
+        
+        if (existingMessage) {
+          console.log('⏭️ Skipping echo message - platform_message_id already exists:', messageId);
+          return;
+        }
+      }
+      
+      // Check if there's a recent IA message with the same content (last 60 seconds)
+      const { data: recentIAMessage } = await supabase
+        .from('messages')
+        .select('id, created_at')
+        .eq('content', messageText)
+        .eq('sender_type', 'ia')
+        .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
+        .limit(1)
+        .single();
+      
+      if (recentIAMessage) {
+        console.log('⏭️ Skipping echo message - corresponds to recent IA response:', recentIAMessage.id);
+        return;
+      }
+      
+      // Check if there's a recent agent message with same content (from frontend)
+      // Messages sent via send-message function are already saved, so their echoes are duplicates
+      const { data: recentAgentMessage } = await supabase
+        .from('messages')
+        .select('id, created_at, sender_type')
+        .eq('content', messageText)
+        .eq('sender_type', 'agent')
+        .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
+        .limit(1)
+        .single();
+      
+      if (recentAgentMessage) {
+        console.log('⏭️ Skipping echo message - corresponds to recent agent message from frontend:', recentAgentMessage.id);
+        return;
+      }
+    }
+
     // Determine the page ID based on echo status
     // For echo messages: sender = page, recipient = user → page_id = sender
     // For normal messages: sender = user, recipient = page → page_id = recipient

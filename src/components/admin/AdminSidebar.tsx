@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Users, 
@@ -8,7 +9,9 @@ import {
   Settings, 
   MessageSquare,
   LogOut,
-  Shield
+  Shield,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -18,6 +21,8 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSidebarProps) => {
+  const navigate = useNavigate();
+  
   const menuItems = [
     { id: 'clients', title: 'Gestión de Clientes', icon: Users },
     { id: 'general-stats', title: 'Estadísticas Generales', icon: BarChart3 },
@@ -30,6 +35,10 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
     if (onTabChange) {
       onTabChange(itemId);
     }
+  };
+
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -93,8 +102,17 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
         </p>
       </div>
 
-      {/* Sign Out */}
-      <div className="p-4 border-t border-gray-200">
+      {/* Navigation Actions */}
+      <div className="p-4 border-t border-gray-200 space-y-2">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-3 text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
+          onClick={handleBackToDashboard}
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Volver al Dashboard
+        </Button>
+        
         <Button
           variant="outline"
           className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-50"
