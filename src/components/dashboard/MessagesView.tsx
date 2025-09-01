@@ -187,36 +187,15 @@ const MessagesView = () => {
       tempId = sendOptimisticMessage({
         conversation_id: selectedConversation,
         content: messageContent,
-        sender_type: 'human',
-        sender_name: 'Tú',
+        sender_type: 'agent', // Cambiar a 'agent' para que coincida con el que guardará la función edge
+        sender_name: 'Agente',
         is_automated: false
       });
 
       console.log('✅ Mensaje optimista creado:', tempId);
       
-      // Guardar mensaje en la base de datos local PRIMERO
-      const { data: savedMessage, error: dbError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: selectedConversation,
-          content: messageContent,
-          sender_type: 'human',
-          is_automated: false,
-          sender_name: 'Tú'
-        })
-        .select()
-        .single();
-
-      if (dbError) {
-        throw dbError;
-      }
-
-      console.log('💾 Mensaje guardado en DB:', savedMessage.id);
-
-      // Actualizar el mensaje optimista con el real
-      if (savedMessage && tempId) {
-        updateMessageStatus(tempId, savedMessage);
-      }
+      // ELIMINADO: Ya no guardamos el mensaje en la base de datos desde el frontend
+      // Solo la función edge se encargará de guardarlo para evitar duplicados
       
       // Si es Facebook Messenger, enviar a través de la API externa
       if (conversationCheck.channel === 'facebook') {
@@ -230,22 +209,51 @@ const MessagesView = () => {
             body: JSON.stringify({
               conversation_id: selectedConversation,
               message: messageContent,
-              user_id: user.id
+              user_id: user.id,
+              sender_type: 'agent', // Especificar que es un mensaje del agente
+              sender_name: 'Agente'
             })
           });
 
           if (!response.ok) {
             const errorData = await response.json();
-            console.warn('⚠️ Error en Facebook API:', errorData);
-            // No lanzar error, el mensaje ya se guardó localmente
+            console.error('❌ Error en función send-message:', errorData);
+            throw new Error(`Error enviando mensaje: ${errorData.error || 'Error desconocido'}`);
           } else {
             const result = await response.json();
-            console.log('✅ Message sent to Facebook:', result);
+            console.log('✅ Mensaje enviado exitosamente a Facebook:', result);
+            
+            // El mensaje real será recibido automáticamente por el realtime
+            // cuando la función edge lo guarde en la base de datos
           }
 
         } catch (facebookError) {
-          console.warn('⚠️ Facebook API error:', facebookError);
-          // No lanzar error, el mensaje ya se guardó localmente
+          console.error('❌ Error en Facebook API:', facebookError);
+          throw facebookError; // Ahora sí lanzamos el error ya que no hay respaldo local
+        }
+      } else {
+        // Para otros canales que no sean Facebook, crear mensaje local
+        const { data: savedMessage, error: dbError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: selectedConversation,
+            content: messageContent,
+            sender_type: 'agent',
+            is_automated: false,
+            sender_name: 'Agente'
+          })
+          .select()
+          .single();
+
+        if (dbError) {
+          throw dbError;
+        }
+
+        console.log('💾 Mensaje guardado en DB para canal no-Facebook:', savedMessage.id);
+
+        // Actualizar el mensaje optimista con el real
+        if (savedMessage && tempId) {
+          updateMessageStatus(tempId, savedMessage);
         }
       }
       
