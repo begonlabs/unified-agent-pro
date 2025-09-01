@@ -86,7 +86,7 @@ async function sendAIResponseToFacebook(
       .from('communication_channels')
       .select('channel_config')
       .eq('channel_type', 'facebook')
-      .like('channel_config->page_id', pageId)
+      .eq('channel_config->>page_id', pageId)
       .single();
 
     if (!channel?.channel_config?.page_access_token) {
