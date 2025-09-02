@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, supabaseInsert, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,16 +37,22 @@ const AIAgentView = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchAIConfig();
-  }, []);
-
-  const fetchAIConfig = async () => {
+  const fetchAIConfig = useCallback(async () => {
     try {
+      // Obtener el usuario actual para filtrar por user_id
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id;
+
+      if (!currentUserId) {
+        return;
+      }
+
+      // Traer solo la configuración del usuario actual
       const { data, error } = await supabase
         .from('ai_configurations')
         .select('*')
-        .single();
+        .eq('user_id', currentUserId)
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       
@@ -62,9 +68,13 @@ const AIAgentView = () => {
           is_active: data.is_active
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching AI config:', error);
-      const isConnectionError = error.message?.includes('upstream connect error') || error.message?.includes('503');
+      const isConnectionError =
+        typeof error === 'object' && error !== null && 'message' in error &&
+        typeof (error as { message?: string }).message === 'string' &&
+        ((error as { message?: string }).message?.includes('upstream connect error') ||
+         (error as { message?: string }).message?.includes('503'));
       
       if (isConnectionError) {
         toast({
@@ -78,12 +88,23 @@ const AIAgentView = () => {
         }, 3000);
       }
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAIConfig();
+  }, [fetchAIConfig]);
 
   const saveAIConfig = async () => {
     setLoading(true);
     try {
-      const configData = {
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id;
+
+      if (!currentUserId) {
+        throw new Error('No se pudo obtener el usuario actual');
+      }
+
+      const baseConfigData = {
         goals: config.goals,
         restrictions: config.restrictions,
         common_questions: config.common_questions,
@@ -91,20 +112,20 @@ const AIAgentView = () => {
         knowledge_base: config.knowledge_base,
         faq: config.faq,
         is_active: config.is_active,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
         updated_at: new Date().toISOString()
       };
 
-      let result;
-      if (config.id) {
-        result = await supabase
+      const result: { error: unknown; data: unknown } = await supabase
+        .from('ai_configurations')
+        .update(baseConfigData)
+        .eq('user_id', currentUserId);
+
+      // Si no actualizó ninguna fila, crear una nueva para este usuario
+      if (result.error || (Array.isArray(result.data) && result.data.length === 0)) {
+        const insertRes = await supabase
           .from('ai_configurations')
-          .update(configData)
-          .eq('id', config.id);
-      } else {
-        result = await supabase
-          .from('ai_configurations')
-          .insert(configData);
+          .insert({ ...baseConfigData, user_id: currentUserId });
+        if (insertRes.error) throw insertRes.error;
       }
 
       if (result.error) throw result.error;
@@ -114,7 +135,7 @@ const AIAgentView = () => {
         title: "Configuración guardada",
         description: "Tu agente de IA ha sido actualizado exitosamente",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "No se pudo guardar la configuración",
