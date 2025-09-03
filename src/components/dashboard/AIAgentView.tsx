@@ -39,20 +39,18 @@ const AIAgentView = () => {
 
   const fetchAIConfig = useCallback(async () => {
     try {
-      // Obtener el usuario actual para filtrar por user_id
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id;
-
-      if (!currentUserId) {
+      // Get current user first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No user found');
         return;
       }
 
-      // Traer solo la configuración del usuario actual
       const { data, error } = await supabase
         .from('ai_configurations')
         .select('*')
-        .eq('user_id', currentUserId)
-        .maybeSingle();
+        .eq('user_id', user.id)
+        .single();
 
       if (error && error.code !== 'PGRST116') throw error;
       
@@ -70,11 +68,7 @@ const AIAgentView = () => {
       }
     } catch (error: unknown) {
       console.error('Error fetching AI config:', error);
-      const isConnectionError =
-        typeof error === 'object' && error !== null && 'message' in error &&
-        typeof (error as { message?: string }).message === 'string' &&
-        ((error as { message?: string }).message?.includes('upstream connect error') ||
-         (error as { message?: string }).message?.includes('503'));
+      const isConnectionError = (error as Error)?.message?.includes('upstream connect error') || (error as Error)?.message?.includes('503');
       
       if (isConnectionError) {
         toast({
@@ -97,14 +91,18 @@ const AIAgentView = () => {
   const saveAIConfig = async () => {
     setLoading(true);
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id;
-
-      if (!currentUserId) {
-        throw new Error('No se pudo obtener el usuario actual');
+      // Get current user first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "No se pudo obtener la información del usuario",
+          variant: "destructive",
+        });
+        return;
       }
 
-      const baseConfigData = {
+      const configData = {
         goals: config.goals,
         restrictions: config.restrictions,
         common_questions: config.common_questions,
@@ -112,20 +110,23 @@ const AIAgentView = () => {
         knowledge_base: config.knowledge_base,
         faq: config.faq,
         is_active: config.is_active,
+        user_id: user.id,
         updated_at: new Date().toISOString()
       };
 
-      const result: { error: unknown; data: unknown } = await supabase
-        .from('ai_configurations')
-        .update(baseConfigData)
-        .eq('user_id', currentUserId);
-
-      // Si no actualizó ninguna fila, crear una nueva para este usuario
-      if (result.error || (Array.isArray(result.data) && result.data.length === 0)) {
-        const insertRes = await supabase
+      let result;
+      if (config.id) {
+        // Update existing config - filter by both id AND user_id for security
+        result = await supabase
           .from('ai_configurations')
-          .insert({ ...baseConfigData, user_id: currentUserId });
-        if (insertRes.error) throw insertRes.error;
+          .update(configData)
+          .eq('id', config.id)
+          .eq('user_id', user.id);
+      } else {
+        // Insert new config
+        result = await supabase
+          .from('ai_configurations')
+          .insert(configData);
       }
 
       if (result.error) throw result.error;
