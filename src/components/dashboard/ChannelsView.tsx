@@ -385,23 +385,39 @@ const ChannelsView = () => {
       
       console.log('✅ Usuario autenticado:', user.id);
 
-      // Usar la nueva función específica de Instagram OAuth
-      const connectInstagram = (userId: string) => {
-        const instagramAuthUrl = `https://www.instagram.com/oauth/authorize?` +
-          `client_id=728339836340255&` +
-          `redirect_uri=https://supabase.ondai.ai/functions/v1/instagram-oauth&` +
-          `scope=user_profile,user_media&` +
-          `response_type=code&` +
-          `state=${encodeURIComponent(JSON.stringify({ user_id: userId }))}`;
-        
-        console.log('🔗 Instagram OAuth URL construida:', instagramAuthUrl);
-        console.log('👤 User ID:', userId);
-        
-        window.location.href = instagramAuthUrl;
-      };
+      // Usar la configuración correcta de Instagram Business API según Meta for Developers
+      const INSTAGRAM_CLIENT_ID = import.meta.env.VITE_INSTAGRAM_BASIC_APP_ID || '1215743729877419';
+      const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
 
-      // Conectar Instagram usando la función específica
-      connectInstagram(user.id);
+      const redirectUri = `${EDGE_BASE_URL}/functions/v1/instagram-oauth`;
+      
+      // Scopes de Instagram Business API según Meta for Developers
+      const scope = [
+        'instagram_business_basic',
+        'instagram_business_manage_messages', 
+        'instagram_business_manage_comments',
+        'instagram_business_content_publish',
+        'instagram_business_manage_insights'
+      ].join(',');
+
+      // State parameter con user_id
+      const state = encodeURIComponent(JSON.stringify({ 
+        user_id: user.id
+      }));
+
+      const instagramAuthUrl = `https://www.instagram.com/oauth/authorize?` +
+        `client_id=${INSTAGRAM_CLIENT_ID}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_type=code&` +
+        `state=${state}`;
+
+      console.log('🔗 Instagram OAuth URL construida:', instagramAuthUrl);
+      console.log('👤 User ID:', user.id);
+      console.log('📝 Client ID:', INSTAGRAM_CLIENT_ID);
+      console.log('📝 Scopes:', scope);
+      
+      window.location.href = instagramAuthUrl;
 
     } catch (error: unknown) {
       console.error('Error building Instagram OAuth URL:', error);
