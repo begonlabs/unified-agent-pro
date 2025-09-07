@@ -57,6 +57,7 @@ interface Conversation {
   user_id: string;
   status: string;
   last_message_at: string;
+  ai_enabled?: boolean;
 }
 
 interface Message {
@@ -66,7 +67,6 @@ interface Message {
   is_automated: boolean;
   sender_name?: string;
 }
-
 
 /**
  * Send AI response to Facebook Messenger
@@ -220,8 +220,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     const isEcho = event.message?.is_echo || false;
 
     // Skip echo messages from application-sent messages (IA responses and frontend messages)
-    // Echo messages have sender = page_id, recipient = user_id
-    // We only want to process echo messages that represent outgoing messages from agents via frontend
     if (isEcho) {
       console.log('🔍 Echo message detected, checking if should be skipped:', {
         senderId,
@@ -261,7 +259,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       }
       
       // Check if there's a recent agent message with same content (from frontend)
-      // Messages sent via send-message function are already saved, so their echoes are duplicates
       const { data: recentAgentMessage } = await supabase
         .from('messages')
         .select('id, created_at, sender_type')
@@ -278,8 +275,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     }
 
     // Determine the page ID based on echo status
-    // For echo messages: sender = page, recipient = user → page_id = sender
-    // For normal messages: sender = user, recipient = page → page_id = recipient
     const pageId = isEcho ? senderId : recipientId;
     
     console.log('🔍 Looking for channel with page_id:', pageId, {
@@ -313,10 +308,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
     // Find or create client (handle echo messages)
     let client: CRMClient;
-    
-    // For Facebook messages:
-    // - Normal message: sender = user, recipient = page → client = sender
-    // - Echo message: sender = page, recipient = user → client = recipient
     const realUserId = isEcho ? recipientId : senderId;
     
     console.log('👤 Client identification:', {
@@ -360,9 +351,8 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       console.log('✅ Created new client:', client.id);
     }
 
-    // Find or create conversation (use consistent thread ID)
+    // Find or create conversation
     let conversation: Conversation;
-    // Thread ID should always be the real user ID for consistency
     const threadId = realUserId;
     
     console.log('💬 Conversation identification:', {
@@ -393,7 +383,8 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           channel: 'facebook',
           channel_thread_id: threadId,
           status: 'open',
-          last_message_at: new Date().toISOString()
+          last_message_at: new Date().toISOString(),
+          ai_enabled: true // Default enable AI
         })
         .select()
         .single();
@@ -408,7 +399,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     }
 
     // Determine sender type based on echo status
-    const senderType = isEcho ? 'agent' : 'client'; // Echo = outgoing (agent), Not echo = incoming (client)
+    const senderType = isEcho ? 'agent' : 'client';
     const senderName = isEcho ? 'Agente' : client.name;
     
     console.log('📋 Message classification:', {
@@ -418,14 +409,14 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       logic: isEcho ? 'Echo message → agent (outgoing)' : 'Normal message → client (incoming)'
     });
 
-    // Save message with new structure (Option 2)
+    // Save message
     const messageData = {
       conversation_id: conversation.id,
       content: messageText,
       sender_type: senderType,
-      is_automated: false, // Could be automated if it's a bot message
+      is_automated: false,
       sender_name: senderName,
-      platform_message_id: messageId, // Facebook message ID
+      platform_message_id: messageId,
       metadata: {
         platform: 'facebook',
         sender_id: senderId,
@@ -480,21 +471,33 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           return;
         }
 
-        // Verificar si la IA debe responder a este mensaje
+
         if (!shouldAIRespond(messageText, aiConfig)) {
           console.log('🤖 IA decide no responder a este mensaje');
           return;
         }
 
-        // Obtener historial reciente de la conversación para contexto
         const { data: recentMessages } = await supabase
           .from('messages')
-          .select('content, sender_type')
+          .select('id, content, sender_type, sender_name, created_at')
           .eq('conversation_id', conversation.id)
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: false }) 
           .limit(10);
 
-        const conversationHistory = recentMessages?.map(msg => msg.content) || [];
+        const conversationHistory = recentMessages?.reverse().map(msg => ({
+          id: msg.id || crypto.randomUUID(),
+          content: msg.content,
+          sender_type: msg.sender_type === 'ia' ? 'ia' : 'user', // Normalizar tipos
+          sender_name: msg.sender_name || 'Usuario',
+          created_at: msg.created_at,
+          metadata: {}
+        })) || [];
+
+        console.log('📜 Historial de conversación cargado:', {
+          messageCount: conversationHistory.length,
+          oldestMessage: conversationHistory[0]?.content,
+          newestMessage: conversationHistory[conversationHistory.length - 1]?.content
+        });
 
         // Generar respuesta de IA
         const aiResponse = await generateAIResponse(messageText, aiConfig, conversationHistory);
@@ -503,22 +506,22 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           console.log('🤖 Respuesta de IA generada exitosamente');
 
           // Guardar respuesta de IA en la base de datos
-                     const { error: aiMessageError } = await supabase
-             .from('messages')
-             .insert({
-               conversation_id: conversation.id,
-               content: aiResponse.response,
-               sender_type: 'ia', // Usar 'ia' según implementación del usuario
-               sender_name: 'IA Assistant',
-               is_automated: true,
-               platform_message_id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-               metadata: {
-                 confidence_score: aiResponse.confidence_score,
-                 ai_model: 'gpt-4o-mini',
-                 response_time: aiConfig.response_time || 0,
-                 platform: 'facebook'
-               }
-             });
+          const { error: aiMessageError } = await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversation.id,
+              content: aiResponse.response,
+              sender_type: 'ia',
+              sender_name: 'IA Assistant',
+              is_automated: true,
+              platform_message_id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              metadata: {
+                confidence_score: aiResponse.confidence_score,
+                ai_model: 'gpt-4o-mini',
+                response_time: aiConfig.response_time || 0,
+                platform: 'facebook'
+              }
+            });
 
           if (aiMessageError) {
             console.error('❌ Error guardando mensaje de IA:', aiMessageError);

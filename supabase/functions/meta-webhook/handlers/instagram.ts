@@ -45,6 +45,7 @@ interface Conversation {
   user_id: string;
   status: string;
   last_message_at: string;
+  ai_enabled?: boolean;
 }
 
 /**
@@ -265,7 +266,8 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           channel: 'instagram',
           channel_thread_id: threadId,
           status: 'open',
-          last_message_at: new Date().toISOString()
+          last_message_at: new Date().toISOString(),
+          ai_enabled: true // Default enable AI
         })
         .select()
         .single();
@@ -290,7 +292,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       logic: isEcho ? 'Echo message → agent (outgoing)' : 'Normal message → client (incoming)'
     });
 
-    // Save message with new structure (Option 2)
+    // Save message with new structure
     const messageData = {
       conversation_id: conversation.id,
       content: text,
@@ -333,12 +335,11 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       direction: isEcho ? 'outgoing' : 'incoming'
     });
 
-    // 🤖 GENERAR RESPUESTA AUTOMÁTICA DE IA (solo para mensajes entrantes)
     if (!isEcho && text && conversation.ai_enabled) {
       try {
         console.log('🤖 Generando respuesta automática de IA para Instagram:', conversation.id);
         
-        // Obtener configuración de IA del usuario
+  
         const { data: aiConfig } = await supabase
           .from('ai_configurations')
           .select('*')
@@ -356,39 +357,50 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           return;
         }
 
-        // Obtener historial reciente de la conversación para contexto
         const { data: recentMessages } = await supabase
           .from('messages')
-          .select('content, sender_type')
+          .select('id, content, sender_type, sender_name, created_at')
           .eq('conversation_id', conversation.id)
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: false }) // Del más reciente al más antiguo
           .limit(10);
 
-        const conversationHistory = recentMessages?.map(msg => msg.content) || [];
+        const conversationHistory = recentMessages?.reverse().map(msg => ({
+          id: msg.id || crypto.randomUUID(),
+          content: msg.content,
+          sender_type: msg.sender_type === 'ia' ? 'ia' : 'user', // Normalizar tipos
+          sender_name: msg.sender_name || 'Usuario',
+          created_at: msg.created_at,
+          metadata: {}
+        })) || [];
 
-        // Generar respuesta de IA
+        console.log('📜 Historial de conversación Instagram cargado:', {
+          messageCount: conversationHistory.length,
+          oldestMessage: conversationHistory[0]?.content,
+          newestMessage: conversationHistory[conversationHistory.length - 1]?.content
+        });
+
+
         const aiResponse = await generateAIResponse(text, aiConfig, conversationHistory);
 
         if (aiResponse.success && aiResponse.response) {
           console.log('🤖 Respuesta de IA generada exitosamente para Instagram');
 
-          // Guardar respuesta de IA en la base de datos
-                     const { error: aiMessageError } = await supabase
-             .from('messages')
-             .insert({
-               conversation_id: conversation.id,
-               content: aiResponse.response,
-               sender_type: 'ia', // Usar 'ia' según implementación del usuario
-               sender_name: 'IA Assistant',
-               is_automated: true,
-               platform_message_id: `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-               metadata: {
-                 confidence_score: aiResponse.confidence_score,
-                 ai_model: 'gpt-4o-mini',
-                 response_time: aiConfig.response_time || 0,
-                 platform: 'instagram'
-               }
-             });
+          const { error: aiMessageError } = await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversation.id,
+              content: aiResponse.response,
+              sender_type: 'ia',
+              sender_name: 'IA Assistant',
+              is_automated: true,
+              platform_message_id: `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              metadata: {
+                confidence_score: aiResponse.confidence_score,
+                ai_model: 'gpt-4o-mini',
+                response_time: aiConfig.response_time || 0,
+                platform: 'instagram'
+              }
+            });
 
           if (aiMessageError) {
             console.error('❌ Error guardando mensaje de IA para Instagram:', aiMessageError);

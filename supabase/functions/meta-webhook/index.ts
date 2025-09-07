@@ -206,6 +206,67 @@ serve(async (req) => {
             }
           }
         }
+      } else if (body.object === 'instagram' && body.entry) {
+        console.log('📱 Processing Instagram events:', {
+          object: body.object,
+          entry_count: body.entry.length
+        });
+        
+        for (const entry of body.entry) {
+          if (entry.messaging) {
+            console.log('💬 Processing Instagram messaging events:', {
+              entry_id: entry.id,
+              messaging_count: entry.messaging.length
+            });
+            
+            for (const messagingEvent of entry.messaging) {
+              console.log('🔍 Full Instagram messaging event:', JSON.stringify(messagingEvent, null, 2));
+              
+              // Only process events with actual content
+              const hasContent = messagingEvent.message?.text;
+
+              if (!hasContent) {
+                console.log('⏭️ Skipping Instagram event without content');
+                continue;
+              }
+
+              console.log('🔄 Processing Instagram messaging event:', {
+                sender_id: messagingEvent.sender?.id,
+                recipient_id: messagingEvent.recipient?.id,
+                message_text: messagingEvent.message?.text
+              });
+
+              // Process the Instagram message
+              await handleInstagramEvent(messagingEvent);
+              console.log('✅ Instagram event processed successfully');
+            }
+          }
+        }
+      } else if (body.object === 'user' && body.entry) {
+        // Handle Instagram user events (when users connect their accounts)
+        console.log('👤 Processing Instagram user events:', {
+          object: body.object,
+          entry_count: body.entry.length
+        });
+        
+        for (const entry of body.entry) {
+          if (entry.changes) {
+            console.log('🔄 Processing Instagram user changes:', {
+              entry_id: entry.id,
+              changes_count: entry.changes.length
+            });
+            
+            for (const change of entry.changes) {
+              console.log('📝 Instagram user change:', {
+                field: change.field,
+                value: change.value
+              });
+              
+              // Log the change but don't process it for now
+              // This could be used for account status changes, permissions, etc.
+            }
+          }
+        }
       } else {
         console.log('⚠️ Unexpected webhook format:', {
           object: body.object,

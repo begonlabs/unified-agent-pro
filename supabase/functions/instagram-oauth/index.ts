@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-// Deno Edge Function: Meta (Facebook) OAuth Redirect Handler
-// Exchanges code -> user_access_token, fetches pages and page_access_tokens.
+// Deno Edge Function: Instagram OAuth Redirect Handler
+// Handles Instagram Business API authentication
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -35,12 +35,11 @@ serve(async (req) => {
       )
     }
 
-    // Get environment variables
-    const appId = Deno.env.get('META_APP_ID')
-    const appSecret = Deno.env.get('META_APP_SECRET')
-    const redirectUri = Deno.env.get('META_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/meta-oauth'
+    // Get environment variables - Instagram uses same Meta app
+    const appId = Deno.env.get('META_APP_ID') // Same as Facebook
+    const appSecret = Deno.env.get('META_APP_SECRET') // Same as Facebook
+    const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0'
-    const verifyToken = Deno.env.get('META_VERIFY_TOKEN')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -63,26 +62,27 @@ serve(async (req) => {
       )
     }
 
-    // Exchange code for access token
+    console.log('🔄 Processing Instagram OAuth with code:', code.substring(0, 10) + '...')
+
+    // Exchange code for access token (same process as Facebook)
     const tokenResponse = await fetch(
       `https://graph.facebook.com/${graphVersion}/oauth/access_token?` +
       `client_id=${appId}&` +
       `client_secret=${appSecret}&` +
-      `redirect_uri=${redirectUri}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `code=${code}`
     )
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
+      console.error('❌ Token exchange failed:', errorText)
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: `Error: HTTP ${tokenResponse.status}: ${errorText}`,
+          error: `Token exchange failed: HTTP ${tokenResponse.status}: ${errorText}`,
           debug: {
-            request_url: req.url,
-            computed_redirect_uri: redirectUri,
-            graph_version: graphVersion,
-            app_id_present: !!appId
+            redirect_uri: redirectUri,
+            graph_version: graphVersion
           }
         }),
         { 
@@ -93,9 +93,9 @@ serve(async (req) => {
     }
 
     const tokenData = await tokenResponse.json()
-    const accessToken = tokenData.access_token
+    const userAccessToken = tokenData.access_token
 
-    if (!accessToken) {
+    if (!userAccessToken) {
       return new Response(
         JSON.stringify({ 
           ok: false, 
@@ -109,9 +109,11 @@ serve(async (req) => {
       )
     }
 
-    // Get user's pages
+    console.log('✅ User access token obtained')
+
+    // Get user's Facebook pages (Instagram Business accounts are connected to Facebook pages)
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${userAccessToken}`
     )
 
     if (!pagesResponse.ok) {
@@ -119,8 +121,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: `Error fetching pages: HTTP ${pagesResponse.status}: ${errorText}`,
-          debug: { access_token_present: !!accessToken }
+          error: `Error fetching pages: HTTP ${pagesResponse.status}: ${errorText}`
         }),
         { 
           status: 400, 
@@ -136,8 +137,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: 'No Facebook pages found for this user',
-          debug: { user_id: 'extracted_from_token' }
+          error: 'No Facebook pages found for this user. Instagram Business requires a Facebook page.'
         }),
         { 
           status: 400, 
@@ -146,40 +146,82 @@ serve(async (req) => {
       )
     }
 
-    // For now, we'll work with the first page
-    // In a real implementation, you might want to let the user choose
-    const selectedPage = pages[0]
-    const pageId = selectedPage.id
-    const pageName = selectedPage.name
-    const pageAccessToken = selectedPage.access_token
+    console.log('📄 Found', pages.length, 'Facebook pages')
 
-    // Subscribe the page to webhooks with proper format
-    let webhookSubscribed = false;
+    // Get Instagram Business accounts connected to pages
+    const pagesWithInstagram = []
+    
+    for (const page of pages) {
+      try {
+        // Check if page has Instagram Business account
+        const igResponse = await fetch(
+          `https://graph.facebook.com/${graphVersion}/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+        )
+        
+        if (igResponse.ok) {
+          const igData = await igResponse.json()
+          if (igData.instagram_business_account?.id) {
+            pagesWithInstagram.push({
+              page_id: page.id,
+              page_name: page.name,
+              page_access_token: page.access_token,
+              instagram_business_account_id: igData.instagram_business_account.id
+            })
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Error checking Instagram for page:', page.name, error)
+      }
+    }
+
+    if (pagesWithInstagram.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: 'No Instagram Business accounts found connected to your Facebook pages. Please connect an Instagram Business account to a Facebook page first.',
+          debug: { 
+            pages_found: pages.length,
+            pages_names: pages.map(p => p.name)
+          }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Use the first Instagram Business account found
+    const selectedIG = pagesWithInstagram[0]
+    
+    console.log('📸 Selected Instagram Business account:', {
+      page_name: selectedIG.page_name,
+      instagram_id: selectedIG.instagram_business_account_id
+    })
+
+    // Subscribe the Instagram account to webhooks
+    let webhookSubscribed = false
     try {
       const webhookResponse = await fetch(
-        `https://graph.facebook.com/${graphVersion}/${pageId}/subscribed_apps?` +
-        `access_token=${pageAccessToken}`,
+        `https://graph.facebook.com/${graphVersion}/${selectedIG.instagram_business_account_id}/subscribed_apps?access_token=${selectedIG.page_access_token}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            subscribed_fields: ['messages', 'messaging_postbacks', 'messaging_optins', 'message_deliveries', 'message_reads', 'message_echoes']
-          })
+          }
         }
       )
 
       if (webhookResponse.ok) {
-        webhookSubscribed = true;
-        console.log('Webhook subscription successful for page:', pageId);
+        webhookSubscribed = true
+        console.log('✅ Instagram webhook subscription successful')
       } else {
-        const errorText = await webhookResponse.text();
-        console.error('Webhook subscription failed:', errorText);
-        // Continue anyway, as the page connection is still valid
+        const errorText = await webhookResponse.text()
+        console.error('⚠️ Instagram webhook subscription failed:', errorText)
+        // Continue anyway
       }
     } catch (webhookError) {
-      console.error('Webhook subscription error:', webhookError);
+      console.error('⚠️ Instagram webhook subscription error:', webhookError)
       // Continue anyway
     }
 
@@ -187,13 +229,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Extract user ID from the state parameter
-    let userId: string | null = null;
+    let userId: string | null = null
     if (state) {
       try {
-        const stateData = JSON.parse(decodeURIComponent(state));
-        userId = stateData.user_id;
+        const stateData = JSON.parse(decodeURIComponent(state))
+        userId = stateData.user_id
       } catch (error) {
-        console.error('Error parsing state parameter:', error);
+        console.error('Error parsing state parameter:', error)
       }
     }
 
@@ -202,7 +244,7 @@ serve(async (req) => {
         JSON.stringify({ 
           ok: false, 
           error: 'User ID not found in state parameter',
-          debug: { state, parsed_state: state ? JSON.parse(decodeURIComponent(state)) : null }
+          debug: { state }
         }),
         { 
           status: 400, 
@@ -211,80 +253,77 @@ serve(async (req) => {
       )
     }
 
-    // Check if channel already exists for this user
+    // Check if Instagram channel already exists for this user
     const { data: existingChannel, error: checkError } = await supabase
       .from('communication_channels')
       .select('id')
       .eq('user_id', userId)
-      .eq('channel_type', 'facebook')
-      .maybeSingle();
+      .eq('channel_type', 'instagram')
+      .maybeSingle()
 
-    if (checkError) {
-      console.error('Error checking existing channel:', checkError);
-      // Continue anyway, as the Facebook connection worked
-    }
-
-    let dbError;
+    let dbError
     if (existingChannel) {
       // Update existing channel
-      console.log('Updating existing Facebook channel for user:', userId);
+      console.log('🔄 Updating existing Instagram channel for user:', userId)
       const { error: updateError } = await supabase
         .from('communication_channels')
         .update({
           channel_config: {
-            page_id: pageId,
-            page_name: pageName,
-            page_access_token: pageAccessToken,
-            user_access_token: accessToken,
+            page_id: selectedIG.page_id,
+            page_name: selectedIG.page_name,
+            page_access_token: selectedIG.page_access_token,
+            instagram_business_account_id: selectedIG.instagram_business_account_id,
+            user_access_token: userAccessToken,
             webhook_subscribed: webhookSubscribed,
             connected_at: new Date().toISOString()
           },
           is_connected: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingChannel.id);
-      dbError = updateError;
+        .eq('id', existingChannel.id)
+      dbError = updateError
     } else {
       // Create new channel
-      console.log('Creating new Facebook channel for user:', userId);
+      console.log('➕ Creating new Instagram channel for user:', userId)
       const { error: insertError } = await supabase
         .from('communication_channels')
         .insert({
           user_id: userId,
-          channel_type: 'facebook',
+          channel_type: 'instagram',
           channel_config: {
-            page_id: pageId,
-            page_name: pageName,
-            page_access_token: pageAccessToken,
-            user_access_token: accessToken,
+            page_id: selectedIG.page_id,
+            page_name: selectedIG.page_name,
+            page_access_token: selectedIG.page_access_token,
+            instagram_business_account_id: selectedIG.instagram_business_account_id,
+            user_access_token: userAccessToken,
             webhook_subscribed: webhookSubscribed,
             connected_at: new Date().toISOString()
           },
           is_connected: true
-        });
-      dbError = insertError;
+        })
+      dbError = insertError
     }
 
     if (dbError) {
-      console.error('Database operation error:', dbError)
-      // Return success anyway, as the Facebook connection worked
+      console.error('❌ Database operation error:', dbError)
+      // Continue anyway, as the Instagram connection worked
     }
 
     // Redirect to frontend dashboard with success
-    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook&view=channels`;
+    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_name=${encodeURIComponent(selectedIG.page_name)}&instagram_id=${selectedIG.instagram_business_account_id}&channel=instagram&view=channels`
     
     return new Response(
       `<!DOCTYPE html>
 <html>
 <head>
-    <title>Redirigiendo...</title>
+    <title>Instagram Conectado</title>
     <meta http-equiv="refresh" content="0;url=${frontendCallbackUrl}">
     <style>
         body { 
             font-family: Arial, sans-serif; 
             text-align: center; 
             padding: 50px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
             color: white;
         }
         .container { 
@@ -312,28 +351,28 @@ serve(async (req) => {
 </head>
 <body>
     <div class="container">
-        <h1>✅ Facebook Conectado Exitosamente</h1>
-        <p>Página: <strong>${pageName}</strong></p>
+        <h1>📸 Instagram Conectado Exitosamente</h1>
+        <p>Página: <strong>${selectedIG.page_name}</strong></p>
+        <p>Instagram Business ID: <strong>${selectedIG.instagram_business_account_id}</strong></p>
         <p>Redirigiendo al dashboard...</p>
         <div class="spinner"></div>
         <p><small>Si no eres redirigido automáticamente, <a href="${frontendCallbackUrl}" style="color: #fff; text-decoration: underline;">haz clic aquí</a></small></p>
     </div>
     <script>
-        // Redirect after a short delay to ensure the page loads
         setTimeout(() => {
             window.location.href = "${frontendCallbackUrl}";
-        }, 2000);
+        }, 3000);
     </script>
 </body>
 </html>`,
       { 
-      status: 200,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
       }
     )
 
   } catch (error) {
-    console.error('Error in meta-oauth function:', error)
+    console.error('❌ Error in instagram-oauth function:', error)
     return new Response(
       JSON.stringify({ 
         ok: false, 
@@ -341,7 +380,7 @@ serve(async (req) => {
         debug: { request_url: req.url }
       }),
       { 
-      status: 500,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )

@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-// Shared OpenAI integration functions
+// CRM AI Engine - Clean and efficient OpenAI integration
 
 interface AIConfig {
   goals?: string;
@@ -19,8 +19,17 @@ interface AIResponse {
   error?: string;
 }
 
+interface Message {
+  id: string;
+  content: string;
+  sender_type: 'user' | 'ia';
+  sender_name: string;
+  created_at: string;
+  metadata?: Record<string, unknown>;
+}
+
 /**
- * Checks custom FAQ for matching questions
+ * Checks custom FAQ for exact matching questions
  * @param message - The incoming message text
  * @param faq - Custom FAQ text from user configuration
  * @returns string | null - Matching answer or null
@@ -35,8 +44,9 @@ function checkCustomFAQ(message: string, faq: string): string | null {
       if (line.toLowerCase().startsWith('pregunta:')) {
         // Save previous Q&A if we have one
         if (currentQuestion && currentAnswer) {
-          if (message.includes(currentQuestion.toLowerCase().replace('pregunta:', '').trim())) {
-            return currentAnswer.trim();
+          const questionText = currentQuestion.toLowerCase().replace('pregunta:', '').trim();
+          if (message.toLowerCase().includes(questionText)) {
+            return currentAnswer.replace(/^respuesta:/i, '').trim();
           }
         }
         // Start new question
@@ -52,8 +62,9 @@ function checkCustomFAQ(message: string, faq: string): string | null {
     
     // Check last Q&A
     if (currentQuestion && currentAnswer) {
-      if (message.includes(currentQuestion.toLowerCase().replace('pregunta:', '').trim())) {
-        return currentAnswer.trim();
+      const questionText = currentQuestion.toLowerCase().replace('pregunta:', '').trim();
+      if (message.toLowerCase().includes(questionText)) {
+        return currentAnswer.replace(/^respuesta:/i, '').trim();
       }
     }
     
@@ -72,19 +83,15 @@ function checkCustomFAQ(message: string, faq: string): string | null {
  */
 export function shouldAIRespond(message: string, aiConfig: AIConfig): boolean {
   try {
-    // Basic logic - AI responds if config is active
     if (!aiConfig?.is_active) {
       return false;
     }
 
-    // Don't respond to very short messages
     if (message.length < 2) {
       return false;
     }
 
-    // Respond to most messages - IA is now more active
     return true;
-
   } catch (error) {
     console.error('Error in shouldAIRespond:', error);
     return false;
@@ -92,61 +99,107 @@ export function shouldAIRespond(message: string, aiConfig: AIConfig): boolean {
 }
 
 /**
- * Builds a dynamic prompt based on user's AI configuration
+ * Builds comprehensive system prompt with company context and conversation history
  * @param aiConfig - AI configuration from database
- * @param message - The incoming message
- * @param conversationHistory - Recent conversation history
- * @returns string - Dynamic prompt for AI response
+ * @param conversationHistory - Complete conversation history for context
+ * @returns string - Complete system prompt
  */
-function buildDynamicPrompt(aiConfig: AIConfig, message: string, conversationHistory: string[]): string {
-  const prompt = `Eres un asistente virtual inteligente y amigable. Tu objetivo es ayudar a los usuarios de manera efectiva y personalizada.
+function buildSystemPrompt(aiConfig: AIConfig, conversationHistory: Message[]): string {
+  const now = new Date();
+  const currentDate = now.toLocaleDateString('es-ES', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const currentTime = now.toLocaleTimeString('es-ES', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    timeZone: 'America/Havana' 
+  });
 
-CONTEXTO DE LA EMPRESA:
-${aiConfig?.goals ? `OBJETIVOS: ${aiConfig.goals}` : 'No hay objetivos específicos definidos.'}
+  let systemPrompt = `Eres un asistente virtual inteligente y profesional especializado en atender consultas de clientes.
 
-${aiConfig?.knowledge_base ? `BASE DE CONOCIMIENTO: ${aiConfig.knowledge_base}` : 'No hay base de conocimiento específica.'}
+INFORMACIÓN ACTUAL:
+- Fecha: ${currentDate}
+- Hora: ${currentTime}
 
-${aiConfig?.restrictions ? `RESTRICCIONES IMPORTANTES: ${aiConfig.restrictions}` : 'No hay restricciones específicas.'}
+INFORMACIÓN DE LA EMPRESA:`;
 
-${aiConfig?.common_questions ? `PREGUNTAS COMUNES: ${aiConfig.common_questions}` : 'No hay preguntas comunes predefinidas.'}
+  // Add company information sections
+  if (aiConfig?.goals?.trim()) {
+    systemPrompt += `\n\nOBJETIVOS Y MISIÓN:\n${aiConfig.goals}`;
+  }
 
-INSTRUCCIONES:
-1. Responde de manera natural, amigable y profesional
-2. Usa ÚNICAMENTE la información proporcionada en el contexto
-3. Si no tienes información específica sobre algo, sé honesto y ofrece alternativas
-4. Mantén un tono conversacional pero informativo
-5. Si hay restricciones, respétalas completamente
-6. Personaliza tu respuesta basándote en los objetivos de la empresa
+  if (aiConfig?.knowledge_base?.trim()) {
+    systemPrompt += `\n\nSERVICIOS Y BASE DE CONOCIMIENTO:\n${aiConfig.knowledge_base}`;
+  }
 
-MENSAJE DEL USUARIO: "${message}"
+  if (aiConfig?.faq?.trim()) {
+    systemPrompt += `\n\nPREGUNTAS FRECUENTES (FAQ):\n${aiConfig.faq}`;
+  }
 
-${conversationHistory.length > 0 ? `HISTORIAL DE CONVERSACIÓN RECIENTE:\n${conversationHistory.slice(-3).join('\n')}` : ''}
+  if (aiConfig?.common_questions?.trim()) {
+    systemPrompt += `\n\nTIPOS DE CONSULTAS FRECUENTES:\n${aiConfig.common_questions}`;
+  }
 
-Responde de manera natural y útil, usando la información del contexto proporcionado.`;
+  if (aiConfig?.restrictions?.trim()) {
+    systemPrompt += `\n\nRESTRICCIONES Y PAUTAS:\n${aiConfig.restrictions}`;
+  }
 
-  return prompt;
+  // Add conversation context
+  if (conversationHistory.length > 0) {
+    systemPrompt += `\n\nCONTEXTO DE CONVERSACIÓN (${conversationHistory.length} mensajes previos):`;
+    conversationHistory.forEach((msg) => {
+      const role = msg.sender_type === 'user' ? 'Cliente' : 'Asistente';
+      systemPrompt += `\n${role}: ${msg.content}`;
+    });
+  } else {
+    systemPrompt += `\n\nCONTEXTO DE CONVERSACIÓN:\nEsta es una nueva conversación.`;
+  }
+
+  systemPrompt += `\n\nINSTRUCCIONES:
+1. Responde ÚNICAMENTE basándote en la información de la empresa proporcionada
+2. Si hay coincidencia exacta en FAQ, usa esa respuesta
+3. IMPORTANTE: Mantén coherencia total con el contexto de conversación mostrado arriba
+4. RECUERDA y mantén consistencia con cualquier información personal que el cliente haya compartido previamente (nombre, preferencias, etc.)
+5. Si previamente mencionaste el nombre del cliente o cualquier dato personal, mantenlo a lo largo de toda la conversación
+6. Si no tienes información específica, sé honesto y sugiere contactar al equipo
+7. Respeta TODAS las restricciones sin excepción
+8. Usa la fecha/hora actual cuando sea relevante
+9. Mantén tono profesional y natural
+10. NO inventes información que no esté en tu base de conocimiento
+11. NUNCA contradices información que ya proporcionaste en mensajes anteriores de esta conversación`;
+
+  return systemPrompt;
 }
 
 /**
- * Generates an AI response using dynamic prompt engineering
+ * Creates simple fallback response for errors
+ * @param message - The original message
+ * @returns string - Simple fallback response
+ */
+function createFallbackResponse(message: string): string {
+  return `Disculpa, estoy experimentando dificultades técnicas en este momento. Tu mensaje "${message}" ha sido recibido. Por favor, intenta nuevamente en unos momentos o contacta directamente con nuestro equipo para asistencia inmediata.`;
+}
+
+/**
+ * Generates AI response using OpenAI with company context and conversation memory
  * @param message - The incoming message text
  * @param aiConfig - AI configuration from database
- * @param conversationHistory - Recent conversation history
+ * @param conversationHistory - Complete conversation history for context
+ * @param userId - User ID for debugging (optional)
  * @returns Promise<AIResponse> - AI response or error
  */
 export async function generateAIResponse(
   message: string, 
   aiConfig: AIConfig, 
-  conversationHistory: string[] = []
+  conversationHistory: Message[] = [],
+  userId?: string
 ): Promise<AIResponse> {
   try {
-    console.log('🤖 Generating AI response for message:', message);
-    console.log('📋 AI Config active:', aiConfig?.is_active);
-    console.log('📜 Conversation history length:', conversationHistory.length);
-    console.log('🎯 AI Goals:', aiConfig?.goals?.substring(0, 100) + '...');
-    console.log('🚫 AI Restrictions:', aiConfig?.restrictions?.substring(0, 100) + '...');
-
-    // Check if AI is active
+    console.log('🤖 Generating AI response for message length:', message.length);
+    
     if (!aiConfig?.is_active) {
       return {
         success: false,
@@ -154,11 +207,11 @@ export async function generateAIResponse(
       };
     }
 
-    // First, check custom FAQ for exact matches
+    // Check custom FAQ first for exact matches
     if (aiConfig.faq) {
       const faqResponse = checkCustomFAQ(message.toLowerCase().trim(), aiConfig.faq);
       if (faqResponse) {
-        console.log('✅ Found FAQ match');
+        console.log('✅ FAQ match found');
         return {
           success: true,
           response: faqResponse,
@@ -167,163 +220,96 @@ export async function generateAIResponse(
       }
     }
 
-    // Build dynamic prompt based on user configuration
-    const dynamicPrompt = buildDynamicPrompt(aiConfig, message, conversationHistory);
-    console.log('📝 Dynamic prompt built, length:', dynamicPrompt.length);
+    // Get OpenAI API key from environment variables
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!openaiApiKey) {
+      console.error('❌ OpenAI API key not configured in environment variables');
+      console.error('🔧 Make sure OPENAI_API_KEY is set in your .env file');
+      return {
+        success: true,
+        response: createFallbackResponse(message),
+        confidence_score: 0.3
+      };
+    }
 
-    // Generate response using the dynamic prompt
-    let response = "";
-    const confidence = 0.8;
+    // Validate API key format (OpenAI keys start with 'sk-')
+    if (!openaiApiKey.startsWith('sk-')) {
+      console.error('❌ Invalid OpenAI API key format. API keys should start with "sk-"');
+      return {
+        success: true,
+        response: createFallbackResponse(message),
+        confidence_score: 0.3
+      };
+    }
 
-    // For now, we'll use a simplified response generation
-    // In a real implementation, this would call OpenAI API with the dynamic prompt
-    response = generateContextualResponse(message, aiConfig, conversationHistory);
+    console.log('✅ OpenAI API key loaded from environment variables');
 
-    // Simulate realistic processing time
-    const processingTime = aiConfig?.response_time || 1;
+    // Build prompts
+    const systemPrompt = buildSystemPrompt(aiConfig, conversationHistory);
+    const userPrompt = `Cliente: "${message}"
+
+Responde a este mensaje siguiendo las instrucciones del system prompt y manteniendo coherencia con el contexto de la conversación.`;
+
+    const model = 'gpt-4o-mini';
+    console.log('🔗 Calling OpenAI API with context-aware prompts');
+    console.log(`🤖 Using model: ${model}`);
+    console.log(`📝 System prompt length: ${systemPrompt.length} characters`);
+    console.log(`💬 User prompt length: ${userPrompt.length} characters`);
+
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+        presence_penalty: 0.6,
+        frequency_penalty: 0.3
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API error:', errorData);
+      return {
+        success: true,
+        response: createFallbackResponse(message),
+        confidence_score: 0.3
+      };
+    }
+
+    const result = await response.json();
+    const aiResponse = result.choices[0].message.content;
+
+    console.log('✅ OpenAI response generated successfully');
+
+    // Apply response time delay if configured
+    const processingTime = aiConfig?.response_time || 0;
     if (processingTime > 0) {
       await new Promise(resolve => setTimeout(resolve, processingTime * 1000));
     }
 
     return {
       success: true,
-      response,
-      confidence_score: confidence
+      response: aiResponse,
+      confidence_score: 0.9
     };
 
   } catch (error) {
     console.error('Error generating AI response:', error);
     return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      success: true,
+      response: createFallbackResponse(message),
+      confidence_score: 0.3
     };
-  }
-}
-
-/**
- * Generates a contextual response based on user configuration
- * @param message - The incoming message
- * @param aiConfig - AI configuration
- * @param conversationHistory - Recent conversation history
- * @returns string - Generated response
- */
-function generateContextualResponse(message: string, aiConfig: AIConfig, conversationHistory: string[]): string {
-  const lowerMessage = message.toLowerCase().trim();
-  
-  // Check if we have specific information to work with
-  const hasGoals = aiConfig?.goals && aiConfig.goals.trim().length > 0;
-  const hasKnowledge = aiConfig?.knowledge_base && aiConfig.knowledge_base.trim().length > 0;
-  const hasRestrictions = aiConfig?.restrictions && aiConfig.restrictions.trim().length > 0;
-  const hasCommonQuestions = aiConfig?.common_questions && aiConfig.common_questions.trim().length > 0;
-
-  // Generate greeting response
-  if (lowerMessage.match(/^(hola|hello|hi|buenas|hey|saludos)/)) {
-    if (hasGoals) {
-      return `¡Hola! 👋 Soy tu asistente virtual. ${aiConfig.goals.substring(0, 150)}... ¿En qué puedo ayudarte hoy?`;
-    } else {
-      return "¡Hola! 👋 Bienvenido/a. Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?";
-    }
-  }
-
-  // Generate service/product response
-  if (lowerMessage.includes('servicio') || lowerMessage.includes('producto') || lowerMessage.includes('ofreces') || lowerMessage.includes('haces')) {
-    if (hasKnowledge) {
-      return `¡Excelente pregunta! 🌟 
-
-Basándome en nuestra información:
-${aiConfig.knowledge_base.substring(0, 300)}...
-
-¿Te interesa algún aspecto específico? ¡Cuéntame más detalles!`;
-    } else if (hasGoals) {
-      return `¡Excelente pregunta! 🌟 
-
-${aiConfig.goals.substring(0, 200)}...
-
-¿Te gustaría saber más sobre algún aspecto específico?`;
-    } else {
-      return "¡Excelente pregunta! 🌟 Estoy aquí para ayudarte con información sobre nuestros servicios. ¿Podrías ser más específico sobre lo que te interesa?";
-    }
-  }
-
-  // Generate pricing response
-  if (lowerMessage.includes('precio') || lowerMessage.includes('costo') || lowerMessage.includes('cuanto') || lowerMessage.includes('tarifa')) {
-    if (hasRestrictions && aiConfig.restrictions.toLowerCase().includes('precio')) {
-      return `💰 Entiendo tu interés en nuestros precios. 
-
-${aiConfig.restrictions.substring(0, 200)}...
-
-¿Te gustaría que te ayude con otra consulta mientras tanto?`;
-    } else if (hasKnowledge && aiConfig.knowledge_base.toLowerCase().includes('precio')) {
-      return `💰 Basándome en nuestra información:
-
-${aiConfig.knowledge_base.substring(0, 300)}...
-
-¿Te gustaría más detalles sobre algún aspecto específico?`;
-    } else {
-      return "💰 Entiendo tu interés en nuestros precios. Para darte información precisa, necesito conocer más sobre tus necesidades específicas. ¿Podrías contarme qué tipo de servicio te interesa?";
-    }
-  }
-
-  // Generate contact response
-  if (lowerMessage.includes('contacto') || lowerMessage.includes('telefono') || lowerMessage.includes('email') || lowerMessage.includes('direccion')) {
-    if (hasKnowledge && aiConfig.knowledge_base.toLowerCase().includes('contacto')) {
-      return `📞 Basándome en nuestra información:
-
-${aiConfig.knowledge_base.substring(0, 300)}...
-
-¿Hay algo específico en lo que pueda ayudarte?`;
-    } else {
-      return "📞 Para información de contacto específica, te recomiendo revisar nuestra información oficial. ¿Hay algo más en lo que pueda ayudarte?";
-    }
-  }
-
-  // Generate schedule/time response
-  if (lowerMessage.includes('hora') || lowerMessage.includes('tiempo') || lowerMessage.includes('cuando') || lowerMessage.includes('horario')) {
-    if (hasKnowledge && aiConfig.knowledge_base.toLowerCase().includes('hora')) {
-      return `⏰ Basándome en nuestra información:
-
-${aiConfig.knowledge_base.substring(0, 300)}...
-
-¿En qué más puedo ayudarte?`;
-    } else {
-      return "⏰ Como asistente virtual, estoy disponible 24/7 para ayudarte con información inicial. ¿En qué puedo ayudarte ahora mismo?";
-    }
-  }
-
-  // Generate thanks response
-  if (lowerMessage.includes('gracias') || lowerMessage.includes('thanks')) {
-    return "¡De nada! 😊 Me da mucho gusto ayudarte. ¿Hay algo más en lo que pueda asistirte?";
-  }
-
-  // Generate response for common questions
-  if (hasCommonQuestions) {
-    const commonQuestions = aiConfig.common_questions.toLowerCase();
-    if (commonQuestions.includes(lowerMessage.substring(0, 20))) {
-      return `Basándome en nuestras preguntas comunes:
-
-${aiConfig.common_questions.substring(0, 300)}...
-
-¿Te ayuda esto con tu consulta?`;
-    }
-  }
-
-  // Default contextual response
-  if (hasGoals) {
-    return `¡Entiendo! 🤔 
-
-${aiConfig.goals.substring(0, 200)}...
-
-Basándome en tu mensaje "${message}", puedo ayudarte con información específica. ¿Podrías ser más específico sobre lo que necesitas?`;
-  } else if (hasKnowledge) {
-    return `¡Entiendo! 🤔 
-
-Basándome en nuestra información:
-${aiConfig.knowledge_base.substring(0, 200)}...
-
-¿Hay algo específico sobre lo que te gustaría saber más?`;
-  } else {
-    return `¡Entiendo! 🤔 
-
-Estoy aquí para ayudarte. Basándome en tu mensaje "${message}", ¿podrías ser más específico sobre lo que necesitas? Así podré darte la mejor información posible.`;
   }
 }
