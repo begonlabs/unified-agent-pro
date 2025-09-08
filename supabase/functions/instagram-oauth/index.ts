@@ -35,24 +35,40 @@ serve(async (req) => {
       )
     }
 
-    // Get environment variables - Instagram uses same Meta app
-    const appId = Deno.env.get('META_APP_ID') // Same as Facebook
-    const appSecret = Deno.env.get('META_APP_SECRET') // Same as Facebook
+    // Get environment variables - Use Instagram Basic Display credentials
+    const appId = Deno.env.get('META_APP_IG_ID') || Deno.env.get('INSTAGRAM_BASIC_APP_ID') // Instagram App ID
+    const appSecret = Deno.env.get('META_APP_IG_SECRET') || Deno.env.get('INSTAGRAM_BASIC_APP_SECRET') // Instagram App Secret
     const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0'
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    // Enhanced environment variable debugging
+    console.log('🔍 Environment variables check:')
+    console.log('  META_APP_IG_ID:', Deno.env.get('META_APP_IG_ID') ? '✅ Present' : '❌ Missing')
+    console.log('  INSTAGRAM_BASIC_APP_ID:', Deno.env.get('INSTAGRAM_BASIC_APP_ID') ? '✅ Present' : '❌ Missing') 
+    console.log('  META_APP_IG_SECRET:', Deno.env.get('META_APP_IG_SECRET') ? '✅ Present' : '❌ Missing')
+    console.log('  INSTAGRAM_BASIC_APP_SECRET:', Deno.env.get('INSTAGRAM_BASIC_APP_SECRET') ? '✅ Present' : '❌ Missing')
+    console.log('  Final appId used:', appId || 'UNDEFINED')
+    console.log('  Final appSecret used:', appSecret ? 'SET' : 'UNDEFINED')
 
     if (!appId || !appSecret || !supabaseUrl || !supabaseServiceKey) {
       return new Response(
         JSON.stringify({ 
           ok: false, 
           error: 'Missing required environment variables',
-          debug: { 
+          debug: {
             app_id_present: !!appId,
             app_secret_present: !!appSecret,
             supabase_url_present: !!supabaseUrl,
-            service_key_present: !!supabaseServiceKey
+            service_key_present: !!supabaseServiceKey,
+            env_check: {
+              META_APP_IG_ID: !!Deno.env.get('META_APP_IG_ID'),
+              INSTAGRAM_BASIC_APP_ID: !!Deno.env.get('INSTAGRAM_BASIC_APP_ID'),
+
+              META_APP_IG_SECRET: !!Deno.env.get('META_APP_IG_SECRET'),
+              INSTAGRAM_BASIC_APP_SECRET: !!Deno.env.get('INSTAGRAM_BASIC_APP_SECRET')
+            }
           }
         }),
         { 
@@ -63,15 +79,23 @@ serve(async (req) => {
     }
 
     console.log('🔄 Processing Instagram OAuth with code:', code.substring(0, 10) + '...')
+    console.log('📍 Using redirect URI:', redirectUri)
+    console.log('🆔 Using App ID:', appId)
 
-    // Exchange code for access token (same process as Facebook)
-    const tokenResponse = await fetch(
-      `https://graph.facebook.com/${graphVersion}/oauth/access_token?` +
-      `client_id=${appId}&` +
-      `client_secret=${appSecret}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `code=${code}`
-    )
+    // Exchange code for access token using Instagram Basic Display API
+    const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: appId,
+        client_secret: appSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+        code: code
+      })
+    })
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
@@ -93,13 +117,14 @@ serve(async (req) => {
     }
 
     const tokenData = await tokenResponse.json()
-    const userAccessToken = tokenData.access_token
+    const shortLivedToken = tokenData.access_token
+    const igUserId = tokenData.user_id
 
-    if (!userAccessToken) {
+    if (!shortLivedToken || !igUserId) {
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: 'No access token received',
+          error: 'No access token or user ID received from Instagram',
           debug: { token_response: tokenData }
         }),
         { 
@@ -109,120 +134,45 @@ serve(async (req) => {
       )
     }
 
-    console.log('✅ User access token obtained')
+    console.log('✅ Short-lived Instagram token obtained for user:', igUserId)
 
-    // Get user's Facebook pages (Instagram Business accounts are connected to Facebook pages)
-    const pagesResponse = await fetch(
-      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${userAccessToken}`
+    // Exchange short-lived token for long-lived token (60 days)
+    console.log('🔄 Exchanging for long-lived token...')
+    const longLivedResponse = await fetch(
+      `https://graph.instagram.com/access_token?` +
+      `grant_type=ig_exchange_token&` +
+      `client_secret=${appSecret}&` +
+      `access_token=${shortLivedToken}`
     )
 
-    if (!pagesResponse.ok) {
-      const errorText = await pagesResponse.text()
-      return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: `Error fetching pages: HTTP ${pagesResponse.status}: ${errorText}`
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    let finalToken = shortLivedToken
+    let tokenType = 'short_lived'
+    let expiresIn = 3600 // 1 hour for short-lived
 
-    const pagesData = await pagesResponse.json()
-    const pages = pagesData.data || []
-
-    if (pages.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: 'No Facebook pages found for this user. Instagram Business requires a Facebook page.'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    console.log('📄 Found', pages.length, 'Facebook pages')
-
-    // Get Instagram Business accounts connected to pages
-    const pagesWithInstagram = []
-    
-    for (const page of pages) {
-      try {
-        // Check if page has Instagram Business account
-        const igResponse = await fetch(
-          `https://graph.facebook.com/${graphVersion}/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
-        )
-        
-        if (igResponse.ok) {
-          const igData = await igResponse.json()
-          if (igData.instagram_business_account?.id) {
-            pagesWithInstagram.push({
-              page_id: page.id,
-              page_name: page.name,
-              page_access_token: page.access_token,
-              instagram_business_account_id: igData.instagram_business_account.id
-            })
-          }
-        }
-      } catch (error) {
-        console.log('⚠️ Error checking Instagram for page:', page.name, error)
+    if (longLivedResponse.ok) {
+      const longLivedData = await longLivedResponse.json()
+      if (longLivedData.access_token) {
+        finalToken = longLivedData.access_token
+        tokenType = 'long_lived'
+        expiresIn = longLivedData.expires_in || 5184000 // 60 days
+        console.log('✅ Long-lived token obtained')
       }
+    } else {
+      console.log('⚠️ Using short-lived token instead')
     }
 
-    if (pagesWithInstagram.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: 'No Instagram Business accounts found connected to your Facebook pages. Please connect an Instagram Business account to a Facebook page first.',
-          debug: { 
-            pages_found: pages.length,
-            pages_names: pages.map(p => p.name)
-          }
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    // Get user profile information using Instagram Basic Display API
+    console.log('👤 Fetching Instagram user profile...')
+    const profileResponse = await fetch(
+      `https://graph.instagram.com/me?fields=id,username,media_count,account_type&access_token=${finalToken}`
+    )
 
-    // Use the first Instagram Business account found
-    const selectedIG = pagesWithInstagram[0]
-    
-    console.log('📸 Selected Instagram Business account:', {
-      page_name: selectedIG.page_name,
-      instagram_id: selectedIG.instagram_business_account_id
-    })
-
-    // Subscribe the Instagram account to webhooks
-    let webhookSubscribed = false
-    try {
-      const webhookResponse = await fetch(
-        `https://graph.facebook.com/${graphVersion}/${selectedIG.instagram_business_account_id}/subscribed_apps?access_token=${selectedIG.page_access_token}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-
-      if (webhookResponse.ok) {
-        webhookSubscribed = true
-        console.log('✅ Instagram webhook subscription successful')
-      } else {
-        const errorText = await webhookResponse.text()
-        console.error('⚠️ Instagram webhook subscription failed:', errorText)
-        // Continue anyway
-      }
-    } catch (webhookError) {
-      console.error('⚠️ Instagram webhook subscription error:', webhookError)
-      // Continue anyway
+    let userProfile = { id: igUserId, username: `ig_user_${igUserId}`, account_type: 'PERSONAL' }
+    if (profileResponse.ok) {
+      userProfile = await profileResponse.json()
+      console.log('✅ User profile obtained:', userProfile.username)
+    } else {
+      console.log('⚠️ Could not fetch user profile, using defaults')
     }
 
     // Initialize Supabase client
@@ -261,6 +211,9 @@ serve(async (req) => {
       .eq('channel_type', 'instagram')
       .maybeSingle()
 
+    // Calculate expiration date
+    const expiresAt = new Date(Date.now() + (expiresIn * 1000)).toISOString()
+
     let dbError
     if (existingChannel) {
       // Update existing channel
@@ -269,12 +222,13 @@ serve(async (req) => {
         .from('communication_channels')
         .update({
           channel_config: {
-            page_id: selectedIG.page_id,
-            page_name: selectedIG.page_name,
-            page_access_token: selectedIG.page_access_token,
-            instagram_business_account_id: selectedIG.instagram_business_account_id,
-            user_access_token: userAccessToken,
-            webhook_subscribed: webhookSubscribed,
+            instagram_user_id: userProfile.id,
+            username: userProfile.username,
+            account_type: userProfile.account_type,
+            access_token: finalToken,
+            token_type: tokenType,
+            expires_at: expiresAt,
+            media_count: userProfile.media_count || 0,
             connected_at: new Date().toISOString()
           },
           is_connected: true,
@@ -291,12 +245,13 @@ serve(async (req) => {
           user_id: userId,
           channel_type: 'instagram',
           channel_config: {
-            page_id: selectedIG.page_id,
-            page_name: selectedIG.page_name,
-            page_access_token: selectedIG.page_access_token,
-            instagram_business_account_id: selectedIG.instagram_business_account_id,
-            user_access_token: userAccessToken,
-            webhook_subscribed: webhookSubscribed,
+            instagram_user_id: userProfile.id,
+            username: userProfile.username,
+            account_type: userProfile.account_type,
+            access_token: finalToken,
+            token_type: tokenType,
+            expires_at: expiresAt,
+            media_count: userProfile.media_count || 0,
             connected_at: new Date().toISOString()
           },
           is_connected: true
@@ -310,7 +265,7 @@ serve(async (req) => {
     }
 
     // Redirect to frontend dashboard with success
-    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_name=${encodeURIComponent(selectedIG.page_name)}&instagram_id=${selectedIG.instagram_business_account_id}&channel=instagram&view=channels`
+    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&instagram_user=${encodeURIComponent(userProfile.username)}&account_type=${userProfile.account_type}&channel=instagram&view=channels`
     
     return new Response(
       `<!DOCTYPE html>
@@ -352,8 +307,9 @@ serve(async (req) => {
 <body>
     <div class="container">
         <h1>📸 Instagram Conectado Exitosamente</h1>
-        <p>Página: <strong>${selectedIG.page_name}</strong></p>
-        <p>Instagram Business ID: <strong>${selectedIG.instagram_business_account_id}</strong></p>
+        <p>Usuario: <strong>@${userProfile.username}</strong></p>
+        <p>Tipo: <strong>${userProfile.account_type}</strong></p>
+        <p>Token: <strong>${tokenType}</strong></p>
         <p>Redirigiendo al dashboard...</p>
         <div class="spinner"></div>
         <p><small>Si no eres redirigido automáticamente, <a href="${frontendCallbackUrl}" style="color: #fff; text-decoration: underline;">haz clic aquí</a></small></p>
@@ -361,7 +317,7 @@ serve(async (req) => {
     <script>
         setTimeout(() => {
             window.location.href = "${frontendCallbackUrl}";
-        }, 3000);
+        }, 2000);
     </script>
 </body>
 </html>`,

@@ -26,13 +26,15 @@ interface FacebookConfig {
 }
 
 interface InstagramConfig {
-  page_id: string;
-  page_name: string;
-  page_access_token: string;
-  user_access_token: string;
-  instagram_business_account_id: string;
-  webhook_subscribed: boolean;
+  username: string;
+  instagram_user_id: string;
+  access_token: string;
+  account_type: string;
+  token_type: string;
+  expires_at: string;
   connected_at: string;
+  media_count?: number;
+  webhook_subscribed?: boolean;
 }
 
 type ChannelConfig = WhatsAppConfig | FacebookConfig | InstagramConfig | null;
@@ -207,20 +209,24 @@ const ChannelsView = () => {
       
       case 'instagram': {
         const config = channel.channel_config as InstagramConfig;
-        const hasPageId = Boolean(config?.page_id);
-        const hasPageToken = Boolean(config?.page_access_token);
-        const hasUserToken = Boolean(config?.user_access_token);
-        const hasIgBusinessId = Boolean(config?.instagram_business_account_id);
+        const hasUsername = Boolean(config?.username);
+        const hasAccessToken = Boolean(config?.access_token);
+        const hasInstagramUserId = Boolean(config?.instagram_user_id);
+        const hasAccountType = Boolean(config?.account_type);
         const isConnected = Boolean(channel.is_connected);
-        const status = hasPageId && hasPageToken && hasUserToken && hasIgBusinessId && isConnected;
+        const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
+        const status = hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && isConnected && isTokenValid;
         
         console.log(`📷 INSTAGRAM Status:`, {
-          hasPageId,
-          hasPageToken: hasPageToken ? '✅' : '❌',
-          hasUserToken: hasUserToken ? '✅' : '❌',
-          hasIgBusinessId,
+          hasUsername,
+          hasAccessToken: hasAccessToken ? '✅' : '❌',
+          hasInstagramUserId,
+          hasAccountType,
           isConnected,
-          pageName: config?.page_name,
+          isTokenValid,
+          username: config?.username,
+          accountType: config?.account_type,
+          expiresAt: config?.expires_at,
           finalStatus: status
         });
         
@@ -458,7 +464,17 @@ const ChannelsView = () => {
         return;
       }
 
-      const config = channel.channel_config as unknown as (FacebookConfig | InstagramConfig);
+      // Only test webhooks for Facebook channels (Instagram has different webhook handling)
+      if (channel.channel_type !== 'facebook') {
+        toast({
+          title: "Test no disponible",
+          description: "El test de webhook solo está disponible para canales de Facebook",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const config = channel.channel_config as unknown as FacebookConfig;
       const pageAccessToken = config.page_access_token;
       const pageId = config.page_id;
 
@@ -875,7 +891,7 @@ const ChannelsView = () => {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Instagram className="h-4 w-4 text-pink-600" />
-                            <span className="font-medium text-pink-900">{config?.page_name || 'Cuenta de Instagram'}</span>
+                            <span className="font-medium text-pink-900">@{config?.username || 'Cuenta de Instagram'}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="default" className="bg-pink-600 text-xs">
@@ -887,14 +903,23 @@ const ChannelsView = () => {
                             >
                               {config?.webhook_subscribed ? '✅ Webhook' : '❌ Webhook'}
                             </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {config?.account_type || 'PERSONAL'}
+                            </Badge>
                           </div>
                         </div>
                         <div className="text-xs text-pink-800 space-y-1">
-                          <p>Business Account ID: {config?.instagram_business_account_id || 'N/A'}</p>
-                          <p>Webhook: {config?.webhook_subscribed ? '✅ Activo' : '❌ Inactivo'}</p>
+                          <p>Usuario ID: {config?.instagram_user_id || 'N/A'}</p>
+                          <p>Tipo de cuenta: {config?.account_type || 'PERSONAL'}</p>
+                          <p>Token: {config?.token_type || 'short_lived'} ({config?.expires_at ? new Date(config.expires_at) > new Date() ? '✅ Válido' : '❌ Expirado' : 'N/A'})</p>
                           <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
-                          {config?.webhook_subscribed && (
-                            <p className="text-green-700 font-medium">✓ Recibiendo mensajes automáticamente</p>
+                          {config?.expires_at && (
+                            <p className={`font-medium ${new Date(config.expires_at) > new Date() ? 'text-green-700' : 'text-red-700'}`}>
+                              {new Date(config.expires_at) > new Date() 
+                                ? `✓ Expira: ${new Date(config.expires_at).toLocaleDateString('es-ES')}` 
+                                : '⚠️ Token expirado'
+                              }
+                            </p>
                           )}
                         </div>
                         <div className="flex gap-2 mt-2">
