@@ -14,6 +14,18 @@ type ChannelType = 'whatsapp' | 'facebook' | 'instagram' | string;
 
 interface WhatsAppConfig {
   phone_number: string;
+  // Nueva estructura de WhatsApp Business API
+  phone_number_id?: string;
+  business_account_id?: string;
+  access_token?: string;
+  display_phone_number?: string;
+  verified_name?: string;
+  business_name?: string;
+  account_review_status?: string;
+  business_verification_status?: string;
+  webhook_configured?: boolean;
+  webhook_url?: string;
+  connected_at?: string;
 }
 
 interface FacebookConfig {
@@ -49,10 +61,6 @@ interface Channel {
 const ChannelsView = () => {
   const { user, loading: authLoading } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [whatsappPhone, setWhatsappPhone] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
   const [showWebhookMonitor, setShowWebhookMonitor] = useState(false);
   const { toast } = useToast();
 
@@ -105,20 +113,6 @@ const ChannelsView = () => {
         }
         
         setChannels((data as Channel[]) || []);
-
-        const whatsappChannel = (data as Channel[] | null | undefined)?.find(
-          (c) => c.channel_type === 'whatsapp'
-        );
-        if (
-          whatsappChannel?.channel_config &&
-          typeof whatsappChannel.channel_config === 'object' &&
-          !Array.isArray(whatsappChannel.channel_config)
-        ) {
-          const config = whatsappChannel.channel_config as Partial<WhatsAppConfig>;
-          if (config.phone_number) {
-            setWhatsappPhone(config.phone_number);
-          }
-        }
       }
     } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudieron cargar los canales");
@@ -173,14 +167,20 @@ const ChannelsView = () => {
     switch (channelType) {
       case 'whatsapp': {
         const config = channel.channel_config as WhatsAppConfig;
-        const hasPhone = Boolean(config?.phone_number);
+        const hasPhoneNumberId = Boolean(config?.phone_number_id);
+        const hasBusinessAccountId = Boolean(config?.business_account_id);
+        const hasAccessToken = Boolean(config?.access_token);
         const isConnected = Boolean(channel.is_connected);
-        const status = hasPhone && isConnected;
+        const status = hasPhoneNumberId && hasBusinessAccountId && hasAccessToken && isConnected;
         
         console.log(`📱 WHATSAPP Status:`, {
-          hasPhone,
-          phone: config?.phone_number,
+          hasPhoneNumberId,
+          hasBusinessAccountId,
+          hasAccessToken: hasAccessToken ? '✅' : '❌',
           isConnected,
+          displayPhoneNumber: config?.display_phone_number,
+          businessName: config?.business_name,
+          webhookConfigured: config?.webhook_configured,
           finalStatus: status
         });
         
@@ -239,87 +239,69 @@ const ChannelsView = () => {
     }
   };
 
-  const handleWhatsAppVerification = async () => {
-    if (!whatsappPhone) {
-      toast({
-        title: "Error",
-        description: "Por favor ingresa tu número de WhatsApp",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsVerifying(true);
+  const handleWhatsAppLogin = async () => {
     try {
-      // Simulate SMS verification (en producción aquí llamarías a WhatsApp Cloud API)
-      setTimeout(() => {
-        setShowVerification(true);
-        setIsVerifying(false);
+      console.log('🟢 Iniciando proceso de login de WhatsApp Business...');
+      
+      if (!user) {
+        console.error('❌ Usuario no autenticado');
         toast({
-          title: "Código enviado",
-          description: "Revisa tu WhatsApp para el código de verificación",
+          title: 'Error',
+          description: 'Debes estar autenticado para conectar WhatsApp',
+          variant: 'destructive',
         });
-      }, 2000);
-    } catch (error) {
-      setIsVerifying(false);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el código de verificación",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleWhatsAppConnect = async () => {
-    if (!verificationCode) {
-      toast({
-        title: "Error",
-        description: "Por favor ingresa el código de verificación",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const config = { phone_number: whatsappPhone };
-      const existingChannel = channels.find(c => c.channel_type === 'whatsapp');
-
-      if (existingChannel) {
-        await supabaseUpdate(
-          supabase
-            .from('communication_channels')
-            .update({
-              channel_config: config,
-              is_connected: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingChannel.id)
-        );
-      } else {
-        await supabaseInsert(
-          supabase
-            .from('communication_channels')
-            .insert({
-              channel_type: 'whatsapp',
-              channel_config: config,
-              is_connected: true,
-              user_id: (await supabase.auth.getUser()).data.user?.id
-            })
-        );
+        return;
       }
+      
+      console.log('✅ Usuario autenticado:', user.id);
 
-      await fetchChannels();
-      setShowVerification(false);
-      setVerificationCode('');
+      // Configuración de WhatsApp Business API Embedded Signup
+      const WHATSAPP_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
+      const WHATSAPP_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v20.0';
+      const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
+
+      // URL de callback para WhatsApp Embedded Signup
+      const redirectUri = `${EDGE_BASE_URL}/functions/v1/whatsapp-embedded-signup`;
+      
+      // Scopes requeridos para WhatsApp Business API
+      const scope = [
+        'whatsapp_business_messaging',
+        'whatsapp_business_management'
+      ].join(',');
+
+      // State parameter con user_id para el callback
+      const state = encodeURIComponent(JSON.stringify({ 
+        user_id: user.id,
+        channel: 'whatsapp'
+      }));
+
+      // URL de autorización de WhatsApp Business Embedded Signup
+      const whatsappAuthUrl = `https://www.facebook.com/${WHATSAPP_GRAPH_VERSION}/dialog/oauth?` +
+        `client_id=${WHATSAPP_APP_ID}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_type=code&` +
+        `state=${state}&` +
+        `config_id=YOUR_WHATSAPP_CONFIG_ID`; // Este viene de tu configuración de Meta
+
+      console.log('🔗 WhatsApp OAuth URL construida:', whatsappAuthUrl);
+      console.log('👤 User ID:', user.id);
+      
+      // Mostrar mensaje informativo
       toast({
-        title: "¡Éxito!",
-        description: "WhatsApp conectado exitosamente",
+        title: "🟢 Conectando WhatsApp Business",
+        description: "Te redirigimos a Meta para autorizar tu cuenta de WhatsApp Business...",
       });
+      
+      // Redirigir a Meta para autorización
+      window.location.href = whatsappAuthUrl;
+
     } catch (error: unknown) {
+      console.error('Error building WhatsApp OAuth URL:', error);
       toast({
-        title: "Error",
-        description: "No se pudo conectar WhatsApp",
-        variant: "destructive",
+        title: 'Error',
+        description: 'No se pudo iniciar la conexión con WhatsApp Business',
+        variant: 'destructive',
       });
     }
   };
@@ -698,60 +680,72 @@ const ChannelsView = () => {
           <div className="space-y-4">
             {!getChannelStatus('whatsapp') ? (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="wa-phone">Número de WhatsApp</Label>
-                  <Input
-                    id="wa-phone"
-                    placeholder="+57 300 123 4567"
-                    value={whatsappPhone}
-                    onChange={(e) => setWhatsappPhone(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Ingresa tu número con código de país
-                  </p>
-                </div>
-
-                {!showVerification ? (
-                  <Button 
-                    onClick={handleWhatsAppVerification}
-                    disabled={isVerifying}
-                    className="w-full"
-                  >
-                    {isVerifying ? "Enviando código..." : "Verificar número"}
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code">Código de verificación</Label>
-                    <Input
-                      id="verification-code"
-                      placeholder="123456"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      maxLength={6}
-                    />
-                    <Button 
-                      onClick={handleWhatsAppConnect}
-                      className="w-full"
-                    >
-                      Conectar WhatsApp
-                    </Button>
-                  </div>
-                )}
+                <Button 
+                  onClick={handleWhatsAppLogin}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Conectar WhatsApp Business
+                </Button>
 
                 <div className="bg-green-50 p-3 rounded-lg border">
-                  <h4 className="font-medium text-green-900 text-sm mb-1">Pasos simples:</h4>
-                  <ol className="text-xs text-green-800 space-y-1 list-decimal list-inside">
-                    <li>Ingresa tu número de WhatsApp Business</li>
-                    <li>Recibirás un código por SMS</li>
-                    <li>Ingresa el código para verificar</li>
-                  </ol>
+                  <h4 className="font-medium text-green-900 text-sm mb-1">Conexión automática:</h4>
+                  <ul className="text-xs text-green-800 space-y-1 list-disc list-inside">
+                    <li>Autoriza tu cuenta de WhatsApp Business</li>
+                    <li>Selecciona el número de teléfono a conectar</li>
+                    <li>Configuración automática del webhook</li>
+                    <li>¡Comienza a recibir mensajes al instante!</li>
+                  </ul>
                 </div>
               </>
             ) : (
-              <div className="text-center py-4">
-                <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
-                <p className="font-medium">WhatsApp conectado</p>
-                <p className="text-sm text-muted-foreground">{whatsappPhone}</p>
+              <div className="space-y-3">
+                {channels
+                  .filter(c => c.channel_type === 'whatsapp')
+                  .map((channel) => {
+                    const config = channel.channel_config as WhatsAppConfig;
+                    return (
+                      <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-green-900">{config?.verified_name || config?.business_name || 'WhatsApp Business'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default" className="bg-green-600 text-xs">
+                              Conectado
+                            </Badge>
+                            <Badge 
+                              variant={config?.webhook_configured ? "default" : "secondary"} 
+                              className={`text-xs ${config?.webhook_configured ? 'bg-green-600' : 'bg-gray-400'}`}
+                            >
+                              {config?.webhook_configured ? '✅ Webhook' : '❌ Webhook'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-xs text-green-800 space-y-1">
+                          <p>Número: {config?.display_phone_number || 'N/A'}</p>
+                          <p>WABA ID: {config?.business_account_id || 'N/A'}</p>
+                          <p>Estado: {config?.account_review_status || 'N/A'}</p>
+                          <p>Verificación: {config?.business_verification_status || 'N/A'}</p>
+                          <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
+                          {config?.webhook_configured && (
+                            <p className="text-green-700 font-medium">✓ Recibiendo mensajes automáticamente</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-green-600 border-green-300 hover:bg-green-100"
+                            onClick={() => handleWhatsAppLogin()}
+                          >
+                            Reconectar
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

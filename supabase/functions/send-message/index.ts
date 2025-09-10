@@ -1,3 +1,4 @@
+// send-message/index.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // Deno Edge Function: Send Message to Facebook Messenger
@@ -85,29 +86,44 @@ serve(async (req) => {
       )
     }
 
-    // Get Facebook channel for this user
+    // Determine channel type from conversation
+    const channelType = conversation.channel || 'facebook';
+
+    // Get channel for this user based on conversation channel
     const { data: channels, error: channelError } = await supabase
       .from('communication_channels')
       .select('*')
       .eq('user_id', user_id)
-      .eq('channel_type', 'facebook')
+      .eq('channel_type', channelType)
       .eq('is_connected', true)
       .single()
 
     if (channelError || !channels) {
       return new Response(
-        JSON.stringify({ error: 'Facebook channel not found' }),
+        JSON.stringify({ error: `${channelType} channel not found` }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const channel = channels
-    const pageAccessToken = channel.channel_config.page_access_token
+    
+    // Use correct access token and API endpoint based on channel type
+    const accessToken = channelType === 'instagram' 
+      ? channel.channel_config.access_token 
+      : channel.channel_config.page_access_token;
+    
     const recipientId = conversation.channel_thread_id
 
-    // Send message to Facebook Messenger
+    console.log('📤 Sending message via', channelType, 'to:', recipientId);
+    console.log('🔑 Access token present:', !!accessToken);
+
+    // Send message to Facebook/Instagram API
+    const apiUrl = channelType === 'instagram' 
+      ? `https://graph.instagram.com/v23.0/me/messages`
+      : `https://graph.facebook.com/v23.0/me/messages`;
+
     const messengerResponse = await fetch(
-      `https://graph.facebook.com/v23.0/me/messages?access_token=${pageAccessToken}`,
+      `${apiUrl}?access_token=${accessToken}`,
       {
         method: 'POST',
         headers: {
@@ -123,9 +139,9 @@ serve(async (req) => {
 
     if (!messengerResponse.ok) {
       const errorData = await messengerResponse.text()
-      console.error('Facebook API error:', errorData)
+      console.error(`${channelType} API error:`, errorData)
       return new Response(
-        JSON.stringify({ error: 'Failed to send message to Facebook' }),
+        JSON.stringify({ error: `Failed to send message to ${channelType}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -160,12 +176,13 @@ serve(async (req) => {
       sender_type: sender_type, // 'agent' or 'ia' based on request
       is_automated: sender_type === 'ia', // true for IA, false for agent
       sender_name: sender_name || (sender_type === 'ia' ? 'IA Assistant' : sender_type === 'agent' ? 'Agente' : 'Cliente'),
-      platform_message_id: messengerResult.message_id, // Facebook message ID
+      platform_message_id: messengerResult.message_id, // Platform message ID (Facebook/Instagram)
       metadata: {
-        platform: 'facebook',
-        facebook_message_id: messengerResult.message_id,
+        platform: channelType,
+        platform_message_id: messengerResult.message_id,
         timestamp: new Date().toISOString(),
-        sent_via: 'send-message-function' // Mark messages sent via this function
+        sent_via: 'send-message-function', // Mark messages sent via this function
+        api_endpoint: apiUrl
       }
     };
 

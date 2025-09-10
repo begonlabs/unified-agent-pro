@@ -1,3 +1,4 @@
+// meta-webhook/handlers/instagram.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // supabase-project/volumes/meta-webhook/handlers/instagram.ts
@@ -22,9 +23,12 @@ interface CommunicationChannel {
   id: string;
   user_id: string;
   channel_config: {
-    page_id: string;
-    page_name: string;
-    page_access_token: string;
+    instagram_user_id: string;
+    instagram_business_account_id?: string; // 🔥 NEW: Business Account ID for messaging
+    username: string;
+    access_token: string;
+    account_type: string;
+    messaging_available?: boolean;
   };
 }
 
@@ -149,27 +153,55 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       }
     }
     
-    // Determine the page ID based on echo status
-    // For echo messages: sender = page, recipient = user → page_id = sender
-    // For normal messages: sender = user, recipient = page → page_id = recipient
-    const actualPageId = isEcho ? senderId : pageId;
+    // For Instagram, we need to find the channel by Business Account ID (for messaging)
+    // The Business Account ID is what receives messages in webhooks
+    // For echo messages: sender = business account, recipient = user → business_account_id = sender  
+    // For normal messages: sender = user, recipient = business account → business_account_id = recipient
+    const webhookBusinessId = isEcho ? senderId : pageId;
     
-    console.log('🔍 Looking for Instagram channel with page_id:', actualPageId, {
+    console.log('🔍 Looking for Instagram channel with business account ID:', webhookBusinessId, {
       isEcho,
       senderId,
       pageId,
-      logic: isEcho ? 'echo: using senderId as pageId' : 'normal: using pageId'
+      logic: isEcho ? 'echo: using senderId as business_account_id' : 'normal: using pageId as business_account_id'
     });
     
-    const { data: channel, error: channelError } = await supabase
+    // 🔥 NEW: Try to find by Business Account ID first, then fallback to User ID for backwards compatibility
+    let channel: CommunicationChannel | null = null;
+    let channelError: any = null;
+    
+    // First attempt: Search by Instagram Business Account ID (new field)
+    const { data: businessChannel, error: businessError } = await supabase
       .from('communication_channels')
       .select('*')
-      .eq('channel_config->>page_id', actualPageId)
+      .eq('channel_config->>instagram_business_account_id', webhookBusinessId)
       .eq('channel_type', 'instagram')
-      .single();
+      .maybeSingle();
+    
+    if (businessChannel && !businessError) {
+      channel = businessChannel;
+      console.log('✅ Found Instagram channel by Business Account ID');
+    } else {
+      // Fallback: Search by Instagram User ID (old field, for backwards compatibility)  
+      console.log('🔄 Trying fallback search by User ID...');
+      const { data: userChannel, error: userError } = await supabase
+        .from('communication_channels')
+        .select('*')
+        .eq('channel_config->>instagram_user_id', webhookBusinessId)
+        .eq('channel_type', 'instagram')
+        .maybeSingle();
+      
+      if (userChannel && !userError) {
+        channel = userChannel;
+        console.log('✅ Found Instagram channel by User ID (fallback)');
+      } else {
+        channelError = userError || businessError;
+        console.log('❌ No Instagram channel found with either Business Account ID or User ID');
+      }
+    }
 
     if (channelError || !channel) {
-      console.error('❌ No Instagram channel found for page:', actualPageId, channelError?.message);
+      console.error('❌ No Instagram channel found for business account ID:', webhookBusinessId, channelError?.message);
       return;
     }
 
@@ -408,8 +440,46 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           }
 
           console.log('✅ Respuesta de IA para Instagram guardada exitosamente');
-          // Nota: Instagram Direct no soporta envío automático de mensajes como Facebook Messenger
-          // Los mensajes se mostrarán solo en la interfaz de usuario
+          
+          // Enviar mensaje automático de IA por Instagram Messaging API
+          try {
+            const accessToken = channel.channel_config.access_token;
+            const igUserId = realUserId; // El ID del usuario de Instagram
+            
+            console.log('📤 Enviando mensaje de IA por Instagram a:', igUserId);
+            console.log('🔑 Using Instagram access token:', accessToken ? 'Present' : 'Missing');
+            
+            const instagramApiResponse = await fetch(
+              `https://graph.instagram.com/v23.0/me/messages?access_token=${accessToken}`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  recipient: { id: igUserId },
+                  message: { text: aiResponse.response },
+                  messaging_type: 'RESPONSE'
+                })
+              }
+            );
+
+            if (!instagramApiResponse.ok) {
+              const errorData = await instagramApiResponse.text();
+              console.error('❌ Error enviando mensaje por Instagram API:', errorData);
+            } else {
+              const result = await instagramApiResponse.json();
+              console.log('✅ Mensaje de IA enviado a Instagram:', result.message_id);
+              
+              // Actualizar el platform_message_id con el ID real de Instagram
+              await supabase
+                .from('messages')
+                .update({ platform_message_id: result.message_id })
+                .eq('platform_message_id', `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+            }
+          } catch (sendError) {
+            console.error('❌ Error enviando mensaje automático de Instagram:', sendError);
+          }
 
         } else {
           console.error('❌ Error generando respuesta de IA para Instagram:', aiResponse.error);

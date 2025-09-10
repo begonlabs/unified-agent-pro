@@ -1,3 +1,4 @@
+// instagram-oauth/index.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // Deno Edge Function: Instagram OAuth Redirect Handler
@@ -175,6 +176,56 @@ serve(async (req) => {
       console.log('⚠️ Could not fetch user profile, using defaults')
     }
 
+    // 🔥 NEW: Get Instagram Business Account ID for messaging (if business account)
+    let businessAccountId = null;
+    if (userProfile.account_type === 'BUSINESS') {
+      console.log('🏢 Fetching Instagram Business Account ID for messaging...');
+      try {
+        // Try to get business account info using Instagram Graph API (not Facebook Graph API)
+        const businessResponse = await fetch(
+          `https://graph.instagram.com/me?fields=id,username,account_type&access_token=${finalToken}`
+        );
+        
+        if (businessResponse.ok) {
+          const businessData = await businessResponse.json();
+          console.log('📋 Business account response:', businessData);
+          
+          // For Instagram Business accounts, try to get the messaging-enabled business account ID
+          // This might be the same as the user ID or different, depending on the account setup
+          businessAccountId = businessData.id;
+          
+          // Alternative approach: Check if we can access business endpoints
+          const businessPagesResponse = await fetch(
+            `https://graph.facebook.com/v23.0/me/accounts?access_token=${finalToken}`
+          );
+          
+          if (businessPagesResponse.ok) {
+            const businessPagesData = await businessPagesResponse.json();
+            console.log('📄 Business pages data:', businessPagesData);
+            
+            // Look for Instagram business accounts in the pages
+            const instagramPages = businessPagesData.data?.filter(page => 
+              page.instagram_business_account?.id
+            );
+            
+            if (instagramPages && instagramPages.length > 0) {
+              businessAccountId = instagramPages[0].instagram_business_account.id;
+              console.log('✅ Found Instagram Business Account ID via pages:', businessAccountId);
+            }
+          }
+          
+          console.log('✅ Instagram Business Account ID:', businessAccountId || 'Not found');
+        } else {
+          const errorText = await businessResponse.text();
+          console.log('⚠️ Could not fetch business account info:', errorText);
+        }
+      } catch (businessError) {
+        console.log('⚠️ Error fetching business account info:', businessError);
+      }
+    } else {
+      console.log('ℹ️ Personal account - business messaging not available');
+    }
+
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -223,13 +274,15 @@ serve(async (req) => {
         .update({
           channel_config: {
             instagram_user_id: userProfile.id,
+            instagram_business_account_id: businessAccountId, // 🔥 NEW: Business Account ID for messaging
             username: userProfile.username,
             account_type: userProfile.account_type,
             access_token: finalToken,
             token_type: tokenType,
             expires_at: expiresAt,
             media_count: userProfile.media_count || 0,
-            connected_at: new Date().toISOString()
+            connected_at: new Date().toISOString(),
+            messaging_available: !!businessAccountId // 🔥 NEW: Flag if messaging is available
           },
           is_connected: true,
           updated_at: new Date().toISOString()
@@ -246,13 +299,15 @@ serve(async (req) => {
           channel_type: 'instagram',
           channel_config: {
             instagram_user_id: userProfile.id,
+            instagram_business_account_id: businessAccountId, // 🔥 NEW: Business Account ID for messaging  
             username: userProfile.username,
             account_type: userProfile.account_type,
             access_token: finalToken,
             token_type: tokenType,
             expires_at: expiresAt,
             media_count: userProfile.media_count || 0,
-            connected_at: new Date().toISOString()
+            connected_at: new Date().toISOString(),
+            messaging_available: !!businessAccountId // 🔥 NEW: Flag if messaging is available
           },
           is_connected: true
         })

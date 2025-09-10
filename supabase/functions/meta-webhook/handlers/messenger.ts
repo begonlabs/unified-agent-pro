@@ -1,3 +1,4 @@
+// meta-webhook/handlers/messanger.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // Deno Edge Function: Facebook Messenger Event Handler
@@ -471,19 +472,21 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           return;
         }
 
-
+        // Verificar si la IA debe responder a este mensaje
         if (!shouldAIRespond(messageText, aiConfig)) {
           console.log('🤖 IA decide no responder a este mensaje');
           return;
         }
 
+        // 🔥 CORRECCIÓN: Obtener historial completo con formato correcto
         const { data: recentMessages } = await supabase
           .from('messages')
           .select('id, content, sender_type, sender_name, created_at')
           .eq('conversation_id', conversation.id)
-          .order('created_at', { ascending: false }) 
+          .order('created_at', { ascending: false }) // Del más reciente al más antiguo (como querías)
           .limit(10);
 
+        // 🔥 CORRECCIÓN: Revertir orden y convertir a formato Message
         const conversationHistory = recentMessages?.reverse().map(msg => ({
           id: msg.id || crypto.randomUUID(),
           content: msg.content,

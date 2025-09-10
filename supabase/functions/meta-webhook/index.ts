@@ -1,3 +1,4 @@
+// meta-webhook/index.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // Deno Edge Function: Meta Webhook Handler for Facebook Messenger and Instagram
@@ -33,17 +34,45 @@ function safeEqual(a: string, b: string): boolean {
 // Verify webhook signature for security
 async function isValidSignature(request: Request, rawBody: string): Promise<boolean> {
   const signatureHeader = request.headers.get("x-hub-signature-256");
-  const appSecret = Deno.env.get("META_APP_SECRET");
+  
+  if (!signatureHeader) {
+    console.error('Missing signature header');
+    return false;
+  }
 
-  if (!signatureHeader || !appSecret) {
-    console.error('Missing signature header or META_APP_SECRET');
+  // Determine webhook type from body to use correct app secret
+  let webhookType = 'facebook'; // default
+  try {
+    const body = JSON.parse(rawBody);
+    if (body.object === 'instagram') {
+      webhookType = 'instagram';
+    } else if (body.object === 'page') {
+      webhookType = 'facebook';
+    }
+  } catch (error) {
+    console.error('Error parsing body for webhook type detection:', error);
+  }
+
+  // Use correct app secret based on webhook type
+  const appSecret = webhookType === 'instagram' 
+    ? Deno.env.get("INSTAGRAM_BASIC_APP_SECRET") 
+    : Deno.env.get("META_APP_SECRET");
+
+  if (!appSecret) {
+    console.error(`Missing app secret for ${webhookType}:`, {
+      webhookType,
+      instagramSecret: !!Deno.env.get("INSTAGRAM_BASIC_APP_SECRET"),
+      metaSecret: !!Deno.env.get("META_APP_SECRET")
+    });
     return false;
   }
 
   console.log('🔐 Verifying signature:', {
+    webhookType,
     hasSignature: !!signatureHeader,
     hasAppSecret: !!appSecret,
-    bodyLength: rawBody.length
+    bodyLength: rawBody.length,
+    secretUsed: webhookType === 'instagram' ? 'INSTAGRAM_BASIC_APP_SECRET' : 'META_APP_SECRET'
   });
 
   const key = await crypto.subtle.importKey(
@@ -60,8 +89,11 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
   const isValid = safeEqual(expectedSignature, signatureHeader);
   console.log('🔐 Signature verification result:', {
     isValid,
+    webhookType,
     expectedLength: expectedSignature.length,
-    receivedLength: signatureHeader.length
+    receivedLength: signatureHeader.length,
+    expectedStart: expectedSignature.substring(0, 15),
+    receivedStart: signatureHeader.substring(0, 15)
   });
   
   return isValid;

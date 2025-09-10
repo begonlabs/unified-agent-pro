@@ -1,8 +1,10 @@
+// send-ai-message/index.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-// Deno Edge Function: Send AI Message to Facebook Messenger
+// Deno Edge Function: Send AI Message to Facebook Messenger with Memory System
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { generateAIResponse, shouldAIRespond } from '../_shared/openai.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,6 +36,73 @@ interface CommunicationChannel {
   };
 }
 
+interface Message {
+  id: string;
+  content: string;
+  sender_type: 'user' | 'ia';
+  sender_name: string;
+  created_at: string;
+  metadata?: any;
+  has_new_messages?: boolean;
+}
+
+interface AIConfig {
+  goals?: string;
+  restrictions?: string;
+  common_questions?: string;
+  response_time?: number;
+  knowledge_base?: string;
+  faq?: string;
+  is_active?: boolean;
+}
+
+// Simplified function to wait and get context with new message check
+async function waitAndGetContextWithNewMessageCheck(
+  supabase: any, 
+  conversationId: string, 
+  delaySeconds: number = 15,
+  limit: number = 150
+): Promise<{ context: Message[], hasNewMessages: boolean }> {
+  console.log(`⏳ Esperando ${delaySeconds} segundos para verificar más mensajes...`);
+  
+  const currentTime = new Date().toISOString();
+  
+  await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+  
+  const { data: contextData, error } = await supabase
+    .rpc('get_conversation_context', {
+      p_conversation_id: conversationId,
+      p_limit: limit,
+      p_after_timestamp: currentTime
+    });
+  
+  if (error) {
+    console.error('Error obteniendo contexto con verificación:', error);
+    return { context: [], hasNewMessages: false };
+  }
+  
+  if (!contextData || contextData.length === 0) {
+    return { context: [], hasNewMessages: false };
+  }
+  
+  // verify if there are new messages
+  const hasNewMessages = contextData[0]?.has_new_messages || false;
+  
+  // convert to expected format and sort chronologically (oldest first)
+  const context: Message[] = contextData
+    .map(row => ({
+      id: row.id,
+      content: row.content,
+      sender_type: row.sender_type,
+      sender_name: row.sender_name,
+      created_at: row.created_at,
+      metadata: row.metadata
+    }))
+    .reverse();
+  
+  return { context, hasNewMessages };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -50,7 +119,7 @@ serve(async (req) => {
       conversation_id, 
       message, 
       user_id, 
-      ai_model = 'default', 
+      ai_model = 'gpt-3.5-turbo', 
       ai_prompt, 
       confidence_score 
     } = body
@@ -62,7 +131,7 @@ serve(async (req) => {
       )
     }
 
-    // Initialize Supabase client
+    // initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
@@ -76,14 +145,14 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    console.log('🤖 Processing AI message request:', {
+    console.log('🤖 Procesando petición con IA:', {
       conversation_id,
       user_id,
       ai_model,
       message_length: message.length
     })
 
-    // Get conversation details
+    // get conversation details
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('*')
@@ -98,7 +167,74 @@ serve(async (req) => {
       )
     }
 
-    // Get communication channel for this user
+    // get AI configuration for this user
+    const { data: aiConfigData, error: aiConfigError } = await supabase
+      .from('ai_configurations')
+      .select('*')
+      .eq('user_id', user_id)
+      .single()
+
+    if (aiConfigError) {
+      console.log('⚠️No se encontró configuración de IA para el usuario, usando valores por defecto');
+    }
+
+    const aiConfig: AIConfig = aiConfigData || { is_active: true };
+
+    // check if AI should respond
+    if (!shouldAIRespond(message, aiConfig)) {
+      console.log('🚫 No se debe responder a esta mensaje');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'AI determinado no responder a este mensaje',
+          should_respond: false 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // **FUNCIONALIDAD MEJORADA: Esperar y obtener contexto en una sola operación**
+    const randomDelay = Math.floor(Math.random() * (20 - 7 + 1)) + 7; // Entre 7 y 20 segundos
+    
+    console.log('📚 Esperando y obteniendo contexto de mensajes...');
+    const { context: messageContext, hasNewMessages } = await waitAndGetContextWithNewMessageCheck(
+      supabase,
+      conversation_id,
+      randomDelay,
+      150
+    );
+    
+    if (hasNewMessages) {
+      console.log('🔄 Detectados más mensajes del usuario, esperando...');
+      // Si hay más mensajes, terminar sin responder (el nuevo mensaje disparará otra ejecución)
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Esperando por más mensajes del usuario',
+          waited: true,
+          delay_applied: randomDelay
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log(`📖 Contexto obtenido: ${messageContext.length} mensajes`);
+
+    console.log('🧠 Generando respuesta con IA usando contexto de conversación...');
+    
+    const aiResponse = await generateAIResponse(message, aiConfig, messageContext);
+    
+    if (!aiResponse.success) {
+      console.error('Error generando respuesta de IA:', aiResponse.error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate AI response' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const aiGeneratedMessage = aiResponse.response;
+    console.log('✅ Respuesta de IA generada con éxito');
+
     let channelType = 'facebook'; // Default to facebook
     if (conversation.channel === 'instagram') {
       channelType = 'instagram';
@@ -120,24 +256,30 @@ serve(async (req) => {
     }
 
     const channel = channels
-    const pageAccessToken = channel.channel_config.page_access_token
+    
+    // Use correct access token based on channel type
+    const accessToken = channelType === 'instagram' 
+      ? channel.channel_config.access_token 
+      : channel.channel_config.page_access_token;
+    
     const recipientId = conversation.channel_thread_id
 
     console.log('📤 Sending AI message via', channelType, 'to:', recipientId)
+    console.log('🔑 Access token present:', !!accessToken);
 
-    // Send message to Facebook/Instagram API
+    // send message to Facebook/Instagram API
     const apiUrl = channelType === 'instagram' 
-      ? `https://graph.facebook.com/v23.0/me/messages?access_token=${pageAccessToken}`
-      : `https://graph.facebook.com/v23.0/me/messages?access_token=${pageAccessToken}`;
+      ? `https://graph.instagram.com/v23.0/me/messages`
+      : `https://graph.facebook.com/v23.0/me/messages`;
 
-    const messengerResponse = await fetch(apiUrl, {
+    const messengerResponse = await fetch(`${apiUrl}?access_token=${accessToken}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         recipient: { id: recipientId },
-        message: { text: message },
+        message: { text: aiGeneratedMessage },
         messaging_type: 'RESPONSE'
       })
     })
@@ -153,28 +295,33 @@ serve(async (req) => {
 
     const messengerResult = await messengerResponse.json()
 
-    // Save AI message to database with new structure (Option 2)
-    const messageData = {
-      conversation_id: conversation_id,
-      content: message,
-      sender_type: 'ia', // AI messages
-      is_automated: true, // AI is always automated
-      sender_name: 'IA Assistant',
-      platform_message_id: messengerResult.message_id, // Platform message ID
-      metadata: {
-        platform: channelType,
-        ai_model,
-        ai_prompt,
-        confidence_score,
-        facebook_message_id: messengerResult.message_id,
-        timestamp: new Date().toISOString(),
-        automated_response: true
+    const enhancedMetadata = {
+      platform: channelType,
+      ai_model,
+      ai_prompt: ai_prompt || 'Dynamic prompt generated',
+      confidence_score: aiResponse.confidence_score || confidence_score,
+      facebook_message_id: messengerResult.message_id,
+      timestamp: new Date().toISOString(),
+      automated_response: true,
+      context_messages_count: messageContext.length,
+      delay_applied: randomDelay,
+      original_user_message: message,
+      ai_config_used: {
+        goals: aiConfig.goals?.substring(0, 100) || null,
+        restrictions: aiConfig.restrictions?.substring(0, 100) || null,
+        knowledge_base: aiConfig.knowledge_base?.substring(0, 100) || null
       }
     };
 
-    const { error: messageError } = await supabase
-      .from('messages')
-      .insert(messageData)
+    const { data: savedMessageId, error: messageError } = await supabase
+      .rpc('insert_ai_message', {
+        p_conversation_id: conversation_id,
+        p_content: aiGeneratedMessage,
+        p_platform_message_id: messengerResult.message_id,
+        p_ai_model: ai_model,
+        p_ai_prompt: ai_prompt || 'Dynamic prompt generated',
+        p_metadata: enhancedMetadata
+      });
 
     if (messageError) {
       console.error('Error saving AI message to database:', messageError)
@@ -184,29 +331,28 @@ serve(async (req) => {
       )
     }
 
-    // Update conversation last_message_at
-    await supabase
-      .from('conversations')
-      .update({ 
-        last_message_at: new Date().toISOString(),
-        status: 'open'
-      })
-      .eq('id', conversation_id)
-
-    console.log('✅ AI message sent and saved successfully:', {
+    console.log('✅ Mensaje generado correctamente:', {
       conversation_id,
-      sender_type: 'ia',
+      saved_message_id: savedMessageId,
       platform_message_id: messengerResult.message_id,
-      ai_model
+      ai_model,
+      context_used: messageContext.length,
+      delay_applied: randomDelay,
+      confidence_score: aiResponse.confidence_score
     })
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message_id: messengerResult.message_id,
+        saved_message_id: savedMessageId,
         conversation_id: conversation_id,
         sender_type: 'ia',
         ai_model,
+        context_messages_used: messageContext.length,
+        delay_applied: randomDelay,
+        confidence_score: aiResponse.confidence_score,
+        ai_generated_content: aiGeneratedMessage,
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
