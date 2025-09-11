@@ -197,8 +197,8 @@ const MessagesView = () => {
       // ELIMINADO: Ya no guardamos el mensaje en la base de datos desde el frontend
       // Solo la función edge se encargará de guardarlo para evitar duplicados
       
-      // Si es Facebook Messenger, enviar a través de la API externa
-      if (conversationCheck.channel === 'facebook') {
+      // Si es Facebook Messenger o Instagram, enviar a través de la API externa
+      if (conversationCheck.channel === 'facebook' || conversationCheck.channel === 'instagram') {
         try {
           const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/send-message`, {
             method: 'POST',
@@ -221,18 +221,18 @@ const MessagesView = () => {
             throw new Error(`Error enviando mensaje: ${errorData.error || 'Error desconocido'}`);
           } else {
             const result = await response.json();
-            console.log('✅ Mensaje enviado exitosamente a Facebook:', result);
+            console.log(`✅ Mensaje enviado exitosamente a ${conversationCheck.channel}:`, result);
             
             // El mensaje real será recibido automáticamente por el realtime
             // cuando la función edge lo guarde en la base de datos
           }
 
-        } catch (facebookError) {
-          console.error('❌ Error en Facebook API:', facebookError);
-          throw facebookError; // Ahora sí lanzamos el error ya que no hay respaldo local
+        } catch (apiError) {
+          console.error(`❌ Error en ${conversationCheck.channel} API:`, apiError);
+          throw apiError; // Ahora sí lanzamos el error ya que no hay respaldo local
         }
       } else {
-        // Para otros canales que no sean Facebook, crear mensaje local
+        // Para otros canales que no sean Facebook o Instagram (ej: WhatsApp), crear mensaje local
         const { data: savedMessage, error: dbError } = await supabase
           .from('messages')
           .insert({
@@ -249,7 +249,7 @@ const MessagesView = () => {
           throw dbError;
         }
 
-        console.log('💾 Mensaje guardado en DB para canal no-Facebook:', savedMessage.id);
+        console.log(`💾 Mensaje guardado en DB para canal ${conversationCheck.channel}:`, savedMessage.id);
 
         // Actualizar el mensaje optimista con el real
         if (savedMessage && tempId) {
