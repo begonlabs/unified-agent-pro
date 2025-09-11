@@ -10,6 +10,14 @@ import { Phone, Facebook, Instagram, Settings, CheckCircle, AlertCircle, Message
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
+// Declaración global para Facebook SDK
+declare global {
+  interface Window {
+    FB: any;
+    fbAsyncInit: () => void;
+  }
+}
+
 type ChannelType = 'whatsapp' | 'facebook' | 'instagram' | string;
 
 interface WhatsAppConfig {
@@ -62,12 +70,43 @@ const ChannelsView = () => {
   const { user, loading: authLoading } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [showWebhookMonitor, setShowWebhookMonitor] = useState(false);
+  const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
   const { toast } = useToast();
+
+  // Función para cargar Facebook SDK
+  const loadFacebookSDK = () => {
+    return new Promise<void>((resolve) => {
+      if (window.FB) {
+        resolve();
+        return;
+      }
+
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          appId: import.meta.env.VITE_META_APP_ID || '728339836340255',
+          cookie: true,
+          xfbml: true,
+          version: import.meta.env.VITE_META_GRAPH_VERSION || 'v20.0'
+        });
+        console.log('Facebook SDK initialized for WhatsApp Embedded Signup');
+        resolve();
+      };
+
+      // Load Facebook SDK
+      (function(d, s, id) {
+        var js: any, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/es_ES/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+    });
+  };
 
   const fetchChannels = useCallback(async () => {
     try {
       if (user && user.id) {
-        console.log('🔍 Fetching channels for user:', user.id);
+        console.log('Fetching channels for user:', user.id);
         
         const { data } = await supabaseSelect(
           supabase
@@ -76,13 +115,13 @@ const ChannelsView = () => {
             .eq('user_id', user.id)
         );
         
-        console.log('📡 Channels fetched:', data?.length || 0);
+        console.log('Channels fetched:', data?.length || 0);
         
         // Debug: Mostrar información detallada de los canales
         if (data && data.length > 0) {
-          console.log('🔍 Channel Status Debug:');
+          console.log('Channel Status Debug:');
           data.forEach(channel => {
-            console.log(`📱 ${channel.channel_type.toUpperCase()}:`, {
+            console.log(`${channel.channel_type.toUpperCase()}:`, {
               id: channel.id,
               is_connected: channel.is_connected,
               config: channel.channel_config,
@@ -96,17 +135,16 @@ const ChannelsView = () => {
         if (data) {
           for (const channel of data) {
             if (channel.channel_type === 'facebook' && channel.channel_config?.webhook_subscribed) {
-              // Verificar si el webhook está funcionando
               try {
                 const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
                 const response = await fetch(webhookUrl, { method: 'HEAD' });
                 if (response.ok) {
-                  console.log('✅ Webhook is accessible for channel:', channel.id);
+                  console.log('Webhook is accessible for channel:', channel.id);
                 } else {
-                  console.warn('⚠️ Webhook not accessible for channel:', channel.id);
+                  console.warn('Webhook not accessible for channel:', channel.id);
                 }
               } catch (error) {
-                console.warn('⚠️ Could not verify webhook for channel:', channel.id, error);
+                console.warn('Could not verify webhook for channel:', channel.id, error);
               }
             }
           }
@@ -136,30 +174,37 @@ const ChannelsView = () => {
     const successParam = urlParams.get('success');
     
     if (successParam === 'true') {
-      // Refresh channels to show the newly connected one
       setTimeout(() => {
         fetchChannels();
       }, 1000);
       
-      // Show success message
       const pageName = urlParams.get('page_name');
+      const businessName = urlParams.get('business_name');
+      const phoneNumber = urlParams.get('phone_number');
       const channel = urlParams.get('channel');
       
-      if (pageName && channel) {
+      if (channel === 'whatsapp' && businessName) {
         toast({
-          title: "✅ Canal reconectado exitosamente",
+          title: "WhatsApp conectado exitosamente",
+          description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
+        });
+      } else if (pageName && channel) {
+        toast({
+          title: "Canal reconectado exitosamente",
           description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} actualizado: ${pageName}`,
         });
       }
+      
+      // Limpiar URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [fetchChannels, toast]);
-
 
   const getChannelStatus = (channelType: string) => {
     const channel = channels.find(c => c.channel_type === channelType);
     
     if (!channel || !channel.channel_config) {
-      console.log(`❌ ${channelType}: No channel or config found`);
+      console.log(`${channelType}: No channel or config found`);
       return false;
     }
 
@@ -173,10 +218,10 @@ const ChannelsView = () => {
         const isConnected = Boolean(channel.is_connected);
         const status = hasPhoneNumberId && hasBusinessAccountId && hasAccessToken && isConnected;
         
-        console.log(`📱 WHATSAPP Status:`, {
+        console.log(`WHATSAPP Status:`, {
           hasPhoneNumberId,
           hasBusinessAccountId,
-          hasAccessToken: hasAccessToken ? '✅' : '❌',
+          hasAccessToken: hasAccessToken ? 'Yes' : 'No',
           isConnected,
           displayPhoneNumber: config?.display_phone_number,
           businessName: config?.business_name,
@@ -195,10 +240,10 @@ const ChannelsView = () => {
         const isConnected = Boolean(channel.is_connected);
         const status = hasPageId && hasPageToken && hasUserToken && isConnected;
         
-        console.log(`📘 FACEBOOK Status:`, {
+        console.log(`FACEBOOK Status:`, {
           hasPageId,
-          hasPageToken: hasPageToken ? '✅' : '❌',
-          hasUserToken: hasUserToken ? '✅' : '❌',
+          hasPageToken: hasPageToken ? 'Yes' : 'No',
+          hasUserToken: hasUserToken ? 'Yes' : 'No',
           isConnected,
           pageName: config?.page_name,
           finalStatus: status
@@ -217,9 +262,9 @@ const ChannelsView = () => {
         const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
         const status = hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && isConnected && isTokenValid;
         
-        console.log(`📷 INSTAGRAM Status:`, {
+        console.log(`INSTAGRAM Status:`, {
           hasUsername,
-          hasAccessToken: hasAccessToken ? '✅' : '❌',
+          hasAccessToken: hasAccessToken ? 'Yes' : 'No',
           hasInstagramUserId,
           hasAccountType,
           isConnected,
@@ -234,17 +279,103 @@ const ChannelsView = () => {
       }
       
       default:
-        // Para otros tipos de canal, usar la lógica anterior
         return channel?.is_connected || false;
     }
   };
 
+  // Función para manejar la respuesta de WhatsApp OAuth
+  const handleWhatsAppResponse = async (response: any, expectedState: string) => {
+    console.log('WhatsApp OAuth response:', response);
+
+    try {
+      if (response.status === 'connected') {
+        toast({
+          title: "Procesando conexión WhatsApp",
+          description: "Configurando automáticamente tu cuenta...",
+        });
+
+        // Get authorization code
+        let authCode = response.code || response.authResponse?.code;
+        
+        if (!authCode) {
+          // Fallback to access token if no code
+          authCode = response.authResponse?.accessToken;
+        }
+        
+        if (!authCode) {
+          throw new Error('No se recibió código de autorización de Facebook');
+        }
+        
+        console.log('Got authorization code:', authCode.substring(0, 20) + '...');
+        
+        // Send to backend
+        await processWhatsAppAuth(authCode, expectedState);
+        
+      } else if (response.status === 'not_authorized') {
+        throw new Error('Usuario no autorizó la aplicación WhatsApp');
+      } else {
+        console.log('Facebook response details:', response);
+        throw new Error('Error en la autenticación con Facebook para WhatsApp');
+      }
+    } catch (error: any) {
+      console.error('Error in WhatsApp OAuth:', error);
+      toast({
+        title: "Error conectando WhatsApp",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnectingWhatsApp(false);
+    }
+  };
+
+  // Función para procesar la autorización de WhatsApp
+  const processWhatsAppAuth = async (code: string, state: string) => {
+    try {
+      console.log('Sending authorization code to backend...');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/whatsapp-embedded-signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: code,
+          state: state,
+          userId: user!.id
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        toast({
+          title: "WhatsApp conectado exitosamente!",
+          description: `Empresa: ${result.data.businessName} - Teléfono: ${result.data.phoneNumber}`,
+        });
+        
+        console.log('WhatsApp connected successfully:', result.data);
+        
+        // Refresh channels to show the new connection
+        await fetchChannels();
+        
+      } else {
+        throw new Error(result.error || 'Error desconocido al conectar WhatsApp');
+      }
+
+    } catch (error: any) {
+      console.error('Error processing WhatsApp authorization:', error);
+      throw error;
+    }
+  };
+
+  // FUNCIÓN ACTUALIZADA para WhatsApp Login con Configuration ID
   const handleWhatsAppLogin = async () => {
     try {
-      console.log('🟢 Iniciando proceso de login de WhatsApp Business...');
+      console.log('Starting WhatsApp Embedded Signup with Configuration ID...');
       
       if (!user) {
-        console.error('❌ Usuario no autenticado');
+        console.error('Usuario no autenticado');
         toast({
           title: 'Error',
           description: 'Debes estar autenticado para conectar WhatsApp',
@@ -252,52 +383,43 @@ const ChannelsView = () => {
         });
         return;
       }
-      
-      console.log('✅ Usuario autenticado:', user.id);
 
-      // Configuración de WhatsApp Business API Embedded Signup
-      const WHATSAPP_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
-      const WHATSAPP_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v20.0';
-      const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
+      setIsConnectingWhatsApp(true);
 
-      // URL de callback para WhatsApp Embedded Signup
-      const redirectUri = `${EDGE_BASE_URL}/functions/v1/whatsapp-embedded-signup`;
-      
-      // Scopes requeridos para WhatsApp Business API
-      const scope = [
-        'whatsapp_business_messaging',
-        'whatsapp_business_management'
-      ].join(',');
+      // Load Facebook SDK
+      await loadFacebookSDK();
 
-      // State parameter con user_id para el callback
-      const state = encodeURIComponent(JSON.stringify({ 
+      // State parameter for callback
+      const state = JSON.stringify({
         user_id: user.id,
-        channel: 'whatsapp'
-      }));
-
-      // URL de autorización de WhatsApp Business Embedded Signup
-      const whatsappAuthUrl = `https://www.facebook.com/${WHATSAPP_GRAPH_VERSION}/dialog/oauth?` +
-        `client_id=${WHATSAPP_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `scope=${encodeURIComponent(scope)}&` +
-        `response_type=code&` +
-        `state=${state}&` +
-        `config_id=YOUR_WHATSAPP_CONFIG_ID`; // Este viene de tu configuración de Meta
-
-      console.log('🔗 WhatsApp OAuth URL construida:', whatsappAuthUrl);
-      console.log('👤 User ID:', user.id);
-      
-      // Mostrar mensaje informativo
-      toast({
-        title: "🟢 Conectando WhatsApp Business",
-        description: "Te redirigimos a Meta para autorizar tu cuenta de WhatsApp Business...",
+        timestamp: Date.now(),
+        nonce: Math.random().toString(36).substring(2)
       });
-      
-      // Redirigir a Meta para autorización
-      window.location.href = whatsappAuthUrl;
+
+      console.log('Starting Embedded Signup with Configuration ID: 789657450267769');
+
+      toast({
+        title: "Conectando WhatsApp Business",
+        description: "Abriendo ventana de autorización de Meta...",
+      });
+
+      // Use Facebook Embedded Signup with your Configuration ID
+      window.FB.login((response: any) => {
+        console.log('Facebook Embedded Signup response:', response);
+        handleWhatsAppResponse(response, state);
+      }, {
+        config_id: '789657450267769', // Tu Configuration ID real
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          setup_type: 'BUSINESS_INTEGRATION',
+          state: state
+        }
+      });
 
     } catch (error: unknown) {
-      console.error('Error building WhatsApp OAuth URL:', error);
+      console.error('Error in WhatsApp Embedded Signup:', error);
+      setIsConnectingWhatsApp(false);
       toast({
         title: 'Error',
         description: 'No se pudo iniciar la conexión con WhatsApp Business',
@@ -308,10 +430,10 @@ const ChannelsView = () => {
 
   const handleFacebookLogin = async () => {
     try {
-      console.log('🔍 Iniciando proceso de login de Facebook...');
+      console.log('Iniciando proceso de login de Facebook...');
       
       if (!user) {
-        console.error('❌ Usuario no autenticado');
+        console.error('Usuario no autenticado');
         toast({
           title: 'Error',
           description: 'Debes estar autenticado para conectar Facebook',
@@ -320,7 +442,7 @@ const ChannelsView = () => {
         return;
       }
       
-      console.log('✅ Usuario autenticado:', user.id);
+      console.log('Usuario autenticado:', user.id);
 
       const META_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
       const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v23.0';
@@ -331,38 +453,36 @@ const ChannelsView = () => {
         'pages_show_list',
         'pages_manage_metadata',
         'pages_messaging',
-        // 'public_profile' is default and not needed explicitly; 'email' is unnecessary for Pages
       ].join(',');
 
-      // Pass user_id in state parameter for the OAuth callback
-      console.log('🔍 User object completo:', user);
-      console.log('🔍 User ID type:', typeof user.id);
-      console.log('🔍 User ID value:', user.id);
+      console.log('User object completo:', user);
+      console.log('User ID type:', typeof user.id);
+      console.log('User ID value:', user.id);
       
       const state = encodeURIComponent(JSON.stringify({ user_id: user.id }));
       const oauthUrl = `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
 
-      console.log('🔗 OAuth URL construida:', oauthUrl);
-      console.log('👤 User ID:', user.id);
-      console.log('📝 State parameter:', state);
+      console.log('OAuth URL construida:', oauthUrl);
+      console.log('User ID:', user.id);
+      console.log('State parameter:', state);
 
       window.location.href = oauthUrl;
     } catch (error: unknown) {
       console.error('Error building Facebook OAuth URL:', error);
-    toast({
+      toast({
         title: 'Error',
         description: 'No se pudo iniciar la conexión con Facebook',
         variant: 'destructive',
-    });
+      });
     }
   };
 
   const handleInstagramLogin = async () => {
     try {
-      console.log('🔍 Iniciando proceso de login de Instagram...');
+      console.log('Iniciando proceso de login de Instagram...');
       
       if (!user) {
-        console.error('❌ Usuario no autenticado');
+        console.error('Usuario no autenticado');
         toast({
           title: 'Error',
           description: 'Debes estar autenticado para conectar Instagram',
@@ -371,15 +491,13 @@ const ChannelsView = () => {
         return;
       }
       
-      console.log('✅ Usuario autenticado:', user.id);
+      console.log('Usuario autenticado:', user.id);
 
-      // Usar la configuración correcta de Instagram Business API según Meta for Developers
       const INSTAGRAM_CLIENT_ID = import.meta.env.VITE_INSTAGRAM_BASIC_APP_ID || '1215743729877419';
       const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
 
       const redirectUri = `${EDGE_BASE_URL}/functions/v1/instagram-oauth`;
       
-      // Scopes de Instagram Business API según Meta for Developers
       const scope = [
         'instagram_business_basic',
         'instagram_business_manage_messages', 
@@ -388,7 +506,6 @@ const ChannelsView = () => {
         'instagram_business_manage_insights'
       ].join(',');
 
-      // State parameter con user_id
       const state = encodeURIComponent(JSON.stringify({ 
         user_id: user.id
       }));
@@ -400,10 +517,10 @@ const ChannelsView = () => {
         `response_type=code&` +
         `state=${state}`;
 
-      console.log('🔗 Instagram OAuth URL construida:', instagramAuthUrl);
-      console.log('👤 User ID:', user.id);
-      console.log('📝 Client ID:', INSTAGRAM_CLIENT_ID);
-      console.log('📝 Scopes:', scope);
+      console.log('Instagram OAuth URL construida:', instagramAuthUrl);
+      console.log('User ID:', user.id);
+      console.log('Client ID:', INSTAGRAM_CLIENT_ID);
+      console.log('Scopes:', scope);
       
       window.location.href = instagramAuthUrl;
 
@@ -429,7 +546,6 @@ const ChannelsView = () => {
         return;
       }
 
-      // Obtener configuración del canal
       const { data: channel } = await supabase
         .from('communication_channels')
         .select('*')
@@ -446,7 +562,6 @@ const ChannelsView = () => {
         return;
       }
 
-      // Only test webhooks for Facebook channels (Instagram has different webhook handling)
       if (channel.channel_type !== 'facebook') {
         toast({
           title: "Test no disponible",
@@ -470,12 +585,11 @@ const ChannelsView = () => {
       }
 
       toast({
-        title: "🧪 Probando webhook...",
+        title: "Probando webhook...",
         description: "Enviando mensaje de prueba para verificar el procesamiento",
       });
 
-      // 1. Test del webhook (POST)
-      console.log('🔍 Testing webhook endpoint...');
+      console.log('Testing webhook endpoint...');
       const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
       
       try {
@@ -502,20 +616,18 @@ const ChannelsView = () => {
         });
 
         if (webhookTest.ok) {
-          console.log('✅ Webhook test passed');
+          console.log('Webhook test passed');
         } else {
-          console.warn('⚠️ Webhook test failed:', webhookTest.status);
+          console.warn('Webhook test failed:', webhookTest.status);
         }
       } catch (webhookError) {
-        console.warn('⚠️ Webhook test error:', webhookError);
+        console.warn('Webhook test error:', webhookError);
       }
 
-      // 2. Test del webhook con un mensaje de prueba
-      console.log('🧪 Testing webhook with test message...');
+      console.log('Testing webhook with test message...');
       
-      const testMessage = `🎯 Test desde OndAI - ${new Date().toLocaleTimeString()}`;
+      const testMessage = `Test desde OndAI - ${new Date().toLocaleTimeString()}`;
       
-      // Enviar un mensaje de prueba al webhook para verificar que funciona
       const webhookTestMessage = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -541,11 +653,11 @@ const ChannelsView = () => {
 
       if (webhookTestMessage.ok) {
         toast({
-          title: "✅ Webhook funcionando",
+          title: "Webhook funcionando",
           description: "El webhook está activo y procesando mensajes correctamente",
         });
         
-        console.log('📊 Webhook test results:', {
+        console.log('Webhook test results:', {
           webhook_accessible: true,
           webhook_test_message: true,
           page_id: pageId,
@@ -553,10 +665,10 @@ const ChannelsView = () => {
         });
       } else {
         const errorData = await webhookTestMessage.text();
-        console.error('❌ Webhook test failed:', errorData);
+        console.error('Webhook test failed:', errorData);
         
         toast({
-          title: "⚠️ Problema en webhook",
+          title: "Problema en webhook",
           description: "El webhook es accesible, pero hay problemas al procesar mensajes",
           variant: "destructive",
         });
@@ -566,7 +678,7 @@ const ChannelsView = () => {
       console.error('Error in Facebook integration test:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo completar el test";
       toast({
-        title: "❌ Error en test",
+        title: "Error en test",
         description: errorMessage,
         variant: "destructive",
       });
@@ -682,19 +794,29 @@ const ChannelsView = () => {
               <>
                 <Button 
                   onClick={handleWhatsAppLogin}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={isConnectingWhatsApp}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                 >
-                  <Phone className="h-4 w-4 mr-2" />
-                  Conectar WhatsApp Business
+                  {isConnectingWhatsApp ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Conectando...
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="h-4 w-4 mr-2" />
+                      Conectar WhatsApp Business
+                    </>
+                  )}
                 </Button>
 
                 <div className="bg-green-50 p-3 rounded-lg border">
-                  <h4 className="font-medium text-green-900 text-sm mb-1">Conexión automática:</h4>
+                  <h4 className="font-medium text-green-900 text-sm mb-1">Embedded Signup automático:</h4>
                   <ul className="text-xs text-green-800 space-y-1 list-disc list-inside">
                     <li>Autoriza tu cuenta de WhatsApp Business</li>
                     <li>Selecciona el número de teléfono a conectar</li>
                     <li>Configuración automática del webhook</li>
-                    <li>¡Comienza a recibir mensajes al instante!</li>
+                    <li>Comienza a recibir mensajes al instante</li>
                   </ul>
                 </div>
               </>
@@ -719,7 +841,7 @@ const ChannelsView = () => {
                               variant={config?.webhook_configured ? "default" : "secondary"} 
                               className={`text-xs ${config?.webhook_configured ? 'bg-green-600' : 'bg-gray-400'}`}
                             >
-                              {config?.webhook_configured ? '✅ Webhook' : '❌ Webhook'}
+                              {config?.webhook_configured ? 'Webhook OK' : 'Webhook Pendiente'}
                             </Badge>
                           </div>
                         </div>
@@ -730,7 +852,7 @@ const ChannelsView = () => {
                           <p>Verificación: {config?.business_verification_status || 'N/A'}</p>
                           <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
                           {config?.webhook_configured && (
-                            <p className="text-green-700 font-medium">✓ Recibiendo mensajes automáticamente</p>
+                            <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
                           )}
                         </div>
                         <div className="flex gap-2 mt-2">
@@ -739,8 +861,9 @@ const ChannelsView = () => {
                             size="sm" 
                             className="flex-1 text-green-600 border-green-300 hover:bg-green-100"
                             onClick={() => handleWhatsAppLogin()}
+                            disabled={isConnectingWhatsApp}
                           >
-                            Reconectar
+                            {isConnectingWhatsApp ? 'Conectando...' : 'Reconectar'}
                           </Button>
                         </div>
                       </div>
@@ -800,16 +923,16 @@ const ChannelsView = () => {
                               variant={config?.webhook_subscribed ? "default" : "secondary"} 
                               className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
                             >
-                              {config?.webhook_subscribed ? '✅ Webhook' : '❌ Webhook'}
+                              {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
                             </Badge>
                           </div>
                         </div>
                         <div className="text-xs text-blue-800 space-y-1">
                           <p>ID: {config?.page_id || 'N/A'}</p>
-                          <p>Webhook: {config?.webhook_subscribed ? '✅ Activo' : '❌ Inactivo'}</p>
+                          <p>Webhook: {config?.webhook_subscribed ? 'Activo' : 'Inactivo'}</p>
                           <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
                           {config?.webhook_subscribed && (
-                            <p className="text-green-700 font-medium">✓ Recibiendo mensajes automáticamente</p>
+                            <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
                           )}
                         </div>
                         <div className="flex gap-2 mt-2">
@@ -835,7 +958,7 @@ const ChannelsView = () => {
                             className="text-xs border-purple-300 hover:bg-purple-100 text-purple-700"
                             onClick={() => setShowWebhookMonitor(true)}
                           >
-                            📊 Monitorear
+                            Monitorear
                           </Button>
                         </div>
                       </div>
@@ -895,7 +1018,7 @@ const ChannelsView = () => {
                               variant={config?.webhook_subscribed ? "default" : "secondary"} 
                               className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
                             >
-                              {config?.webhook_subscribed ? '✅ Webhook' : '❌ Webhook'}
+                              {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
                               {config?.account_type || 'PERSONAL'}
@@ -905,13 +1028,13 @@ const ChannelsView = () => {
                         <div className="text-xs text-pink-800 space-y-1">
                           <p>Usuario ID: {config?.instagram_user_id || 'N/A'}</p>
                           <p>Tipo de cuenta: {config?.account_type || 'PERSONAL'}</p>
-                          <p>Token: {config?.token_type || 'short_lived'} ({config?.expires_at ? new Date(config.expires_at) > new Date() ? '✅ Válido' : '❌ Expirado' : 'N/A'})</p>
+                          <p>Token: {config?.token_type || 'short_lived'} ({config?.expires_at ? new Date(config.expires_at) > new Date() ? 'Válido' : 'Expirado' : 'N/A'})</p>
                           <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
                           {config?.expires_at && (
                             <p className={`font-medium ${new Date(config.expires_at) > new Date() ? 'text-green-700' : 'text-red-700'}`}>
                               {new Date(config.expires_at) > new Date() 
-                                ? `✓ Expira: ${new Date(config.expires_at).toLocaleDateString('es-ES')}` 
-                                : '⚠️ Token expirado'
+                                ? `Expira: ${new Date(config.expires_at).toLocaleDateString('es-ES')}` 
+                                : 'Token expirado'
                               }
                             </p>
                           )}
@@ -984,7 +1107,7 @@ const ChannelsView = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                📊 Monitor de Webhook en Tiempo Real
+                Monitor de Webhook en Tiempo Real
               </CardTitle>
               <Button 
                 variant="outline" 
@@ -1001,7 +1124,7 @@ const ChannelsView = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">📋 Instrucciones para monitorear:</h4>
+                <h4 className="font-medium mb-2">Instrucciones para monitorear:</h4>
                 <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
                   <li>Mantén esta ventana abierta</li>
                   <li>Envía un mensaje a tu página de Facebook</li>
@@ -1012,9 +1135,9 @@ const ChannelsView = () => {
               </div>
               
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">🔍 Comando para ver logs:</h4>
+                <h4 className="font-medium text-blue-800 mb-2">Comando para ver logs:</h4>
                 <code className="text-sm bg-blue-100 p-2 rounded block">
-                  docker logs &lt;contenedor_supabase&gt; -f | grep -E "(webhook|messenger|facebook)"
+                  docker logs contenedor_supabase -f | grep -E "(webhook|messenger|facebook)"
                 </code>
                 <p className="text-xs text-blue-600 mt-2">
                   Los logs detallados se muestran en la consola del contenedor
@@ -1022,7 +1145,7 @@ const ChannelsView = () => {
               </div>
 
               <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-2">🧪 Test rápido:</h4>
+                <h4 className="font-medium text-green-800 mb-2">Test rápido:</h4>
                 <p className="text-sm text-green-700 mb-2">
                   Haz clic en "Test Webhook" para simular un mensaje entrante y verificar el procesamiento
                 </p>
