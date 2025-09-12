@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Facebook, Instagram, Settings, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
+import { Phone, Facebook, Instagram, Settings, CheckCircle, AlertCircle, MessageSquare, Clock, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -84,6 +84,7 @@ interface InstagramConfig {
   connected_at: string;
   media_count?: number;
   webhook_subscribed?: boolean;
+  verified_at?: string; // NEW: When verification was completed
 }
 
 interface InstagramVerification {
@@ -92,6 +93,100 @@ interface InstagramVerification {
   status: 'pending' | 'completed' | 'expired';
   expires_at: string;
 }
+
+// Hook para countdown timer
+const useCountdown = (targetDate: string) => {
+  const [timeLeft, setTimeLeft] = useState<{
+    minutes: number;
+    seconds: number;
+    isExpired: boolean;
+  }>({ minutes: 0, seconds: 0, isExpired: false });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const target = new Date(targetDate).getTime();
+      const difference = target - now;
+
+      if (difference > 0) {
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+        setTimeLeft({ minutes, seconds, isExpired: false });
+      } else {
+        setTimeLeft({ minutes: 0, seconds: 0, isExpired: true });
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  return timeLeft;
+};
+
+// Componente para mostrar código de verificación con timer
+const VerificationCodeDisplay = ({ 
+  verification, 
+  onCopy, 
+  isPolling = false 
+}: { 
+  verification: InstagramVerification;
+  onCopy: (code: string) => void;
+  isPolling?: boolean;
+}) => {
+  const countdown = useCountdown(verification.expires_at);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-mono bg-white px-3 py-2 rounded-lg border-2 border-yellow-300 font-bold">
+            {verification.verification_code}
+          </span>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => onCopy(verification.verification_code)}
+            className="border-yellow-300 hover:bg-yellow-50"
+          >
+            <Copy className="h-4 w-4 mr-1" />
+            Copiar
+          </Button>
+        </div>
+        
+        {isPolling && (
+          <div className="flex items-center gap-2 text-green-600">
+            <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-xs font-medium">Detectando mensaje...</span>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="h-4 w-4 text-yellow-600" />
+          <span className="font-medium text-yellow-800 text-sm">
+            {countdown.isExpired ? "Código expirado" : `Tiempo restante: ${countdown.minutes}:${countdown.seconds.toString().padStart(2, '0')}`}
+          </span>
+        </div>
+        
+        <div className="space-y-2">
+          <p className="text-xs text-yellow-700">
+            <strong>📱 Instrucciones:</strong> Envía exactamente este código como un mensaje desde tu cuenta de Instagram.
+          </p>
+          <p className="text-xs text-yellow-700">
+            <strong>🤖 Detección automática:</strong> El sistema verificará automáticamente cuando reciba el mensaje.
+          </p>
+          {isPolling && (
+            <p className="text-xs text-green-700 font-medium">
+              ⚡ Sistema en espera - Envía el mensaje ahora para completar la verificación
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 type ChannelConfig = WhatsAppConfig | FacebookConfig | InstagramConfig | null;
 
@@ -109,6 +204,7 @@ const ChannelsView = () => {
   const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
   const [igVerifications, setIgVerifications] = useState<Record<string, InstagramVerification>>({});
   const [isGeneratingCode, setIsGeneratingCode] = useState<Record<string, boolean>>({});
+  const [verificationPolling, setVerificationPolling] = useState<Record<string, NodeJS.Timeout>>({});
   const { toast } = useToast();
 
   // Función para cargar Facebook SDK
@@ -208,12 +304,150 @@ const ChannelsView = () => {
     }
   }, [user, authLoading, fetchChannels]);
 
+  // Cleanup polling timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(verificationPolling).forEach(timeout => {
+        if (timeout) {
+          clearInterval(timeout);
+        }
+      });
+    };
+  }, [verificationPolling]);
+
+  // Clean up expired verification codes
+  useEffect(() => {
+    const cleanupExpired = () => {
+      const now = new Date();
+      setIgVerifications(prev => {
+        const updated = { ...prev };
+        let hasChanges = false;
+
+        Object.entries(updated).forEach(([channelId, verification]) => {
+          const expiresAt = new Date(verification.expires_at);
+          if (now > expiresAt && verification.status === 'pending') {
+            console.log('🧹 Cleaning up expired verification:', verification.verification_code);
+            delete updated[channelId];
+            hasChanges = true;
+
+            // Stop polling for expired code
+            const timeout = verificationPolling[channelId];
+            if (timeout) {
+              clearInterval(timeout);
+              setVerificationPolling(prev => {
+                const updatedPolling = { ...prev };
+                delete updatedPolling[channelId];
+                return updatedPolling;
+              });
+            }
+          }
+        });
+
+        return hasChanges ? updated : prev;
+      });
+    };
+
+    // Check for expired codes every 30 seconds
+    const cleanupInterval = setInterval(cleanupExpired, 30000);
+    
+    return () => clearInterval(cleanupInterval);
+  }, [verificationPolling]);
+
   // Check if Instagram channel needs verification
   const instagramNeedsVerification = (config: InstagramConfig): boolean => {
     // When instagram_user_id equals instagram_business_account_id, verification is needed
     // This happens because Instagram returns the same ID for both, but we need the correct business account ID
     return config.instagram_user_id === config.instagram_business_account_id ||
            !config.instagram_business_account_id;
+  };
+
+  // Check verification status by polling the channel configuration
+  const checkVerificationStatus = async (channelId: string) => {
+    try {
+      const { data: channel } = await supabase
+        .from('communication_channels')
+        .select('channel_config, updated_at')
+        .eq('id', channelId)
+        .eq('user_id', user!.id)
+        .single();
+
+      if (channel) {
+        const config = channel.channel_config as unknown as InstagramConfig;
+        const needsVerification = instagramNeedsVerification(config);
+        
+        // If verification is complete, update UI
+        if (!needsVerification && config.verified_at) {
+          console.log('✅ Instagram verification completed for channel:', channelId);
+          
+          // Clear verification UI
+          setIgVerifications(prev => {
+            const updated = { ...prev };
+            delete updated[channelId];
+            return updated;
+          });
+          
+          // Stop polling
+          const timeout = verificationPolling[channelId];
+          if (timeout) {
+            clearInterval(timeout);
+            setVerificationPolling(prev => {
+              const updated = { ...prev };
+              delete updated[channelId];
+              return updated;
+            });
+          }
+          
+          // Refresh channels to show updated status
+          await fetchChannels();
+          
+          toast({
+            title: "🎉 Instagram verificado exitosamente",
+            description: `Tu cuenta @${config.username} ya puede recibir mensajes automáticamente`,
+          });
+          
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+      return false;
+    }
+  };
+
+  // Start polling for verification completion
+  const startVerificationPolling = (channelId: string) => {
+    // Clear any existing polling for this channel
+    const existingTimeout = verificationPolling[channelId];
+    if (existingTimeout) {
+      clearInterval(existingTimeout);
+    }
+
+    console.log('🔄 Starting verification polling for channel:', channelId);
+    
+    const pollInterval = setInterval(async () => {
+      const isCompleted = await checkVerificationStatus(channelId);
+      if (isCompleted) {
+        console.log('✅ Verification polling completed for channel:', channelId);
+      }
+    }, 3000); // Check every 3 seconds
+
+    setVerificationPolling(prev => ({
+      ...prev,
+      [channelId]: pollInterval
+    }));
+
+    // Stop polling after 35 minutes (5 minutes past expiration)
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      setVerificationPolling(prev => {
+        const updated = { ...prev };
+        delete updated[channelId];
+        return updated;
+      });
+      console.log('⏰ Verification polling timeout for channel:', channelId);
+    }, 35 * 60 * 1000);
   };
 
   // Generate Instagram verification code
@@ -258,12 +492,15 @@ const ChannelsView = () => {
           [channelId]: verification 
         }));
 
+        // Start polling for completion
+        startVerificationPolling(channelId);
+
         toast({
-          title: "Código de verificación generado",
-          description: `Envía el código ${result.verification_code} a tu cuenta de Instagram para completar la configuración`,
+          title: "🎯 Código de verificación generado",
+          description: `Envía ${result.verification_code} como mensaje en Instagram. El sistema detectará automáticamente cuando lo envíes.`,
         });
 
-        console.log('✅ Verification code generated:', result.verification_code);
+        console.log('✅ Verification code generated and polling started:', result.verification_code);
       } else {
         throw new Error(result.error || 'Error generando código de verificación');
       }
@@ -1189,30 +1426,17 @@ const ChannelsView = () => {
                                 )}
                               </Button>
                             ) : (
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-mono bg-white px-2 py-1 rounded border">
-                                    {channelVerification.verification_code}
-                                  </span>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(channelVerification.verification_code);
-                                      toast({ title: "Código copiado al portapapeles" });
-                                    }}
-                                  >
-                                    Copiar
-                                  </Button>
-                                </div>
-                                <p className="text-xs text-yellow-700">
-                                  <strong>Instrucciones:</strong> Envía este código como mensaje a tu cuenta de Instagram. 
-                                  El sistema detectará automáticamente el mensaje y completará la configuración.
-                                </p>
-                                <p className="text-xs text-yellow-600">
-                                  Expira: {new Date(channelVerification.expires_at).toLocaleString('es-ES')}
-                                </p>
-                              </div>
+                              <VerificationCodeDisplay
+                                verification={channelVerification}
+                                onCopy={(code) => {
+                                  navigator.clipboard.writeText(code);
+                                  toast({ 
+                                    title: "📋 Código copiado al portapapeles",
+                                    description: "Ahora pégalo en un mensaje de Instagram"
+                                  });
+                                }}
+                                isPolling={!!verificationPolling[channel.id]}
+                              />
                             )}
                           </div>
                         )}

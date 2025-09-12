@@ -86,7 +86,8 @@ interface Conversation {
  * @returns The verification code if found, null otherwise
  */
 function extractVerificationCode(text: string): string | null {
-  const codePattern = /\b(IG-\d{5})\b/;
+  // Updated pattern to match both numbers and letters: IG-12345 or IG-B0XJDN
+  const codePattern = /\b(IG-[A-Z0-9]{5,6})\b/;
   const match = text.match(codePattern);
   return match ? match[1] : null;
 }
@@ -151,7 +152,8 @@ async function processInstagramVerification(
       user_id: verification.user_id
     });
 
-    // Get the channel that needs to be updated
+    // 🔥 NEW: Get the channel using the channel_id from verification (not by business account ID)
+    // This ensures we find the right channel even when IDs don't match
     const { data: channel, error: channelError } = await supabase
       .from('communication_channels')
       .select('*')
@@ -161,9 +163,19 @@ async function processInstagramVerification(
       .single();
 
     if (channelError || !channel) {
-      console.error('❌ Channel not found for verification:', channelError);
+      console.error('❌ Channel not found for verification:', {
+        channel_id: verification.channel_id,
+        user_id: verification.user_id,
+        error: channelError
+      });
       return false;
     }
+
+    console.log('✅ Found Instagram channel for verification:', {
+      channel_id: channel.id,
+      user_id: channel.user_id,
+      current_business_id: (channel.channel_config as InstagramChannelConfig)?.instagram_business_account_id
+    });
 
     // Update channel configuration with correct business account ID
     const currentConfig: InstagramChannelConfig = channel.channel_config;
@@ -174,11 +186,12 @@ async function processInstagramVerification(
       verified_at: now.toISOString()
     };
 
-    console.log('🔄 Updating channel config:', {
+    console.log('🔄 Updating channel config with verified business account ID:', {
       channel_id: verification.channel_id,
       old_business_id: currentConfig?.instagram_business_account_id,
       new_business_id: senderId,
-      instagram_user_id: currentConfig?.instagram_user_id
+      instagram_user_id: currentConfig?.instagram_user_id,
+      username: currentConfig?.username
     });
 
     // Update the channel
@@ -195,6 +208,8 @@ async function processInstagramVerification(
       return false;
     }
 
+    console.log('✅ Channel updated successfully with new business account ID');
+
     // Mark verification as completed
     const { error: verificationUpdateError } = await supabase
       .from('instagram_verifications')
@@ -202,6 +217,7 @@ async function processInstagramVerification(
         status: 'completed',
         business_account_id: senderId,
         sender_id: senderId,
+        message_content: verificationCode,
         verified_at: now.toISOString(),
         updated_at: now.toISOString()
       })
@@ -215,7 +231,9 @@ async function processInstagramVerification(
     console.log('✅ Instagram verification completed successfully:', {
       verification_code: verificationCode,
       channel_id: verification.channel_id,
-      business_account_id: senderId
+      old_business_account_id: currentConfig?.instagram_business_account_id,
+      new_business_account_id: senderId,
+      status: 'completed'
     });
 
     return true;

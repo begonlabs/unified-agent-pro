@@ -195,15 +195,15 @@ async function exchangeCodeForToken(code: string, config: ConfigurationVariables
     `https://graph.facebook.com/${config.graphVersion}/oauth/access_token`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
         client_id: config.appId,
         client_secret: config.appSecret,
-        code: code
-      }).toString()
-    }
+            code: code
+          }).toString()
+        }
   );
 
   if (!response.ok) {
@@ -239,7 +239,7 @@ async function fetchWhatsAppBusinessAccounts(token: string, config: Configuratio
   const wabaData = await response.json();
   const wabas = wabaData.data || [];
 
-  if (wabas.length === 0) {
+      if (wabas.length === 0) {
     logEvent('error', 'No WhatsApp Business Accounts found');
     throw new Error('No WhatsApp Business Accounts found for this user');
   }
@@ -253,7 +253,7 @@ async function fetchWABADetails(wabaId: string, token: string, config: Configura
   
   const response = await fetchWithRetry(
     `https://graph.facebook.com/${config.graphVersion}/${wabaId}?` +
-    `fields=name,account_review_status,business_verification_status&` +
+        `fields=name,account_review_status,business_verification_status&` +
     `access_token=${token}`
   );
 
@@ -284,7 +284,7 @@ async function fetchPhoneNumbers(wabaId: string, token: string, config: Configur
   const phoneNumbersData = await response.json();
   const phoneNumbers = phoneNumbersData.data || [];
 
-  if (phoneNumbers.length === 0) {
+      if (phoneNumbers.length === 0) {
     logEvent('error', 'No phone numbers found', { wabaId });
     throw new Error('No phone numbers found for this WhatsApp Business Account');
   }
@@ -299,22 +299,22 @@ async function registerPhoneNumber(phoneNumberId: string, token: string, config:
   try {
     const response = await fetchWithRetry(
       `https://graph.facebook.com/${config.graphVersion}/${phoneNumberId}/register`,
-      {
-        method: 'POST',
-        headers: {
+          {
+            method: 'POST',
+            headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp'
-        })
-      }
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp'
+            })
+          }
     );
 
     if (response.ok) {
       logEvent('info', 'Phone number registered successfully', { phoneNumberId });
       return true;
-    } else {
+        } else {
       const errorText = await response.text();
       logEvent('warn', 'Phone number registration failed - might already be registered', { 
         phoneNumberId, 
@@ -335,19 +335,19 @@ async function configureWebhooks(wabaId: string, token: string, config: Configur
   try {
     const response = await fetchWithRetry(
       `https://graph.facebook.com/${config.graphVersion}/${wabaId}/subscribed_apps`,
-      {
-        method: 'POST',
-        headers: {
+          {
+            method: 'POST',
+            headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }
+              'Content-Type': 'application/json'
+            }
+          }
     );
 
     if (response.ok) {
       logEvent('info', 'Webhooks configured successfully', { wabaId });
       return true;
-    } else {
+        } else {
       const errorText = await response.text();
       logEvent('error', 'Webhook configuration failed', { 
         wabaId, 
@@ -369,49 +369,49 @@ async function saveToDatabase(userId: string, channelConfig: unknown, config: Co
 
   try {
     // Start transaction-like operation
-    const { data: existingChannel, error: checkError } = await supabase
-      .from('communication_channels')
+      const { data: existingChannel, error: checkError } = await supabase
+        .from('communication_channels')
       .select('id, channel_config')
-      .eq('user_id', userId)
-      .eq('channel_type', 'whatsapp')
-      .maybeSingle();
+        .eq('user_id', userId)
+        .eq('channel_type', 'whatsapp')
+        .maybeSingle();
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found"
       throw checkError;
     }
 
-    let dbError;
-    if (existingChannel) {
-      // Update existing channel
+      let dbError;
+      if (existingChannel) {
+        // Update existing channel
       logEvent('info', 'Updating existing WhatsApp channel', { userId, channelId: existingChannel.id });
       
-      const { error: updateError } = await supabase
-        .from('communication_channels')
-        .update({
-          channel_config: channelConfig,
-          is_connected: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingChannel.id);
+        const { error: updateError } = await supabase
+          .from('communication_channels')
+          .update({
+            channel_config: channelConfig,
+            is_connected: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingChannel.id);
       
-      dbError = updateError;
-    } else {
-      // Create new channel
+        dbError = updateError;
+      } else {
+        // Create new channel
       logEvent('info', 'Creating new WhatsApp channel', { userId });
       
-      const { error: insertError } = await supabase
-        .from('communication_channels')
-        .insert({
-          user_id: userId,
-          channel_type: 'whatsapp',
-          channel_config: channelConfig,
-          is_connected: true
-        });
+        const { error: insertError } = await supabase
+          .from('communication_channels')
+          .insert({
+            user_id: userId,
+            channel_type: 'whatsapp',
+            channel_config: channelConfig,
+            is_connected: true
+          });
       
-      dbError = insertError;
-    }
+        dbError = insertError;
+      }
 
-    if (dbError) {
+      if (dbError) {
       logEvent('error', 'Database operation failed', { userId, error: dbError.message });
       throw new Error(`Database error: ${dbError.message}`);
     }
@@ -438,8 +438,8 @@ function createSuccessResponse(data: unknown, isCallback: boolean = false, confi
   }
 
   // API response
-  return new Response(
-    JSON.stringify({
+        return new Response(
+          JSON.stringify({ 
       success: true,
       data,
       timestamp: new Date().toISOString()
