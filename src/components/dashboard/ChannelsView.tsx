@@ -242,28 +242,47 @@ const ChannelsView = () => {
   const fetchChannels = useCallback(async () => {
     try {
       if (user && user.id) {
-        console.log('Fetching channels for user:', user.id);
+        console.log('🔄 Fetching channels for user:', user.id);
         
         const { data } = await supabaseSelect(
           supabase
             .from('communication_channels')
             .select('*')
             .eq('user_id', user.id)
+            .order('created_at', { ascending: true }) // Show older channels first (Instagram is usually first)
         );
         
-        console.log('Channels fetched:', data?.length || 0);
+        console.log('📊 Channels fetched:', data?.length || 0);
         
         // Debug: Mostrar información detallada de los canales
         if (data && data.length > 0) {
-          console.log('Channel Status Debug:');
+          console.log('📊 Channel Status Debug:');
           data.forEach(channel => {
-            console.log(`${channel.channel_type.toUpperCase()}:`, {
+            console.log(`${channel.channel_type.toUpperCase()} Channel:`, {
               id: channel.id,
               is_connected: channel.is_connected,
               config: channel.channel_config,
               has_config: Boolean(channel.channel_config),
-              config_keys: channel.channel_config ? Object.keys(channel.channel_config) : []
+              config_keys: channel.channel_config ? Object.keys(channel.channel_config) : [],
+              created_at: channel.created_at,
+              updated_at: channel.updated_at
             });
+
+            // Extra debug for Instagram
+            if (channel.channel_type === 'instagram' && channel.channel_config) {
+              const igConfig = channel.channel_config as InstagramConfig;
+              console.log(`📱 Instagram Detailed Debug:`, {
+                username: igConfig.username,
+                instagram_user_id: igConfig.instagram_user_id,
+                instagram_business_account_id: igConfig.instagram_business_account_id,
+                account_type: igConfig.account_type,
+                verified_at: igConfig.verified_at,
+                expires_at: igConfig.expires_at,
+                token_valid: igConfig.expires_at ? new Date(igConfig.expires_at) > new Date() : false,
+                ids_match: igConfig.instagram_user_id === igConfig.instagram_business_account_id,
+                needs_verification: igConfig.instagram_user_id === igConfig.instagram_business_account_id || !igConfig.instagram_business_account_id
+              });
+            }
           });
         }
         
@@ -275,18 +294,34 @@ const ChannelsView = () => {
                 const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
                 const response = await fetch(webhookUrl, { method: 'HEAD' });
                 if (response.ok) {
-                  console.log('Webhook is accessible for channel:', channel.id);
+                  console.log('✅ Webhook is accessible for channel:', channel.id);
                 } else {
-                  console.warn('Webhook not accessible for channel:', channel.id);
+                  console.warn('⚠️ Webhook not accessible for channel:', channel.id);
                 }
               } catch (error) {
-                console.warn('Could not verify webhook for channel:', channel.id, error);
+                console.warn('⚠️ Could not verify webhook for channel:', channel.id, error);
               }
             }
           }
         }
         
         setChannels((data as Channel[]) || []);
+        
+        // Log final summary
+        const summary = {
+          total_channels: data?.length || 0,
+          whatsapp_connected: data?.some(c => c.channel_type === 'whatsapp' && c.is_connected) || false,
+          facebook_connected: data?.some(c => c.channel_type === 'facebook' && c.is_connected) || false,
+          instagram_connected: data?.some(c => c.channel_type === 'instagram' && c.is_connected) || false,
+          instagram_needs_verification: data?.filter(c => 
+            c.channel_type === 'instagram' && 
+            c.is_connected && 
+            c.channel_config && 
+            ((c.channel_config as InstagramConfig).instagram_user_id === (c.channel_config as InstagramConfig).instagram_business_account_id)
+          ).length || 0
+        };
+        
+        console.log('🎯 Channels Summary:', summary);
       }
     } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudieron cargar los canales");
@@ -354,12 +389,149 @@ const ChannelsView = () => {
   }, [verificationPolling]);
 
   // Check if Instagram channel needs verification
-  const instagramNeedsVerification = (config: InstagramConfig): boolean => {
+  const instagramNeedsVerification = useCallback((config: InstagramConfig): boolean => {
     // When instagram_user_id equals instagram_business_account_id, verification is needed
     // This happens because Instagram returns the same ID for both, but we need the correct business account ID
     return config.instagram_user_id === config.instagram_business_account_id ||
            !config.instagram_business_account_id;
-  };
+  }, []);
+
+  const getChannelStatus = useCallback((channelType: string) => {
+    const channel = channels.find(c => c.channel_type === channelType);
+    
+    if (!channel || !channel.channel_config) {
+      console.log(`${channelType}: No channel or config found`);
+      return false;
+    }
+
+    // Verificación específica por tipo de canal
+    switch (channelType) {
+      case 'whatsapp': {
+        const config = channel.channel_config as WhatsAppConfig;
+        const hasPhoneNumberId = Boolean(config?.phone_number_id);
+        const hasBusinessAccountId = Boolean(config?.business_account_id);
+        const hasAccessToken = Boolean(config?.access_token);
+        const isConnected = Boolean(channel.is_connected);
+        const status = hasPhoneNumberId && hasBusinessAccountId && hasAccessToken && isConnected;
+        
+        console.log(`WHATSAPP Status:`, {
+          hasPhoneNumberId,
+          hasBusinessAccountId,
+          hasAccessToken: hasAccessToken ? 'Yes' : 'No',
+          isConnected,
+          displayPhoneNumber: config?.display_phone_number,
+          businessName: config?.business_name,
+          webhookConfigured: config?.webhook_configured,
+          finalStatus: status
+        });
+        
+        return status;
+      }
+      
+      case 'facebook': {
+        const config = channel.channel_config as FacebookConfig;
+        const hasPageId = Boolean(config?.page_id);
+        const hasPageToken = Boolean(config?.page_access_token);
+        const hasUserToken = Boolean(config?.user_access_token);
+        const isConnected = Boolean(channel.is_connected);
+        const status = hasPageId && hasPageToken && hasUserToken && isConnected;
+        
+        console.log(`FACEBOOK Status:`, {
+          hasPageId,
+          hasPageToken: hasPageToken ? 'Yes' : 'No',
+          hasUserToken: hasUserToken ? 'Yes' : 'No',
+          isConnected,
+          pageName: config?.page_name,
+          finalStatus: status
+        });
+        
+        return status;
+      }
+      
+      case 'instagram': {
+        const config = channel.channel_config as InstagramConfig;
+        const hasUsername = Boolean(config?.username);
+        const hasAccessToken = Boolean(config?.access_token);
+        const hasInstagramUserId = Boolean(config?.instagram_user_id);
+        const hasAccountType = Boolean(config?.account_type);
+        const isConnected = Boolean(channel.is_connected);
+        const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
+        
+        // 🔥 FIXED: Instagram is CONNECTED if it has basic OAuth data (separate from verification)
+        // Verification is a separate process for messaging functionality
+        const status = hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && 
+                      isConnected && isTokenValid;
+        
+        console.log(`📱 INSTAGRAM Connection Status:`, {
+          hasUsername,
+          hasAccessToken: hasAccessToken ? 'Yes' : 'No',
+          hasInstagramUserId,
+          hasAccountType,
+          isConnected,
+          isTokenValid,
+          username: config?.username,
+          accountType: config?.account_type,
+          expiresAt: config?.expires_at,
+          instagram_user_id: config?.instagram_user_id,
+          instagram_business_account_id: config?.instagram_business_account_id,
+          finalStatus: status,
+          channelId: channel.id
+        });
+        
+        return status;
+      }
+      
+      default:
+        return channel?.is_connected || false;
+    }
+  }, [channels]);
+
+  // Auto-detect Instagram channels that need verification on load
+  useEffect(() => {
+    if (channels.length > 0 && user) {
+      console.log('🔍 Auto-detecting Instagram verification needs...');
+      
+      // Find Instagram channels that are connected but need verification
+      const instagramChannels = channels.filter(c => c.channel_type === 'instagram');
+      
+      if (instagramChannels.length > 0) {
+        console.log(`📱 Found ${instagramChannels.length} Instagram channel(s), checking verification status...`);
+      }
+      
+      instagramChannels.forEach(channel => {
+        const config = channel.channel_config as InstagramConfig;
+        const needsVerification = instagramNeedsVerification(config);
+        const hasExistingVerification = igVerifications[channel.id];
+        const isConnected = getChannelStatus('instagram');
+        
+        console.log(`📋 Instagram channel ${channel.id} (@${config?.username}) verification check:`, {
+          isConnected,
+          needsVerification,
+          hasExistingVerification,
+          instagram_user_id: config?.instagram_user_id,
+          instagram_business_account_id: config?.instagram_business_account_id,
+          verified_at: config?.verified_at,
+          idsMatch: config?.instagram_user_id === config?.instagram_business_account_id
+        });
+        
+        // Only show notification for connected Instagram that needs verification
+        if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at) {
+          console.log('🎯 Instagram channel is connected but needs verification, showing notification');
+          
+          setTimeout(() => {
+            toast({
+              title: "📱 Instagram detectado - Verificación requerida",
+              description: `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
+            });
+          }, 1000); // Delay to avoid spamming notifications on page load
+        } else if (isConnected && !needsVerification) {
+          console.log('✅ Instagram channel is fully verified and ready');
+        } else if (!isConnected) {
+          console.log('🔌 Instagram channel not connected yet');
+        }
+      });
+    }
+  }, [channels, user, igVerifications, toast, getChannelStatus, instagramNeedsVerification]);
 
   // Check verification status by polling the channel configuration
   const checkVerificationStatus = async (channelId: string) => {
@@ -550,99 +722,28 @@ const ChannelsView = () => {
     }
   }, [fetchChannels, toast]);
 
-  const getChannelStatus = (channelType: string) => {
-    const channel = channels.find(c => c.channel_type === channelType);
+  // Función separada para detectar si Instagram necesita verificación (pero ya está conectado)
+  const getInstagramVerificationStatus = (channelId: string) => {
+    const channel = channels.find(c => c.channel_type === 'instagram' && c.id === channelId);
     
     if (!channel || !channel.channel_config) {
-      console.log(`${channelType}: No channel or config found`);
-      return false;
+      return { needsVerification: false, isVerified: false };
     }
 
-    // Verificación específica por tipo de canal
-    switch (channelType) {
-      case 'whatsapp': {
-        const config = channel.channel_config as WhatsAppConfig;
-        const hasPhoneNumberId = Boolean(config?.phone_number_id);
-        const hasBusinessAccountId = Boolean(config?.business_account_id);
-        const hasAccessToken = Boolean(config?.access_token);
-        const isConnected = Boolean(channel.is_connected);
-        const status = hasPhoneNumberId && hasBusinessAccountId && hasAccessToken && isConnected;
-        
-        console.log(`WHATSAPP Status:`, {
-          hasPhoneNumberId,
-          hasBusinessAccountId,
-          hasAccessToken: hasAccessToken ? 'Yes' : 'No',
-          isConnected,
-          displayPhoneNumber: config?.display_phone_number,
-          businessName: config?.business_name,
-          webhookConfigured: config?.webhook_configured,
-          finalStatus: status
-        });
-        
-        return status;
-      }
-      
-      case 'facebook': {
-        const config = channel.channel_config as FacebookConfig;
-        const hasPageId = Boolean(config?.page_id);
-        const hasPageToken = Boolean(config?.page_access_token);
-        const hasUserToken = Boolean(config?.user_access_token);
-        const isConnected = Boolean(channel.is_connected);
-        const status = hasPageId && hasPageToken && hasUserToken && isConnected;
-        
-        console.log(`FACEBOOK Status:`, {
-          hasPageId,
-          hasPageToken: hasPageToken ? 'Yes' : 'No',
-          hasUserToken: hasUserToken ? 'Yes' : 'No',
-          isConnected,
-          pageName: config?.page_name,
-          finalStatus: status
-        });
-        
-        return status;
-      }
-      
-      case 'instagram': {
-        const config = channel.channel_config as InstagramConfig;
-        const hasUsername = Boolean(config?.username);
-        const hasAccessToken = Boolean(config?.access_token);
-        const hasInstagramUserId = Boolean(config?.instagram_user_id);
-        const hasAccountType = Boolean(config?.account_type);
-        const isConnected = Boolean(channel.is_connected);
-        const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
-        const needsVerification = instagramNeedsVerification(config);
-        const hasValidBusinessAccount = Boolean(config?.instagram_business_account_id) && 
-                                      config.instagram_business_account_id !== config.instagram_user_id;
-        
-        // Instagram is fully configured if it has all required fields and either:
-        // 1. Has a valid business account ID different from user ID, OR
-        // 2. Has completed verification process
-        const status = hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && 
-                      isConnected && isTokenValid && (hasValidBusinessAccount || !needsVerification);
-        
-        console.log(`INSTAGRAM Status:`, {
-          hasUsername,
-          hasAccessToken: hasAccessToken ? 'Yes' : 'No',
-          hasInstagramUserId,
-          hasAccountType,
-          isConnected,
-          isTokenValid,
-          needsVerification,
-          hasValidBusinessAccount,
-          username: config?.username,
-          accountType: config?.account_type,
-          expiresAt: config?.expires_at,
-          instagram_user_id: config?.instagram_user_id,
-          instagram_business_account_id: config?.instagram_business_account_id,
-          finalStatus: status
-        });
-        
-        return status;
-      }
-      
-      default:
-        return channel?.is_connected || false;
-    }
+    const config = channel.channel_config as InstagramConfig;
+    const needsVerification = instagramNeedsVerification(config);
+    const isVerified = Boolean(config?.verified_at);
+
+    console.log(`🔍 Instagram Verification Status for channel ${channelId}:`, {
+      needsVerification,
+      isVerified,
+      verified_at: config?.verified_at,
+      instagram_user_id: config?.instagram_user_id,
+      instagram_business_account_id: config?.instagram_business_account_id,
+      idsMatch: config?.instagram_user_id === config?.instagram_business_account_id
+    });
+
+    return { needsVerification, isVerified };
   };
 
   // Función para manejar la respuesta de WhatsApp OAuth
@@ -1135,11 +1236,33 @@ const ChannelsView = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Configuración de Canales</h1>
-          <p className="text-muted-foreground mt-1">Conecta tus redes sociales de manera sencilla</p>
+          <p className="text-muted-foreground mt-1">
+            Conecta tus redes sociales de manera sencilla
+            {channels.length > 0 && (
+              <span className="ml-2">
+                • {channels.length} canal{channels.length !== 1 ? 'es' : ''} 
+                {channels.some(c => c.channel_type === 'instagram' && c.is_connected) && (
+                  <span className="ml-1 text-pink-600 font-medium">📱 Instagram detectado</span>
+                )}
+              </span>
+            )}
+          </p>
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Settings className="h-5 w-5" />
-          <span className="text-sm">Conecta tus redes sociales</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              console.log('🔄 Manual refresh triggered');
+              fetchChannels();
+            }}
+          >
+            🔄 Actualizar
+          </Button>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Settings className="h-5 w-5" />
+            <span className="text-sm">Configuración</span>
+          </div>
         </div>
       </div>
 
@@ -1492,31 +1615,81 @@ const ChannelsView = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Canales Conectados
+            Estado de Canales
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {getChannelStatus('whatsapp') && (
-              <Badge variant="default" className="bg-green-600">
-                <Phone className="h-3 w-3 mr-1" />
-                WhatsApp
-              </Badge>
-            )}
-            {getChannelStatus('facebook') && (
-              <Badge variant="default" className="bg-blue-600">
-                <Facebook className="h-3 w-3 mr-1" />
-                Facebook
-              </Badge>
-            )}
-            {getChannelStatus('instagram') && (
-              <Badge variant="default" className="bg-pink-600">
-                <Instagram className="h-3 w-3 mr-1" />
-                Instagram
-              </Badge>
-            )}
-            {!getChannelStatus('whatsapp') && !getChannelStatus('facebook') && !getChannelStatus('instagram') && (
-              <p className="text-muted-foreground text-sm">No hay canales conectados</p>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {getChannelStatus('whatsapp') && (
+                <Badge variant="default" className="bg-green-600">
+                  <Phone className="h-3 w-3 mr-1" />
+                  WhatsApp
+                </Badge>
+              )}
+              {getChannelStatus('facebook') && (
+                <Badge variant="default" className="bg-blue-600">
+                  <Facebook className="h-3 w-3 mr-1" />
+                  Facebook
+                </Badge>
+              )}
+              {getChannelStatus('instagram') && (
+                <Badge variant="default" className="bg-pink-600">
+                  <Instagram className="h-3 w-3 mr-1" />
+                  Instagram
+                  {(() => {
+                    const igChannel = channels.find(c => c.channel_type === 'instagram');
+                    const config = igChannel?.channel_config as InstagramConfig;
+                    const needsVerification = config ? instagramNeedsVerification(config) : false;
+                    return needsVerification ? ' (Necesita Verificación)' : ' (Verificado)';
+                  })()}
+                </Badge>
+              )}
+              {!getChannelStatus('whatsapp') && !getChannelStatus('facebook') && !getChannelStatus('instagram') && (
+                <p className="text-muted-foreground text-sm">No hay canales conectados</p>
+              )}
+            </div>
+
+            {/* Debug info for development */}
+            {channels.length > 0 && (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h4 className="font-medium text-gray-700 text-sm mb-2">Estado de Conexiones (Debug):</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  {channels.map(channel => {
+                    const config = channel.channel_config as InstagramConfig | FacebookConfig | WhatsAppConfig;
+                    const isConnected = getChannelStatus(channel.channel_type);
+                    
+                    return (
+                      <div key={channel.id} className={`p-2 rounded border ${
+                        isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="font-medium">
+                          {channel.channel_type.toUpperCase()}
+                          {isConnected ? ' ✅' : ' ❌'}
+                        </div>
+                        {channel.channel_type === 'instagram' && (
+                          <div className="text-gray-600">
+                            @{(config as InstagramConfig)?.username}
+                            {instagramNeedsVerification(config as InstagramConfig) && (
+                              <div className="text-yellow-600 font-medium">⚠️ Needs Verification</div>
+                            )}
+                          </div>
+                        )}
+                        {channel.channel_type === 'facebook' && (
+                          <div className="text-gray-600">
+                            {(config as FacebookConfig)?.page_name}
+                          </div>
+                        )}
+                        {channel.channel_type === 'whatsapp' && (
+                          <div className="text-gray-600">
+                            {(config as WhatsAppConfig)?.business_name || (config as WhatsAppConfig)?.display_phone_number}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         </CardContent>
