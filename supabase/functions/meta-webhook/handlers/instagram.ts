@@ -18,18 +18,46 @@ interface InstagramEvent {
   };
 }
 
+// interface for Instagram channel configuration
+interface InstagramChannelConfig {
+  instagram_user_id: string;
+  instagram_business_account_id?: string; // Business Account ID for messaging
+  username: string;
+  access_token: string;
+  account_type: string;
+  token_type?: string;
+  expires_at?: string;
+  connected_at?: string;
+  messaging_available?: boolean;
+  webhook_subscribed?: boolean;
+  verified_at?: string;
+}
+
 // interface for communication channel
 interface CommunicationChannel {
   id: string;
   user_id: string;
-  channel_config: {
-    instagram_user_id: string;
-    instagram_business_account_id?: string; // 🔥 NEW: Business Account ID for messaging
-    username: string;
-    access_token: string;
-    account_type: string;
-    messaging_available?: boolean;
-  };
+  channel_type: string;
+  is_connected: boolean;
+  channel_config: InstagramChannelConfig;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// interface for Instagram verification record
+interface InstagramVerificationRecord {
+  id: string;
+  user_id: string;
+  channel_id: string;
+  verification_code: string;
+  status: 'pending' | 'completed' | 'expired';
+  business_account_id?: string;
+  sender_id?: string;
+  message_content?: string;
+  verified_at?: string;
+  expires_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CRMClient {
@@ -50,6 +78,152 @@ interface Conversation {
   status: string;
   last_message_at: string;
   ai_enabled?: boolean;
+}
+
+/**
+ * Checks if a message contains a valid Instagram verification code
+ * @param text - Message text to check
+ * @returns The verification code if found, null otherwise
+ */
+function extractVerificationCode(text: string): string | null {
+  const codePattern = /\b(IG-\d{5})\b/;
+  const match = text.match(codePattern);
+  return match ? match[1] : null;
+}
+
+/**
+ * Processes an Instagram verification code and updates the channel configuration
+ * @param verificationCode - The verification code found in the message
+ * @param senderId - The ID of the message sender (business account ID)
+ * @param supabase - Supabase client
+ * @returns Promise<boolean> - true if verification was processed successfully
+ */
+async function processInstagramVerification(
+  verificationCode: string,
+  senderId: string,
+  supabase: SupabaseClient
+): Promise<boolean> {
+  try {
+    console.log('🔧 Processing Instagram verification:', { verificationCode, senderId });
+
+    // Find pending verification with this code
+    const { data: verification, error: verificationError } = await supabase
+      .from('instagram_verifications')
+      .select(`
+        id,
+        user_id,
+        channel_id,
+        verification_code,
+        status,
+        expires_at
+      `)
+      .eq('verification_code', verificationCode)
+      .eq('status', 'pending')
+      .single();
+
+    if (verificationError || !verification) {
+      console.log('❌ No pending verification found for code:', verificationCode);
+      return false;
+    }
+
+    // Check if verification has expired
+    const now = new Date();
+    const expiresAt = new Date(verification.expires_at);
+    
+    if (now > expiresAt) {
+      console.log('⏰ Verification code has expired:', verificationCode);
+      
+      // Mark as expired
+      await supabase
+        .from('instagram_verifications')
+        .update({ 
+          status: 'expired',
+          updated_at: now.toISOString()
+        })
+        .eq('id', verification.id);
+      
+      return false;
+    }
+
+    console.log('✅ Valid verification found:', {
+      id: verification.id,
+      channel_id: verification.channel_id,
+      user_id: verification.user_id
+    });
+
+    // Get the channel that needs to be updated
+    const { data: channel, error: channelError } = await supabase
+      .from('communication_channels')
+      .select('*')
+      .eq('id', verification.channel_id)
+      .eq('user_id', verification.user_id)
+      .eq('channel_type', 'instagram')
+      .single();
+
+    if (channelError || !channel) {
+      console.error('❌ Channel not found for verification:', channelError);
+      return false;
+    }
+
+    // Update channel configuration with correct business account ID
+    const currentConfig: InstagramChannelConfig = channel.channel_config;
+    const updatedConfig: InstagramChannelConfig = {
+      ...currentConfig,
+      instagram_business_account_id: senderId, // This is the correct business account ID from webhook
+      webhook_subscribed: true,
+      verified_at: now.toISOString()
+    };
+
+    console.log('🔄 Updating channel config:', {
+      channel_id: verification.channel_id,
+      old_business_id: currentConfig?.instagram_business_account_id,
+      new_business_id: senderId,
+      instagram_user_id: currentConfig?.instagram_user_id
+    });
+
+    // Update the channel
+    const { error: updateError } = await supabase
+      .from('communication_channels')
+      .update({
+        channel_config: updatedConfig,
+        updated_at: now.toISOString()
+      })
+      .eq('id', verification.channel_id);
+
+    if (updateError) {
+      console.error('❌ Error updating channel:', updateError);
+      return false;
+    }
+
+    // Mark verification as completed
+    const { error: verificationUpdateError } = await supabase
+      .from('instagram_verifications')
+      .update({
+        status: 'completed',
+        business_account_id: senderId,
+        sender_id: senderId,
+        verified_at: now.toISOString(),
+        updated_at: now.toISOString()
+      })
+      .eq('id', verification.id);
+
+    if (verificationUpdateError) {
+      console.error('❌ Error updating verification status:', verificationUpdateError);
+      // Don't return false here since the channel was updated successfully
+    }
+
+    console.log('✅ Instagram verification completed successfully:', {
+      verification_code: verificationCode,
+      channel_id: verification.channel_id,
+      business_account_id: senderId
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error('❌ Error processing Instagram verification:', error);
+    return false;
+  }
 }
 
 /**
@@ -94,6 +268,23 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     console.log(`📝 [Instagram] Message received from ${senderId} for page ${pageId}: "${text}"`);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 🔧 Check if this message contains a verification code (PRIORITY CHECK)
+    const verificationCode = extractVerificationCode(text);
+    if (verificationCode) {
+      console.log('🎯 Instagram verification code detected:', verificationCode);
+      
+      // Process verification - senderId is the business account ID in this case
+      const verificationProcessed = await processInstagramVerification(verificationCode, senderId, supabase);
+      
+      if (verificationProcessed) {
+        console.log('✅ Instagram verification completed, continuing with normal message processing');
+        // Continue processing as normal message after verification
+      } else {
+        console.log('⚠️ Verification processing failed, continuing as normal message');
+        // Continue processing as normal message even if verification failed
+      }
+    }
 
     // Determine if this is an echo message early
     const isEcho = message.is_echo || false;

@@ -11,9 +11,37 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 // Declaración global para Facebook SDK
+// Facebook SDK types
+interface FacebookSDK {
+  init: (config: {
+    appId: string;
+    cookie: boolean;
+    xfbml: boolean;
+    version: string;
+  }) => void;
+  login: (
+    callback: (response: FacebookLoginResponse) => void,
+    options: {
+      config_id?: string;
+      response_type?: string;
+      override_default_response_type?: boolean;
+      extras?: Record<string, unknown>;
+    }
+  ) => void;
+}
+
+interface FacebookLoginResponse {
+  status: string;
+  code?: string;
+  authResponse?: {
+    code?: string;
+    accessToken?: string;
+  };
+}
+
 declare global {
   interface Window {
-    FB: any;
+    FB: FacebookSDK;
     fbAsyncInit: () => void;
   }
 }
@@ -48,6 +76,7 @@ interface FacebookConfig {
 interface InstagramConfig {
   username: string;
   instagram_user_id: string;
+  instagram_business_account_id?: string; // NEW: Business Account ID for messaging
   access_token: string;
   account_type: string;
   token_type: string;
@@ -55,6 +84,13 @@ interface InstagramConfig {
   connected_at: string;
   media_count?: number;
   webhook_subscribed?: boolean;
+}
+
+interface InstagramVerification {
+  id: string;
+  verification_code: string;
+  status: 'pending' | 'completed' | 'expired';
+  expires_at: string;
 }
 
 type ChannelConfig = WhatsAppConfig | FacebookConfig | InstagramConfig | null;
@@ -71,6 +107,8 @@ const ChannelsView = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [showWebhookMonitor, setShowWebhookMonitor] = useState(false);
   const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
+  const [igVerifications, setIgVerifications] = useState<Record<string, InstagramVerification>>({});
+  const [isGeneratingCode, setIsGeneratingCode] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   // Función para cargar Facebook SDK
@@ -94,11 +132,13 @@ const ChannelsView = () => {
 
       // Load Facebook SDK
       (function(d, s, id) {
-        var js: any, fjs = d.getElementsByTagName(s)[0];
+        const fjs = d.getElementsByTagName(s)[0] as HTMLElement;
         if (d.getElementById(id)) return;
-        js = d.createElement(s); js.id = id;
+        const js = d.createElement(s) as HTMLScriptElement; js.id = id;
         js.src = "https://connect.facebook.net/es_ES/sdk.js";
-        fjs.parentNode.insertBefore(js, fjs);
+        if (fjs && fjs.parentNode) {
+          fjs.parentNode.insertBefore(js, fjs);
+        }
       }(document, 'script', 'facebook-jssdk'));
     });
   };
@@ -167,6 +207,79 @@ const ChannelsView = () => {
       fetchChannels();
     }
   }, [user, authLoading, fetchChannels]);
+
+  // Check if Instagram channel needs verification
+  const instagramNeedsVerification = (config: InstagramConfig): boolean => {
+    // When instagram_user_id equals instagram_business_account_id, verification is needed
+    // This happens because Instagram returns the same ID for both, but we need the correct business account ID
+    return config.instagram_user_id === config.instagram_business_account_id ||
+           !config.instagram_business_account_id;
+  };
+
+  // Generate Instagram verification code
+  const generateInstagramVerificationCode = async (channelId: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Debes estar autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingCode(prev => ({ ...prev, [channelId]: true }));
+
+    try {
+      console.log('🔧 Generating Instagram verification code for channel:', channelId);
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/generate-instagram-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({ 
+          channel_id: channelId 
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const verification: InstagramVerification = {
+          id: `${channelId}_${Date.now()}`,
+          verification_code: result.verification_code,
+          status: 'pending',
+          expires_at: result.expires_at
+        };
+
+        setIgVerifications(prev => ({ 
+          ...prev, 
+          [channelId]: verification 
+        }));
+
+        toast({
+          title: "Código de verificación generado",
+          description: `Envía el código ${result.verification_code} a tu cuenta de Instagram para completar la configuración`,
+        });
+
+        console.log('✅ Verification code generated:', result.verification_code);
+      } else {
+        throw new Error(result.error || 'Error generando código de verificación');
+      }
+
+    } catch (error: unknown) {
+      console.error('❌ Error generating verification code:', error);
+      const errorMessage = error instanceof Error ? error.message : "No se pudo generar el código de verificación";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingCode(prev => ({ ...prev, [channelId]: false }));
+    }
+  };
 
   // Check for success parameters in URL
   useEffect(() => {
@@ -260,7 +373,15 @@ const ChannelsView = () => {
         const hasAccountType = Boolean(config?.account_type);
         const isConnected = Boolean(channel.is_connected);
         const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
-        const status = hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && isConnected && isTokenValid;
+        const needsVerification = instagramNeedsVerification(config);
+        const hasValidBusinessAccount = Boolean(config?.instagram_business_account_id) && 
+                                      config.instagram_business_account_id !== config.instagram_user_id;
+        
+        // Instagram is fully configured if it has all required fields and either:
+        // 1. Has a valid business account ID different from user ID, OR
+        // 2. Has completed verification process
+        const status = hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && 
+                      isConnected && isTokenValid && (hasValidBusinessAccount || !needsVerification);
         
         console.log(`INSTAGRAM Status:`, {
           hasUsername,
@@ -269,9 +390,13 @@ const ChannelsView = () => {
           hasAccountType,
           isConnected,
           isTokenValid,
+          needsVerification,
+          hasValidBusinessAccount,
           username: config?.username,
           accountType: config?.account_type,
           expiresAt: config?.expires_at,
+          instagram_user_id: config?.instagram_user_id,
+          instagram_business_account_id: config?.instagram_business_account_id,
           finalStatus: status
         });
         
@@ -284,7 +409,7 @@ const ChannelsView = () => {
   };
 
   // Función para manejar la respuesta de WhatsApp OAuth
-  const handleWhatsAppResponse = async (response: any, expectedState: string) => {
+  const handleWhatsAppResponse = async (response: FacebookLoginResponse, expectedState: string) => {
     console.log('WhatsApp OAuth response:', response);
 
     try {
@@ -317,11 +442,12 @@ const ChannelsView = () => {
         console.log('Facebook response details:', response);
         throw new Error('Error en la autenticación con Facebook para WhatsApp');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error in WhatsApp OAuth:', error);
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
       toast({
         title: "Error conectando WhatsApp",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -363,7 +489,7 @@ const ChannelsView = () => {
         throw new Error(result.error || 'Error desconocido al conectar WhatsApp');
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error processing WhatsApp authorization:', error);
       throw error;
     }
@@ -404,7 +530,7 @@ const ChannelsView = () => {
       });
 
       // Use Facebook Embedded Signup with your Configuration ID
-      window.FB.login((response: any) => {
+      window.FB.login((response: FacebookLoginResponse) => {
         console.log('Facebook Embedded Signup response:', response);
         handleWhatsAppResponse(response, state);
       }, {
@@ -1003,6 +1129,10 @@ const ChannelsView = () => {
                   .filter(c => c.channel_type === 'instagram')
                   .map((channel) => {
                     const config = channel.channel_config as InstagramConfig;
+                    const needsVerification = instagramNeedsVerification(config);
+                    const channelVerification = igVerifications[channel.id];
+                    const isGenerating = isGeneratingCode[channel.id];
+                    
                     return (
                       <div key={channel.id} className="bg-pink-50 p-3 rounded-lg border border-pink-200">
                         <div className="flex items-center justify-between mb-2">
@@ -1014,19 +1144,84 @@ const ChannelsView = () => {
                             <Badge variant="default" className="bg-pink-600 text-xs">
                               Conectado
                             </Badge>
-                            <Badge 
-                              variant={config?.webhook_subscribed ? "default" : "secondary"} 
-                              className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
-                            >
-                              {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
-                            </Badge>
+                            {needsVerification ? (
+                              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
+                                Necesita Verificación
+                              </Badge>
+                            ) : (
+                              <Badge 
+                                variant={config?.webhook_subscribed ? "default" : "secondary"} 
+                                className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
+                              >
+                                {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
+                              </Badge>
+                            )}
                             <Badge variant="outline" className="text-xs">
                               {config?.account_type || 'PERSONAL'}
                             </Badge>
                           </div>
                         </div>
+
+                        {needsVerification && (
+                          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertCircle className="h-4 w-4 text-yellow-600" />
+                              <span className="font-medium text-yellow-800 text-sm">Verificación Requerida</span>
+                            </div>
+                            <p className="text-xs text-yellow-700 mb-2">
+                              Instagram requiere verificar la cuenta comercial para recibir mensajes correctamente.
+                            </p>
+                            
+                            {!channelVerification ? (
+                              <Button 
+                                size="sm" 
+                                onClick={() => generateInstagramVerificationCode(channel.id)}
+                                disabled={isGenerating}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                              >
+                                {isGenerating ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                                    Generando...
+                                  </>
+                                ) : (
+                                  'Generar Código de Verificación'
+                                )}
+                              </Button>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-mono bg-white px-2 py-1 rounded border">
+                                    {channelVerification.verification_code}
+                                  </span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(channelVerification.verification_code);
+                                      toast({ title: "Código copiado al portapapeles" });
+                                    }}
+                                  >
+                                    Copiar
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-yellow-700">
+                                  <strong>Instrucciones:</strong> Envía este código como mensaje a tu cuenta de Instagram. 
+                                  El sistema detectará automáticamente el mensaje y completará la configuración.
+                                </p>
+                                <p className="text-xs text-yellow-600">
+                                  Expira: {new Date(channelVerification.expires_at).toLocaleString('es-ES')}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="text-xs text-pink-800 space-y-1">
                           <p>Usuario ID: {config?.instagram_user_id || 'N/A'}</p>
+                          {config?.instagram_business_account_id && (
+                            <p>Business Account ID: {config.instagram_business_account_id}</p>
+                          )}
                           <p>Tipo de cuenta: {config?.account_type || 'PERSONAL'}</p>
                           <p>Token: {config?.token_type || 'short_lived'} ({config?.expires_at ? new Date(config.expires_at) > new Date() ? 'Válido' : 'Expirado' : 'N/A'})</p>
                           <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
@@ -1048,14 +1243,16 @@ const ChannelsView = () => {
                           >
                             Reconectar
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs border-green-300 hover:bg-green-100 text-green-700"
-                            onClick={() => handleTestWebhook(channel.id)}
-                          >
-                            Test Webhook
-                          </Button>
+                          {!needsVerification && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs border-green-300 hover:bg-green-100 text-green-700"
+                              onClick={() => handleTestWebhook(channel.id)}
+                            >
+                              Test Webhook
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
