@@ -42,7 +42,7 @@ interface Message {
   sender_type: 'user' | 'ia';
   sender_name: string;
   created_at: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   has_new_messages?: boolean;
 }
 
@@ -58,7 +58,7 @@ interface AIConfig {
 
 // Simplified function to wait and get context with new message check
 async function waitAndGetContextWithNewMessageCheck(
-  supabase: any, 
+  supabase: SupabaseClient, 
   conversationId: string, 
   delaySeconds: number = 15,
   limit: number = 150

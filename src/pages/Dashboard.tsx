@@ -8,6 +8,7 @@ import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MessagesView from '@/components/dashboard/MessagesView';
+import CRMView from '@/components/dashboard/CRMView';
 import StatsView from '@/components/dashboard/StatsView';
 import ChannelsView from '@/components/dashboard/ChannelsView';
 import ProfileView from '@/components/dashboard/ProfileView';
@@ -137,20 +138,32 @@ const Dashboard = () => {
   };
 
   const renderView = () => {
+    console.log(`🎯 Dashboard: Rendering view: ${currentView}`);
+    
     switch (currentView) {
       case 'messages':
+        console.log('📱 Rendering MessagesView');
         return <MessagesView />;
+      case 'crm':
+        console.log('👥 Rendering CRMView');
+        return <CRMView />;
       case 'stats':
+        console.log('📊 Rendering StatsView');
         return <StatsView />;
       case 'channels':
+        console.log('⚙️ Rendering ChannelsView');
         return <ChannelsView />;
       case 'profile':
+        console.log('👤 Rendering ProfileView');
         return <ProfileView user={user} />;
       case 'support':
+        console.log('🔧 Rendering SupportView');
         return <SupportView />;
       case 'ai-agent':
+        console.log('🤖 Rendering AIAgentView');
         return <AIAgentView />;
       default:
+        console.log('📱 Rendering default MessagesView');
         return <MessagesView />;
     }
   };
@@ -165,13 +178,17 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar 
-        currentView={currentView} 
-        setCurrentView={handleViewChange}
-        onSignOut={handleSignOut}
-        user={user}
-      />
-      <main className="flex-1 overflow-hidden">
+      {/* Sidebar fijo */}
+      <div className="sticky top-0 h-screen">
+        <Sidebar 
+          currentView={currentView} 
+          setCurrentView={handleViewChange}
+          onSignOut={handleSignOut}
+          user={user}
+        />
+      </div>
+      {/* Contenido principal con scroll */}
+      <main className="flex-1 overflow-y-auto">
         {renderView()}
       </main>
     </div>

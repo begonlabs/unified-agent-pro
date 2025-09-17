@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   MessageSquare, 
+  Users,
   BarChart3, 
   Settings, 
   User, 
@@ -34,7 +35,8 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps)
   const { isAdmin, loading: adminLoading } = useAdmin(user);
   
   const menuItems = [
-    { id: 'messages', label: 'Mensajes/CRM', icon: MessageSquare },
+    { id: 'messages', label: 'Mensajes', icon: MessageSquare },
+    { id: 'crm', label: 'CRM Clientes', icon: Users },
     { id: 'stats', label: 'Estadísticas', icon: BarChart3 },
     { id: 'channels', label: 'Canales', icon: Settings },
     { id: 'profile', label: 'Perfil', icon: User },
@@ -47,7 +49,7 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps)
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
+    <div className="w-64 bg-white shadow-lg h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
         <div className="flex items-center gap-3 group">
@@ -77,7 +79,10 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps)
               key={item.id}
               variant={currentView === item.id ? "default" : "ghost"}
               className="w-full justify-start gap-3"
-              onClick={() => setCurrentView(item.id)}
+              onClick={() => {
+                console.log(`🎯 Sidebar: Clicked on ${item.id} (${item.label})`);
+                setCurrentView(item.id);
+              }}
             >
               <Icon className="h-5 w-5" />
               {item.label}

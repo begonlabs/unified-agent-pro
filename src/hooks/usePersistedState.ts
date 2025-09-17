@@ -92,7 +92,7 @@ export function usePersistedState<T>(
  */
 export function usePersistedDashboardView(defaultView: string = 'messages') {
   // Validador para asegurar que la vista sea válida
-  const validViews = ['messages', 'stats', 'channels', 'profile', 'support', 'ai-agent'];
+  const validViews = ['messages', 'crm', 'stats', 'channels', 'profile', 'support', 'ai-agent'];
   
   const validator = (value: unknown): boolean => {
     return typeof value === 'string' && validViews.includes(value);
@@ -130,7 +130,7 @@ export function useViewFromUrlOrPersisted(defaultView: string = 'messages') {
       const urlParams = new URLSearchParams(window.location.search);
       const viewParam = urlParams.get('view');
       
-      if (viewParam && ['messages', 'stats', 'channels', 'profile', 'support', 'ai-agent'].includes(viewParam)) {
+      if (viewParam && ['messages', 'crm', 'stats', 'channels', 'profile', 'support', 'ai-agent'].includes(viewParam)) {
         console.log(`🌐 URL parameter detected: view=${viewParam}`);
         setUrlView(viewParam);
         // También actualizar el estado persistido
