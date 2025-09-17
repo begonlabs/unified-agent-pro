@@ -6,11 +6,21 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, MessageSquare, Users, Bot, Phone, Facebook, Instagram, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useRefreshListener } from '@/hooks/useDataRefresh';
 
 const StatsView = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('7d');
+
+  // 🔄 Escuchar eventos de refresh de datos
+  useRefreshListener(
+    async () => {
+      console.log('🔄 StatsView: Refreshing statistics data');
+      await fetchUserStats();
+    },
+    'stats'
+  );
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalMessages: 0,

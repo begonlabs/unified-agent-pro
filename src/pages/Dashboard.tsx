@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
+import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MessagesView from '@/components/dashboard/MessagesView';
 import StatsView from '@/components/dashboard/StatsView';
@@ -14,12 +16,21 @@ import AIAgentView from '@/components/dashboard/AIAgentView';
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState('messages');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // 🎯 Nuevo sistema de persistencia de vistas
+  const [currentView, setCurrentView] = useViewFromUrlOrPersisted('messages');
+  const { refreshGlobalData, refreshViewData } = useDataRefresh();
+  const { detectViewChange } = useViewChangeDetector();
 
-  console.log('Dashboard state:', { user: user?.email, loading });
+  console.log('Dashboard state:', { 
+    user: user?.email, 
+    loading, 
+    currentView, 
+    isPersisted: !!localStorage.getItem('dashboard-current-view')
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,34 +55,59 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Handle URL parameters for automatic view switching
+  // 🔄 Detectar cambios de vista y refrescar datos específicos
+  useEffect(() => {
+    const hasViewChanged = detectViewChange(currentView);
+    
+    if (hasViewChanged && user?.id) {
+      console.log(`🎯 Vista cambiada, refrescando datos para: ${currentView}`);
+      refreshViewData(currentView);
+    }
+  }, [currentView, detectViewChange, refreshViewData, user?.id]);
+
+  // Handle success parameters for OAuth callbacks (URL params for view are handled in useViewFromUrlOrPersisted)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const viewParam = urlParams.get('view');
     const successParam = urlParams.get('success');
     
-    if (viewParam && ['messages', 'stats', 'channels', 'profile', 'support', 'ai-agent'].includes(viewParam)) {
-      setCurrentView(viewParam);
+    if (successParam === 'true') {
+      const pageId = urlParams.get('page_id');
+      const pageName = urlParams.get('page_name');
+      const businessName = urlParams.get('business_name');
+      const phoneNumber = urlParams.get('phone_number');
+      const channel = urlParams.get('channel');
       
-      // If this is a successful OAuth callback, show success message
-      if (successParam === 'true') {
-        const pageId = urlParams.get('page_id');
-        const pageName = urlParams.get('page_name');
-        const channel = urlParams.get('channel');
-        
-        if (pageId && pageName && channel) {
-          toast({
-            title: "✅ Conexión exitosa",
-            description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} conectado: ${pageName}`,
-          });
-        }
-        
-        // Clean up URL parameters
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
+      // Mostrar notificación de éxito según el tipo de canal
+      if (channel === 'whatsapp' && businessName) {
+        toast({
+          title: "✅ WhatsApp conectado exitosamente",
+          description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
+        });
+      } else if (pageId && pageName && channel) {
+        toast({
+          title: "✅ Conexión exitosa", 
+          description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} conectado: ${pageName}`,
+        });
       }
+      
+      // Limpiar parámetros URL después de mostrar notificación
+      setTimeout(() => {
+        const newUrl = window.location.pathname + (window.location.search.includes('view=') ? `?view=${currentView}` : '');
+        window.history.replaceState({}, '', newUrl);
+      }, 2000);
     }
-  }, [toast]);
+  }, [toast, currentView]);
+
+  // 🎯 Función personalizada para cambiar vista con logging adicional
+  const handleViewChange = (newView: string) => {
+    console.log(`🎯 Dashboard: Changing view from ${currentView} to ${newView}`);
+    setCurrentView(newView);
+    
+    // Opcional: Mostrar toast para debugging
+    if (import.meta.env.DEV) {
+      console.log(`📱 Vista activa: ${newView} (persistida en localStorage)`);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -131,7 +167,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar 
         currentView={currentView} 
-        setCurrentView={setCurrentView}
+        setCurrentView={handleViewChange}
         onSignOut={handleSignOut}
         user={user}
       />

@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeConversations } from '@/hooks/useRealtimeConversations';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
+import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
 import { useDebounce, useMessageSender } from '@/hooks/useDebounce';
 
@@ -102,6 +103,16 @@ const MessagesView = () => {
     connectionStatus,
     refreshConversations 
   } = useRealtimeConversations(user?.id || null);
+
+  // 🔄 Escuchar eventos de refresh de datos
+  useRefreshListener(
+    async () => {
+      console.log('🔄 MessagesView: Refreshing conversations and clients data');
+      refreshConversations();
+      await fetchClients();
+    },
+    'messages'
+  );
 
   const {
     messages,

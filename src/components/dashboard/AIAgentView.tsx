@@ -12,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Bot, Brain, FileText, MessageSquare, Clock, Target, Shield, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRefreshListener } from '@/hooks/useDataRefresh';
 
 interface AIConfig {
   id?: string;
@@ -36,6 +37,15 @@ const AIAgentView = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // 🔄 Escuchar eventos de refresh de datos
+  useRefreshListener(
+    async () => {
+      console.log('🔄 AIAgentView: Refreshing AI configuration data');
+      await fetchAIConfig();
+    },
+    'ai-agent'
+  );
 
   const fetchAIConfig = useCallback(async () => {
     try {

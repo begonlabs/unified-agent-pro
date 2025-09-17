@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, Facebook, Instagram, Settings, CheckCircle, AlertCircle, MessageSquare, Clock, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useRefreshListener } from '@/hooks/useDataRefresh';
 
 // Declaración global para Facebook SDK
 // Facebook SDK types
@@ -207,6 +208,15 @@ const ChannelsView = () => {
   const [verificationPolling, setVerificationPolling] = useState<Record<string, NodeJS.Timeout>>({});
   const { toast } = useToast();
 
+  // 🔄 Escuchar eventos de refresh de datos
+  useRefreshListener(
+    async () => {
+      console.log('🔄 ChannelsView: Refreshing channels data');
+      await fetchChannels();
+    },
+    'channels'
+  );
+
   // Función para cargar Facebook SDK
   const loadFacebookSDK = () => {
     return new Promise<void>((resolve) => {
@@ -306,7 +316,7 @@ const ChannelsView = () => {
         }
         
         setChannels((data as Channel[]) || []);
-        
+
         // Log final summary
         const summary = {
           total_channels: data?.length || 0,
@@ -373,9 +383,9 @@ const ChannelsView = () => {
                 const updatedPolling = { ...prev };
                 delete updatedPolling[channelId];
                 return updatedPolling;
-              });
-            }
-          }
+        });
+      }
+    }
         });
 
         return hasChanges ? updated : prev;
@@ -706,7 +716,7 @@ const ChannelsView = () => {
       const channel = urlParams.get('channel');
       
       if (channel === 'whatsapp' && businessName) {
-        toast({
+      toast({
           title: "WhatsApp conectado exitosamente",
           description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
         });
@@ -840,7 +850,7 @@ const ChannelsView = () => {
       
       if (!user) {
         console.error('Usuario no autenticado');
-        toast({
+      toast({
           title: 'Error',
           description: 'Debes estar autenticado para conectar WhatsApp',
           variant: 'destructive',
@@ -933,11 +943,11 @@ const ChannelsView = () => {
       window.location.href = oauthUrl;
     } catch (error: unknown) {
       console.error('Error building Facebook OAuth URL:', error);
-      toast({
+    toast({
         title: 'Error',
         description: 'No se pudo iniciar la conexión con Facebook',
         variant: 'destructive',
-      });
+    });
     }
   };
 
@@ -1259,8 +1269,8 @@ const ChannelsView = () => {
           >
             🔄 Actualizar
           </Button>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Settings className="h-5 w-5" />
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Settings className="h-5 w-5" />
             <span className="text-sm">Configuración</span>
           </div>
         </div>
@@ -1278,7 +1288,7 @@ const ChannelsView = () => {
           <div className="space-y-4">
             {!getChannelStatus('whatsapp') ? (
               <>
-                <Button 
+                  <Button 
                   onClick={handleWhatsAppLogin}
                   disabled={isConnectingWhatsApp}
                   className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
@@ -1509,12 +1519,12 @@ const ChannelsView = () => {
                                 Necesita Verificación
                               </Badge>
                             ) : (
-                              <Badge 
-                                variant={config?.webhook_subscribed ? "default" : "secondary"} 
-                                className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
-                              >
+                            <Badge 
+                              variant={config?.webhook_subscribed ? "default" : "secondary"} 
+                              className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
+                            >
                                 {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
-                              </Badge>
+                            </Badge>
                             )}
                             <Badge variant="outline" className="text-xs">
                               {config?.account_type || 'PERSONAL'}
@@ -1591,14 +1601,14 @@ const ChannelsView = () => {
                             Reconectar
                           </Button>
                           {!needsVerification && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-xs border-green-300 hover:bg-green-100 text-green-700"
-                              onClick={() => handleTestWebhook(channel.id)}
-                            >
-                              Test Webhook
-                            </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs border-green-300 hover:bg-green-100 text-green-700"
+                            onClick={() => handleTestWebhook(channel.id)}
+                          >
+                            Test Webhook
+                          </Button>
                           )}
                         </div>
                       </div>
@@ -1620,33 +1630,33 @@ const ChannelsView = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {getChannelStatus('whatsapp') && (
-                <Badge variant="default" className="bg-green-600">
-                  <Phone className="h-3 w-3 mr-1" />
-                  WhatsApp
-                </Badge>
-              )}
-              {getChannelStatus('facebook') && (
-                <Badge variant="default" className="bg-blue-600">
-                  <Facebook className="h-3 w-3 mr-1" />
-                  Facebook
-                </Badge>
-              )}
-              {getChannelStatus('instagram') && (
-                <Badge variant="default" className="bg-pink-600">
-                  <Instagram className="h-3 w-3 mr-1" />
-                  Instagram
+          <div className="flex flex-wrap gap-2">
+            {getChannelStatus('whatsapp') && (
+              <Badge variant="default" className="bg-green-600">
+                <Phone className="h-3 w-3 mr-1" />
+                WhatsApp
+              </Badge>
+            )}
+            {getChannelStatus('facebook') && (
+              <Badge variant="default" className="bg-blue-600">
+                <Facebook className="h-3 w-3 mr-1" />
+                Facebook
+              </Badge>
+            )}
+            {getChannelStatus('instagram') && (
+              <Badge variant="default" className="bg-pink-600">
+                <Instagram className="h-3 w-3 mr-1" />
+                Instagram
                   {(() => {
                     const igChannel = channels.find(c => c.channel_type === 'instagram');
                     const config = igChannel?.channel_config as InstagramConfig;
                     const needsVerification = config ? instagramNeedsVerification(config) : false;
                     return needsVerification ? ' (Necesita Verificación)' : ' (Verificado)';
                   })()}
-                </Badge>
-              )}
-              {!getChannelStatus('whatsapp') && !getChannelStatus('facebook') && !getChannelStatus('instagram') && (
-                <p className="text-muted-foreground text-sm">No hay canales conectados</p>
+              </Badge>
+            )}
+            {!getChannelStatus('whatsapp') && !getChannelStatus('facebook') && !getChannelStatus('instagram') && (
+              <p className="text-muted-foreground text-sm">No hay canales conectados</p>
               )}
             </div>
 

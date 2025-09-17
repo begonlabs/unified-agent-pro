@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, supabaseUpdate, handleSupabaseError } from '@/lib/supabaseUtils';
 import { User } from '@supabase/supabase-js';
@@ -34,6 +34,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRefreshListener } from '@/hooks/useDataRefresh';
 import ChangePasswordDialog from './ChangePasswordDialog';
 
 interface Profile {
@@ -78,13 +79,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const { data } = await supabaseSelect(
         supabase
@@ -102,7 +97,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
         phone: data.phone || ''
       });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudo cargar el perfil");
       toast({
         title: errorInfo.title,
@@ -110,7 +105,24 @@ const ProfileView = ({ user }: ProfileViewProps) => {
         variant: "destructive",
       });
     }
-  };
+  }, [user?.id, toast]);
+
+  // 🔄 Escuchar eventos de refresh de datos
+  useRefreshListener(
+    async () => {
+      console.log('🔄 ProfileView: Refreshing profile data');
+      if (user) {
+        await fetchProfile();
+      }
+    },
+    'profile'
+  );
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, fetchProfile]);
 
   const updateProfile = async () => {
     if (!profileData.company_name.trim() || !profileData.email.trim()) {
@@ -142,7 +154,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
         title: "✅ Perfil actualizado",
         description: "Tu información ha sido guardada exitosamente",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "No se pudo actualizar el perfil");
       toast({
         title: errorInfo.title,
