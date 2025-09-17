@@ -8,6 +8,28 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 
+// Tipos TypeScript para las estadísticas
+interface ChannelStat {
+  name: string;
+  messages: number;
+  leads: number;
+  color: string;
+}
+
+interface DailyStat {
+  date: Date;
+  messages: number;
+  leads: number;
+  responseRate: number;
+}
+
+interface FormattedDailyStat {
+  date: string;
+  messages: number;
+  leads: number;
+  responseRate: number;
+}
+
 const StatsView = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -26,33 +48,23 @@ const StatsView = () => {
     totalMessages: 0,
     automatedMessages: 0,
     humanMessages: 0,
+    clientMessages: 0,
     responseRate: 0,
     newLeads: 0,
-    totalClients: 0
+    totalClients: 0,
+    totalConversations: 0
   });
+  const [channelData, setChannelData] = useState<ChannelStat[]>([]);
+  const [dailyData, setDailyData] = useState<FormattedDailyStat[]>([]);
 
-  const channelData = [
-    { name: 'WhatsApp', messages: 1456, leads: 89, color: '#25D366' },
-    { name: 'Facebook', messages: 892, leads: 45, color: '#1877F2' },
-    { name: 'Instagram', messages: 499, leads: 22, color: '#E4405F' }
-  ];
-
-  const dailyData = [
-    { date: '2024-01-01', messages: 245, leads: 12, responseRate: 92 },
-    { date: '2024-01-02', messages: 312, leads: 18, responseRate: 95 },
-    { date: '2024-01-03', messages: 278, leads: 15, responseRate: 89 },
-    { date: '2024-01-04', messages: 389, leads: 24, responseRate: 97 },
-    { date: '2024-01-05', messages: 445, leads: 31, responseRate: 93 },
-    { date: '2024-01-06', messages: 398, leads: 28, responseRate: 96 },
-    { date: '2024-01-07', messages: 467, leads: 35, responseRate: 98 }
-  ];
+  // Datos dinámicos cargados desde la base de datos
 
   const automationData = [
     { name: 'Automatizados', value: stats.automatedMessages, color: '#10B981' },
     { name: 'Humanos', value: stats.humanMessages, color: '#3B82F6' }
   ];
 
-  // Función para cargar estadísticas del usuario
+  // Función para cargar estadísticas del usuario usando consultas directas a tablas base
   const fetchUserStats = useCallback(async () => {
     if (!user?.id) return;
     
@@ -60,49 +72,191 @@ const StatsView = () => {
       setLoading(true);
       console.log('🔍 Fetching stats for user:', user.id);
       
-      // Obtener estadísticas del usuario desde la base de datos
-      const { data: statsData } = await supabase
-        .from('statistics')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(30); // Últimos 30 días
+      // 1. Obtener conversaciones del usuario
+      const { data: conversations, error: conversationsError } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          channel,
+          created_at,
+          client_id,
+          messages (
+            id,
+            sender_type,
+            is_automated,
+            created_at
+          )
+        `)
+        .eq('user_id', user.id);
       
-      if (statsData && statsData.length > 0) {
-        // Calcular totales
-        const totalStats = statsData.reduce((acc, stat) => ({
-          totalMessages: acc.totalMessages + (stat.total_messages || 0),
-          automatedMessages: acc.automatedMessages + (stat.automated_messages || 0),
-          humanMessages: acc.humanMessages + (stat.human_messages || 0),
-          newLeads: acc.newLeads + (stat.new_leads || 0),
-          totalClients: acc.totalClients + (stat.leads_converted || 0)
-        }), {
-          totalMessages: 0,
-          automatedMessages: 0,
-          humanMessages: 0,
-          newLeads: 0,
-          totalClients: 0
-        });
-        
-        // Calcular tasa de respuesta
-        const responseRate = totalStats.totalMessages > 0 
-          ? ((totalStats.automatedMessages + totalStats.humanMessages) / totalStats.totalMessages) * 100
-          : 0;
-        
-        setStats({
-          ...totalStats,
-          responseRate: Math.round(responseRate * 100) / 100
-        });
+      if (conversationsError) {
+        throw conversationsError;
       }
       
-      console.log('📊 Stats loaded for user:', user.id);
+      // 2. Obtener clientes del usuario
+      const { data: clients, error: clientsError } = await supabase
+        .from('crm_clients')
+        .select('id, status, created_at')
+        .eq('user_id', user.id);
+      
+      if (clientsError) {
+        throw clientsError;
+      }
+      
+      console.log('📊 Raw data loaded:', { 
+        conversations: conversations?.length || 0, 
+        clients: clients?.length || 0 
+      });
+      
+      // 3. Procesar estadísticas generales
+      let totalMessages = 0;
+      let automatedMessages = 0;
+      let humanMessages = 0;
+      let clientMessages = 0;
+      let conversationsWithResponse = 0;
+      
+      const channelStats: Record<string, ChannelStat> = {};
+      const dailyStats: Record<string, DailyStat> = {};
+      const currentDate = new Date();
+      const sevenDaysAgo = new Date(currentDate.getTime() - (7 * 24 * 60 * 60 * 1000));
+      
+      conversations?.forEach(conversation => {
+        const messages = conversation.messages || [];
+        const hasResponse = messages.some(m => 
+          m.sender_type === 'ai' || m.sender_type === 'agent' || m.sender_type === 'human' || m.is_automated
+        );
+        
+        if (hasResponse) {
+          conversationsWithResponse++;
+        }
+        
+        // Estadísticas por canal
+        const channel = conversation.channel;
+        if (!channelStats[channel]) {
+          channelStats[channel] = {
+            name: channel === 'whatsapp' ? 'WhatsApp' :
+                  channel === 'facebook' ? 'Facebook' :
+                  channel === 'instagram' ? 'Instagram' : channel,
+            messages: 0,
+            leads: 0,
+            color: channel === 'whatsapp' ? '#25D366' :
+                   channel === 'facebook' ? '#1877F2' :
+                   channel === 'instagram' ? '#E4405F' : '#6B7280'
+          };
+        }
+        
+        messages.forEach(message => {
+          totalMessages++;
+          channelStats[channel].messages++;
+          
+          if (message.sender_type === 'ai' || message.is_automated) {
+            automatedMessages++;
+          } else if (message.sender_type === 'agent' || message.sender_type === 'human') {
+            humanMessages++;
+          } else if (message.sender_type === 'client') {
+            clientMessages++;
+          }
+          
+          // Estadísticas diarias (últimos 7 días)
+          const messageDate = new Date(message.created_at);
+          if (messageDate >= sevenDaysAgo) {
+            const dateKey = messageDate.toDateString();
+            if (!dailyStats[dateKey]) {
+              dailyStats[dateKey] = {
+                date: messageDate,
+                messages: 0,
+                leads: 0,
+                responseRate: 0
+              };
+            }
+            dailyStats[dateKey].messages++;
+          }
+        });
+      });
+      
+      // 4. Procesar estadísticas de clientes
+      const totalClients = clients?.length || 0;
+      const newLeads = clients?.filter(client => {
+        const createdAt = new Date(client.created_at);
+        return createdAt >= sevenDaysAgo;
+      }).length || 0;
+      
+      // Contar leads por canal (aproximación basada en conversaciones con cliente)
+      conversations?.forEach(conversation => {
+        if (conversation.client_id) {
+          const channel = conversation.channel;
+          if (channelStats[channel]) {
+            channelStats[channel].leads++;
+          }
+        }
+      });
+      
+      // 5. Calcular tasa de respuesta
+      const responseRate = conversations?.length > 0 
+        ? Math.round((conversationsWithResponse / conversations.length) * 100 * 100) / 100
+        : 0;
+      
+      // 6. Actualizar estados
+      setStats({
+        totalMessages,
+        automatedMessages,
+        humanMessages,
+        clientMessages,
+        responseRate,
+        newLeads,
+        totalClients,
+        totalConversations: conversations?.length || 0
+      });
+      
+      // 7. Formatear datos por canal
+      const formattedChannels = Object.values(channelStats);
+      setChannelData(formattedChannels);
+      
+      // 8. Formatear datos diarios
+      const formattedDailyData: FormattedDailyStat[] = Object.values(dailyStats)
+        .sort((a: DailyStat, b: DailyStat) => a.date.getTime() - b.date.getTime())
+        .map((day: DailyStat) => ({
+          date: day.date.toLocaleDateString('es-ES', {
+            month: '2-digit',
+            day: '2-digit'
+          }),
+          messages: day.messages,
+          leads: day.leads,
+          responseRate: day.responseRate
+        }));
+      
+      setDailyData(formattedDailyData);
+      
+      console.log('✅ Stats processed successfully:', {
+        totalMessages,
+        automatedMessages,
+        humanMessages,
+        responseRate,
+        channels: formattedChannels.length,
+        dailyData: formattedDailyData.length
+      });
+      
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('❌ Error loading stats:', error);
       toast({
         title: "Error al cargar estadísticas",
-        description: "No se pudieron cargar las estadísticas",
+        description: error instanceof Error ? error.message : "No se pudieron cargar las estadísticas",
         variant: "destructive",
       });
+      
+      // En caso de error, mantener datos vacíos
+      setStats({
+        totalMessages: 0,
+        automatedMessages: 0,
+        humanMessages: 0,
+        clientMessages: 0,
+        responseRate: 0,
+        newLeads: 0,
+        totalClients: 0,
+        totalConversations: 0
+      });
+      setChannelData([]);
+      setDailyData([]);
     } finally {
       setLoading(false);
     }
@@ -219,7 +373,7 @@ const StatsView = () => {
         />
         <StatCard
           title="Mensajes IA"
-          value={`${((stats.automatedMessages / stats.totalMessages) * 100).toFixed(1)}%`}
+          value={`${stats.totalMessages > 0 ? ((stats.automatedMessages / stats.totalMessages) * 100).toFixed(1) : '0.0'}%`}
           icon={Bot}
           color="text-emerald-600"
           subtitle="Automatización"
@@ -291,8 +445,8 @@ const StatsView = () => {
                 <YAxis yAxisId="left" />
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip />
-                <Bar yAxisId="left" dataKey="messages" fill="#3B82F6" />
-                <Line yAxisId="right" type="monotone" dataKey="responseRate" stroke="#10B981" strokeWidth={3} />
+                <Line yAxisId="left" type="monotone" dataKey="messages" stroke="#3B82F6" strokeWidth={2} name="Mensajes" />
+                <Line yAxisId="right" type="monotone" dataKey="responseRate" stroke="#10B981" strokeWidth={2} name="Tasa de Respuesta %" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
