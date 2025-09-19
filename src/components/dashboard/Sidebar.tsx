@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { User as UserType } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
@@ -19,9 +18,11 @@ import {
   Waves,
   Sparkles,
   Shield,
-  Crown
+  Crown,
+  Loader2
 } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useChannelsStatus } from '@/hooks/useChannelsStatus';
 
 interface SidebarProps {
   currentView: string;
@@ -33,6 +34,7 @@ interface SidebarProps {
 const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps) => {
   const navigate = useNavigate();
   const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const { status: channelsStatus, loading: channelsLoading } = useChannelsStatus();
   
   const menuItems = [
     { id: 'messages', label: 'Mensajes', icon: MessageSquare },
@@ -122,23 +124,45 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps)
           <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
           Canales Conectados
         </h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-            <Phone className="h-4 w-4 text-green-600" />
-            <span className="font-medium">WhatsApp</span>
-            <div className="w-2 h-2 bg-green-500 rounded-full ml-auto animate-pulse"></div>
+        
+        {channelsLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <span className="ml-2 text-sm text-gray-600">Cargando...</span>
           </div>
-          <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-            <Facebook className="h-4 w-4 text-blue-600" />
-            <span className="font-medium">Facebook</span>
-            <div className="w-2 h-2 bg-gray-400 rounded-full ml-auto"></div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+              <Phone className="h-4 w-4 text-green-600" />
+              <span className="font-medium">WhatsApp</span>
+              <div className={`w-2 h-2 rounded-full ml-auto ${
+                channelsStatus.whatsapp 
+                  ? 'bg-green-500 animate-pulse' 
+                  : 'bg-gray-400'
+              }`}></div>
+            </div>
+            
+            <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+              <Facebook className="h-4 w-4 text-blue-600" />
+              <span className="font-medium">Facebook</span>
+              <div className={`w-2 h-2 rounded-full ml-auto ${
+                channelsStatus.facebook 
+                  ? 'bg-green-500 animate-pulse' 
+                  : 'bg-gray-400'
+              }`}></div>
+            </div>
+            
+            <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+              <Instagram className="h-4 w-4 text-pink-600" />
+              <span className="font-medium">Instagram</span>
+              <div className={`w-2 h-2 rounded-full ml-auto ${
+                channelsStatus.instagram 
+                  ? 'bg-green-500 animate-pulse' 
+                  : 'bg-gray-400'
+              }`}></div>
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-            <Instagram className="h-4 w-4 text-pink-600" />
-            <span className="font-medium">Instagram</span>
-            <div className="w-2 h-2 bg-gray-400 rounded-full ml-auto"></div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Sign Out */}
