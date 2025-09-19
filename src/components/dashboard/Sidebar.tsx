@@ -37,13 +37,13 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps)
   const { status: channelsStatus, loading: channelsLoading } = useChannelsStatus();
   
   const menuItems = [
+    { id: 'ai-agent', label: 'Mi Agente IA', icon: Bot },
     { id: 'messages', label: 'Mensajes', icon: MessageSquare },
     { id: 'crm', label: 'CRM Clientes', icon: Users },
     { id: 'stats', label: 'Estadísticas', icon: BarChart3 },
     { id: 'channels', label: 'Canales', icon: Settings },
     { id: 'profile', label: 'Perfil', icon: User },
     { id: 'support', label: 'Soporte', icon: HelpCircle },
-    { id: 'ai-agent', label: 'Mi Agente IA', icon: Bot },
   ];
 
   const handleAdminAccess = () => {
