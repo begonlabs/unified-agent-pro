@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User as UserType } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,18 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
   const { isAdmin, loading: adminLoading } = useAdmin(user);
   const { status: channelsStatus, loading: channelsLoading } = useChannelsStatus();
   const { isOpen, isMobile, toggleSidebar, closeSidebar } = useSidebar();
+  const [isMenuActive, setIsMenuActive] = useState(false);
+  
+  // Efecto para volver a semitransparente después de unos segundos
+  useEffect(() => {
+    if (isMenuActive) {
+      const timer = setTimeout(() => {
+        setIsMenuActive(false);
+      }, 3000); // 3 segundos
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isMenuActive]);
   
   const menuItems = [
     { id: 'ai-agent', label: 'Mi Agente IA', icon: Bot },
@@ -62,91 +74,76 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
 
   const SidebarContent = () => (
     <div className="w-64 bg-white shadow-lg h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
-        <div className="flex items-center gap-3 group">
-          <div className="relative">
-            <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300 transform group-hover:scale-110">
-              <Waves className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </div>
-            <div className="absolute -top-1 -right-1">
-              <Sparkles className="h-2 w-2 sm:h-3 sm:w-3 text-yellow-400 animate-pulse" />
-            </div>
+      {/* Header - Simplified for mobile */}
+      <div className="p-3 sm:p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="flex items-center gap-2 sm:gap-3 group">
+          <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300">
+            <Waves className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">
               OndAI
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium">Powered by AI</p>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium hidden sm:block">Powered by AI</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2">
+      {/* Navigation - Optimized for mobile */}
+      <nav className="flex-1 p-2 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
             <Button
               key={item.id}
               variant={currentView === item.id ? "default" : "ghost"}
-              className="w-full justify-start gap-2 sm:gap-3 text-sm sm:text-base h-10 sm:h-11"
+              className="w-full justify-start gap-2 sm:gap-3 text-sm sm:text-base h-9 sm:h-11"
               onClick={() => {
-                // Sidebar item clicked
                 handleViewChange(item.id);
               }}
             >
               <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">{item.label}</span>
-              <span className="sm:hidden">{item.label.split(' ')[0]}</span>
+              <span className="sm:hidden">
+                {item.id === 'ai-agent' ? 'Agente IA' : 
+                 item.id === 'crm' ? 'CRM' :
+                 item.label.split(' ')[0]}
+              </span>
             </Button>
           );
         })}
       </nav>
 
-      {/* Admin Access Section */}
+      {/* Admin Access Section - Simplified */}
       {!adminLoading && isAdmin && (
-        <div className="p-3 sm:p-4 border-t border-orange-200 bg-gradient-to-b from-orange-50 to-orange-100">
-          <div className="mb-2 sm:mb-3 flex items-center justify-between">
-            <h3 className="text-xs sm:text-sm font-semibold text-orange-700 flex items-center gap-1 sm:gap-2">
-              <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
-              <span className="hidden sm:inline">Panel Admin</span>
-              <span className="sm:hidden">Admin</span>
-            </h3>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
-              Admin
-            </Badge>
-          </div>
+        <div className="p-2 sm:p-4 border-t border-orange-200 bg-gradient-to-b from-orange-50 to-orange-100">
           <Button
             onClick={handleAdminAccess}
-            className="w-full justify-start gap-2 sm:gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-sm sm:text-base h-9 sm:h-10"
+            className="w-full justify-start gap-2 sm:gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base h-9 sm:h-10"
           >
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Dashboard Admin</span>
+            <Shield className="h-4 w-4 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Administración</span>
             <span className="sm:hidden">Admin</span>
           </Button>
-          <p className="text-xs text-orange-600 mt-1 sm:mt-2 leading-relaxed hidden sm:block">
-            Acceso completo a la gestión de la plataforma
-          </p>
         </div>
       )}
 
-      {/* Quick Channel Status */}
-      <div className="p-3 sm:p-4 border-t bg-gradient-to-b from-gray-50 to-white">
-        <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2">
+      {/* Quick Channel Status - Compact for mobile */}
+      <div className="p-2 sm:p-4 border-t bg-gradient-to-b from-gray-50 to-white">
+        <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2">
           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
           <span className="hidden sm:inline">Canales Conectados</span>
           <span className="sm:hidden">Canales</span>
         </h3>
         
         {channelsLoading ? (
-          <div className="flex items-center justify-center py-2 sm:py-4">
+          <div className="flex items-center justify-center py-1 sm:py-4">
             <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-blue-600" />
             <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">Cargando...</span>
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-3">
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+          <div className="space-y-1 sm:space-y-3">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
               <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
               <span className="font-medium">WhatsApp</span>
               <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ml-auto ${
@@ -156,7 +153,7 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
               }`}></div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
               <Facebook className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
               <span className="font-medium">Facebook</span>
               <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ml-auto ${
@@ -166,7 +163,7 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
               }`}></div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
               <Instagram className="h-3 w-3 sm:h-4 sm:w-4 text-pink-600" />
               <span className="font-medium">Instagram</span>
               <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ml-auto ${
@@ -179,8 +176,8 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
         )}
       </div>
 
-      {/* Sign Out */}
-      <div className="p-3 sm:p-4 border-t bg-gradient-to-b from-white to-gray-50">
+      {/* Sign Out - Always visible */}
+      <div className="p-2 sm:p-4 border-t bg-gradient-to-b from-white to-gray-50 flex-shrink-0">
         <Button
           variant="outline"
           className="w-full justify-start gap-2 sm:gap-3 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all duration-300 text-sm sm:text-base h-9 sm:h-10"
@@ -210,7 +207,12 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
         <Button
           variant="outline"
           size="sm"
-          className="fixed top-2 left-0 z-50 lg:hidden bg-white shadow-lg hover:shadow-xl rounded-l-none rounded-r-lg p-2"
+          onClick={() => setIsMenuActive(true)}
+          className={`fixed top-2 left-0 z-50 lg:hidden shadow-lg hover:shadow-xl rounded-l-none rounded-r-lg p-2 transition-all duration-300 ${
+            isMenuActive 
+              ? 'bg-white opacity-100' 
+              : 'bg-white/70 opacity-70 hover:opacity-100'
+          }`}
         >
           <Menu className="h-4 w-4" />
         </Button>

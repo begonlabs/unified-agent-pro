@@ -425,7 +425,7 @@ const MessagesView = () => {
                             <h3 className="font-semibold text-sm sm:text-base text-gray-900 leading-tight">
                               {conversation.crm_clients?.name || 'Cliente Anónimo'}
                             </h3>
-                          </div>
+                            </div>
                           
                           {/* Información de contacto */}
                           <div className="mb-2">
@@ -437,19 +437,19 @@ const MessagesView = () => {
                           {/* Badges y estado en una línea */}
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-1 flex-wrap">
-                              <Badge 
-                                className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
-                                variant="secondary"
-                              >
-                                {conversation.crm_clients?.status || 'lead'}
-                              </Badge>
-                              <Badge 
-                                variant={conversation.status === 'open' ? 'default' : 'secondary'} 
-                                className="text-xs"
-                              >
-                                {conversation.status}
-                              </Badge>
-                            </div>
+                            <Badge 
+                              className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
+                              variant="secondary"
+                            >
+                              {conversation.crm_clients?.status || 'lead'}
+                            </Badge>
+                            <Badge 
+                              variant={conversation.status === 'open' ? 'default' : 'secondary'} 
+                              className="text-xs"
+                            >
+                              {conversation.status}
+                            </Badge>
+                          </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {getChannelIcon(conversation.channel)}
                               {conversation.ai_enabled && (

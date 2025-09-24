@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Bot, Brain, FileText, MessageSquare, Clock, Target, Shield, Upload } from 'lucide-react';
@@ -194,34 +195,64 @@ const AIAgentView = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="goals" className="w-full">
-        <TabsList className="flex w-full bg-white shadow-sm overflow-x-auto justify-start md:grid md:grid-cols-5">
-          <TabsTrigger value="goals" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
-            <Target className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Objetivos</span>
-            <span className="inline sm:hidden text-xs">Obj.</span>
-          </TabsTrigger>
-          <TabsTrigger value="restrictions" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Restricciones</span>
-            <span className="inline sm:hidden text-xs">Rest.</span>
-          </TabsTrigger>
-          <TabsTrigger value="knowledge" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
-            <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Conocimiento</span>
-            <span className="inline sm:hidden text-xs">Conoc.</span>
-          </TabsTrigger>
-          <TabsTrigger value="faq" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
-            <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">FAQs</span>
-            <span className="inline sm:hidden text-xs">FAQ</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
-            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Configuración</span>
-            <span className="inline sm:hidden text-xs">Config.</span>
-          </TabsTrigger>
-        </TabsList>
+      <TooltipProvider>
+        <Tabs defaultValue="goals" className="w-full">
+          <TabsList className="flex w-full bg-white shadow-sm overflow-x-auto justify-start">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="goals" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                  <Target className="h-4 w-4" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Objetivos</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="restrictions" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                  <Shield className="h-4 w-4" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Restricciones</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="knowledge" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                  <Brain className="h-4 w-4" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Conocimiento</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="faq" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                  <MessageSquare className="h-4 w-4" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>FAQs</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="settings" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                  <Clock className="h-4 w-4" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Configuración</p>
+              </TooltipContent>
+            </Tooltip>
+          </TabsList>
 
         <TabsContent value="goals" className="space-y-4 sm:space-y-6">
           <Card>
@@ -457,7 +488,8 @@ Respuesta: Sí, hacemos envíos a todo el país.`}
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </TooltipProvider>
     </div>
   );
 };

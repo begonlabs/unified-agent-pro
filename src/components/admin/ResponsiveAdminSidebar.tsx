@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -25,6 +25,18 @@ interface ResponsiveAdminSidebarProps {
 const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: ResponsiveAdminSidebarProps) => {
   const navigate = useNavigate();
   const { isOpen, isMobile, toggleSidebar, closeSidebar } = useSidebar();
+  const [isMenuActive, setIsMenuActive] = useState(false);
+  
+  // Efecto para volver a semitransparente después de unos segundos
+  useEffect(() => {
+    if (isMenuActive) {
+      const timer = setTimeout(() => {
+        setIsMenuActive(false);
+      }, 3000); // 3 segundos
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isMenuActive]);
   
   const menuItems = [
     { id: 'clients', title: 'Gestión de Clientes', icon: Users },
@@ -150,7 +162,12 @@ const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange 
         <Button
           variant="outline"
           size="sm"
-          className="fixed top-2 left-0 z-50 lg:hidden bg-white shadow-lg hover:shadow-xl rounded-l-none rounded-r-lg p-2"
+          onClick={() => setIsMenuActive(true)}
+          className={`fixed top-2 left-0 z-50 lg:hidden shadow-lg hover:shadow-xl rounded-l-none rounded-r-lg p-2 transition-all duration-300 ${
+            isMenuActive 
+              ? 'bg-white opacity-100' 
+              : 'bg-white/70 opacity-70 hover:opacity-100'
+          }`}
         >
           <Menu className="h-4 w-4" />
         </Button>
