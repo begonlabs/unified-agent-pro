@@ -198,7 +198,7 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
 
       // Éxito
       toast({
-        title: "✅ Contraseña actualizada",
+        title: "Contraseña actualizada",
         description: "Tu contraseña ha sido cambiada exitosamente. Por seguridad, se mantendrá tu sesión actual.",
       });
 
@@ -209,21 +209,23 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
       setErrors({});
       onOpenChange(false);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error changing password:', error);
       
-      if (error.message?.includes('Invalid login credentials')) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      if (errorMessage.includes('Invalid login credentials')) {
         setErrors({ currentPassword: 'La contraseña actual es incorrecta' });
-      } else if (error.message?.includes('Password should be at least')) {
+      } else if (errorMessage.includes('Password should be at least')) {
         setErrors({ newPassword: 'La contraseña debe tener al menos 6 caracteres' });
-      } else if (error.message?.includes('same as the old password')) {
+      } else if (errorMessage.includes('same as the old password')) {
         setErrors({ newPassword: 'La nueva contraseña debe ser diferente a la actual' });
-      } else if (error.message?.includes('New password should be different')) {
+      } else if (errorMessage.includes('New password should be different')) {
         setErrors({ newPassword: 'La nueva contraseña debe ser diferente a la actual' });
       } else {
         toast({
           title: "Error al cambiar contraseña",
-          description: error.message || 'Error desconocido al cambiar la contraseña',
+          description: errorMessage,
           variant: "destructive",
         });
       }

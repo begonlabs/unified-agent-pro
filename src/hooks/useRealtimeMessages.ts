@@ -57,7 +57,7 @@ export const useRealtimeMessages = (
         .single();
 
       if (!conversationCheck) {
-        console.error('❌ Conversation does not belong to user');
+        console.error('Conversation does not belong to user');
         return;
       }
 
@@ -71,10 +71,10 @@ export const useRealtimeMessages = (
         throw error;
       }
 
-      console.log('💬 Messages loaded:', data?.length || 0);
+      // Messages loaded successfully
       setMessages(data || []);
     } catch (error: unknown) {
-      console.error('❌ Error fetching messages:', error);
+      console.error('Error fetching messages:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: "Error",
@@ -169,7 +169,7 @@ export const useRealtimeMessages = (
 
         case 'DELETE': {
           const deletedId = (oldData as Message)?.id;
-          console.log('🗑️ Removing message:', deletedId);
+          // Removing message
           return prevMessages.filter(msg => msg.id !== deletedId);
         }
 
@@ -215,7 +215,7 @@ export const useRealtimeMessages = (
 
       channelRef.current = channel;
     } catch (error) {
-      console.error('❌ Error setting up messages realtime:', error);
+      console.error('Error setting up messages realtime:', error);
       setIsConnected(false);
     }
   }, [conversationId, handleRealtimeChange]);
@@ -291,7 +291,7 @@ export const useRealtimeMessages = (
       prev.map(msg => msg.id === tempId ? savedMessage : msg)
     );
 
-    console.log('✅ Message status updated:', tempId, '→', savedMessage.id);
+    console.log('Message status updated:', tempId, '→', savedMessage.id);
   }, []);
 
   // Función pública para refrescar mensajes

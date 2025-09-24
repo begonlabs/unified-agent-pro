@@ -32,7 +32,7 @@ export function useDataRefresh() {
       refreshCountRef.current += 1;
       lastRefreshRef.current = now;
       
-      console.log(`🔄 Global data refresh #${refreshCountRef.current} initiated for user:`, user.email);
+      // Global data refresh initiated
 
       // Aquí puedes agregar lógica específica para refrescar datos
       // Por ejemplo, invalidar caches, refrescar tokens, etc.
@@ -46,10 +46,10 @@ export function useDataRefresh() {
         }
       }));
 
-      console.log('✅ Global data refresh completed successfully');
+      // Global data refresh completed successfully
 
     } catch (error) {
-      console.error('❌ Error during global data refresh:', error);
+      console.error('Error during global data refresh:', error);
       toast({
         title: "Error actualizando datos",
         description: "Algunos datos pueden estar desactualizados",
@@ -62,7 +62,7 @@ export function useDataRefresh() {
   const refreshViewData = useCallback(async (viewName: string) => {
     if (!user?.id) return;
 
-    console.log(`🎯 Refreshing data for view: ${viewName}`);
+    // Refreshing data for view
 
     // Disparar evento específico para la vista
     window.dispatchEvent(new CustomEvent('viewDataRefresh', {
@@ -115,7 +115,7 @@ export function useRefreshListener(
         try {
           await callbackRef.current();
         } catch (error) {
-          console.error('❌ Error in component refresh callback:', error);
+          console.error('Error in component refresh callback:', error);
         }
       }
     };
@@ -127,13 +127,13 @@ export function useRefreshListener(
       
       // Solo refrescar si coincide con nuestra vista o no especificamos vista
       if (!viewName || eventViewName === viewName) {
-        console.log(`🎯 Component received view refresh for: ${eventViewName}`);
+        console.log(`Component received view refresh for: ${eventViewName}`);
         
         if (callbackRef.current) {
           try {
             await callbackRef.current();
           } catch (error) {
-            console.error('❌ Error in component view refresh callback:', error);
+            console.error('Error in component view refresh callback:', error);
           }
         }
       }

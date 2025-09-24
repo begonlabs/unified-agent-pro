@@ -5,9 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Loader2, Server } from 'lucide-react';
 
+interface EdgeFunctionResult {
+  environment: string;
+  deno_version: string;
+  capabilities?: {
+    env_variables: boolean;
+  };
+  timestamp: string;
+}
+
 const EdgeFunctionTest = () => {
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<EdgeFunctionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const testEdgeFunction = async () => {
@@ -37,9 +46,9 @@ const EdgeFunctionTest = () => {
       console.log('Response data:', data);
       setResult(data);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error testing Edge Function:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setTesting(false);
     }

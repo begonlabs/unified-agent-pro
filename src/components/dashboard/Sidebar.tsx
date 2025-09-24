@@ -82,7 +82,7 @@ const Sidebar = ({ currentView, setCurrentView, onSignOut, user }: SidebarProps)
               variant={currentView === item.id ? "default" : "ghost"}
               className="w-full justify-start gap-3"
               onClick={() => {
-                console.log(`🎯 Sidebar: Clicked on ${item.id} (${item.label})`);
+                // Sidebar item clicked
                 setCurrentView(item.id);
               }}
             >

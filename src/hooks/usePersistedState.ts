@@ -59,7 +59,7 @@ export function usePersistedState<T>(
         if (state === defaultValue) {
           // Si es el valor por defecto, remover de localStorage para mantenerlo limpio
           window.localStorage.removeItem(key);
-          console.log(`🗑️ Removed default value from localStorage: "${key}"`);
+          // Removed default value from localStorage
         } else {
           const serialized = serializer.serialize(state);
           window.localStorage.setItem(key, serialized);
@@ -111,7 +111,7 @@ export function usePersistedDashboardView(defaultView: string = 'messages') {
       return;
     }
     
-    console.log(`🎯 Changing dashboard view: ${currentView} → ${newView}`);
+    // Changing dashboard view
     setCurrentView(newView);
   };
 

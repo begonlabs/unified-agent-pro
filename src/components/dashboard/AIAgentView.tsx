@@ -38,10 +38,9 @@ const AIAgentView = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // 🔄 Escuchar eventos de refresh de datos
+  // Escuchar eventos de refresh de datos
   useRefreshListener(
     async () => {
-      console.log('🔄 AIAgentView: Refreshing AI configuration data');
       await fetchAIConfig();
     },
     'ai-agent'
@@ -52,7 +51,6 @@ const AIAgentView = () => {
       // Get current user first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('No user found');
         return;
       }
 
@@ -77,7 +75,6 @@ const AIAgentView = () => {
         });
       }
     } catch (error: unknown) {
-      console.error('Error fetching AI config:', error);
       const isConnectionError = (error as Error)?.message?.includes('upstream connect error') || (error as Error)?.message?.includes('503');
       
       if (isConnectionError) {
@@ -439,19 +436,19 @@ Respuesta: Sí, hacemos envíos a todo el país.`}
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Objetivos configurados:</span>
                       <Badge variant={config.goals ? "default" : "secondary"} className="text-xs w-fit">
-                        {config.goals ? "✓ Completado" : "Pendiente"}
+                        {config.goals ? "Completado" : "Pendiente"}
                       </Badge>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Restricciones definidas:</span>
                       <Badge variant={config.restrictions ? "default" : "secondary"} className="text-xs w-fit">
-                        {config.restrictions ? "✓ Completado" : "Pendiente"}
+                        {config.restrictions ? "Completado" : "Pendiente"}
                       </Badge>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Base de conocimiento:</span>
                       <Badge variant={config.knowledge_base ? "default" : "secondary"} className="text-xs w-fit">
-                        {config.knowledge_base ? "✓ Completado" : "Pendiente"}
+                        {config.knowledge_base ? "Completado" : "Pendiente"}
                       </Badge>
                     </div>
                   </div>

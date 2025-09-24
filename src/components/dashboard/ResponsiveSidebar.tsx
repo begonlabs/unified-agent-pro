@@ -92,7 +92,7 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
               variant={currentView === item.id ? "default" : "ghost"}
               className="w-full justify-start gap-2 sm:gap-3 text-sm sm:text-base h-10 sm:h-11"
               onClick={() => {
-                console.log(`🎯 Sidebar: Clicked on ${item.id} (${item.label})`);
+                // Sidebar item clicked
                 handleViewChange(item.id);
               }}
             >

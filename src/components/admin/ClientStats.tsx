@@ -41,7 +41,6 @@ const ClientStats = () => {
   const fetchClientStats = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching client stats...');
       
       // Obtener todos los perfiles de usuarios
       const { data: profiles, error: profilesError } = await supabaseSelect(
@@ -53,14 +52,10 @@ const ClientStats = () => {
 
       if (profilesError) throw profilesError;
 
-      console.log('👥 Profiles found:', profiles?.length || 0);
-
       // Obtener estadísticas para cada cliente
       const clientsWithStats: ClientWithStats[] = [];
 
       for (const profile of profiles || []) {
-        console.log(`📊 Processing stats for client: ${profile.company_name}`);
-        
         // Obtener conversaciones del usuario
         const { data: conversations, error: conversationsError } = await supabaseSelect(
           supabase
@@ -70,7 +65,6 @@ const ClientStats = () => {
         );
 
         if (conversationsError) {
-          console.error('Error fetching conversations for client:', profile.id, conversationsError);
           continue;
         }
 
@@ -91,7 +85,6 @@ const ClientStats = () => {
           );
 
           if (messagesError) {
-            console.error('Error fetching messages for conversation:', conversation.id, messagesError);
             continue;
           }
 
@@ -109,9 +102,7 @@ const ClientStats = () => {
             .eq('user_id', profile.user_id)
         );
 
-        if (crmError) {
-          console.error('Error fetching CRM clients for client:', profile.id, crmError);
-        } else {
+        if (!crmError) {
           // Contar leads por canal
           for (const client of crmClients || []) {
             const source = client.source as keyof typeof channelStats;
@@ -146,7 +137,6 @@ const ClientStats = () => {
         });
       }
 
-      console.log('✅ Client stats processed:', clientsWithStats.length);
       setClients(clientsWithStats);
     } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "Error al cargar estadísticas de clientes");

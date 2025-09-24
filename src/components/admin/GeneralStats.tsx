@@ -41,7 +41,6 @@ const GeneralStats = () => {
   const fetchGeneralStats = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching general platform stats...');
 
       // Obtener estadísticas de clientes por plan
       const { data: profiles, error: profilesError } = await supabaseSelect(
@@ -106,7 +105,6 @@ const GeneralStats = () => {
         );
 
         if (messagesError) {
-          console.error('Error fetching messages for conversation:', conversation.id, messagesError);
           continue;
         }
 
@@ -123,9 +121,7 @@ const GeneralStats = () => {
           .select('source')
       );
 
-      if (crmError) {
-        console.error('Error fetching CRM clients:', crmError);
-      } else {
+      if (!crmError) {
         // Contar leads por canal
         for (const client of crmClients || []) {
           const source = client.source as keyof typeof channelStats;
@@ -158,7 +154,6 @@ const GeneralStats = () => {
         inactive_clients: planCounts.inactive
       };
 
-      console.log('✅ General stats processed:', generalStats);
       setStats(generalStats);
     } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "Error al cargar estadísticas generales");

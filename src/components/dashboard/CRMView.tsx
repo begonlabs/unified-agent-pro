@@ -39,7 +39,7 @@ interface Client {
 }
 
 const CRMView = () => {
-  console.log('🎯 CRMView: Component is rendering!');
+  console.log('CRMView: Component is rendering!');
   
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
@@ -58,7 +58,7 @@ const CRMView = () => {
   });
   const { toast } = useToast();
   
-  console.log('🎯 CRMView: User ID:', user?.id, 'Loading:', loading, 'Clients count:', clients.length);
+  console.log('CRMView: User ID:', user?.id, 'Loading:', loading, 'Clients count:', clients.length);
 
   // 🔄 Escuchar eventos de refresh de datos
   useRefreshListener(

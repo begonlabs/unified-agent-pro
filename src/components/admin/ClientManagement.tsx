@@ -72,7 +72,6 @@ const ClientManagement = () => {
   const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching clients for management...');
 
       // Obtener clientes (sin roles por ahora, hasta que se cree la tabla)
       const { data: profiles, error: profilesError } = await supabaseSelect(
@@ -90,7 +89,6 @@ const ClientManagement = () => {
         role: 'user' // Rol por defecto hasta implementar la tabla de roles
       }));
 
-      console.log('👥 Clients fetched:', clientsWithRoles.length);
       setClients(clientsWithRoles);
     } catch (error: unknown) {
       const errorInfo = handleSupabaseError(error, "Error al cargar clientes");
@@ -179,7 +177,6 @@ const ClientManagement = () => {
 
       // TODO: Implementar actualización de roles cuando se cree la tabla
       // Por ahora solo mostramos el rol seleccionado pero no lo guardamos
-      console.log('Rol seleccionado:', editForm.role);
 
       toast({
         title: "Cliente actualizado",

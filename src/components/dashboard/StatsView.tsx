@@ -103,7 +103,7 @@ const StatsView = () => {
         throw clientsError;
       }
       
-      console.log('📊 Raw data loaded:', { 
+      console.log('Raw data loaded:', { 
         conversations: conversations?.length || 0, 
         clients: clients?.length || 0 
       });
@@ -227,7 +227,7 @@ const StatsView = () => {
       
       setDailyData(formattedDailyData);
       
-      console.log('✅ Stats processed successfully:', {
+      console.log('Stats processed successfully:', {
         totalMessages,
         automatedMessages,
         humanMessages,
@@ -237,7 +237,7 @@ const StatsView = () => {
       });
       
     } catch (error) {
-      console.error('❌ Error loading stats:', error);
+      console.error('Error loading stats:', error);
       toast({
         title: "Error al cargar estadísticas",
         description: error instanceof Error ? error.message : "No se pudieron cargar las estadísticas",

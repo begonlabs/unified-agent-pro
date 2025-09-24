@@ -59,7 +59,7 @@ const HeroSection = () => {
 
         <Badge className="mb-8 bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30 hover:border-purple-400 transition-all duration-300 backdrop-blur-sm px-6 py-2">
           <Zap className="h-4 w-4 mr-2" />
-          <span className="font-mono text-sm tracking-wider">🚀 7 DÍAS GRATIS + 50% DESCUENTO</span>
+          <span className="font-mono text-sm tracking-wider">7 DÍAS GRATIS + 50% DESCUENTO</span>
         </Badge>
         
         <h2 className="text-4xl lg:text-6xl xl:text-7xl font-black uppercase tracking-widest text-white mb-8 leading-[0.9] group cursor-default">

@@ -154,7 +154,7 @@ const MessagesView = () => {
         is_automated: false
       });
 
-      console.log('✅ Mensaje optimista creado:', tempId);
+      console.log('Mensaje optimista creado:', tempId);
       
       // Si es Facebook Messenger o Instagram, enviar a través de la API externa
       if (conversationCheck.channel === 'facebook' || conversationCheck.channel === 'instagram') {
@@ -176,15 +176,15 @@ const MessagesView = () => {
 
           if (!response.ok) {
             const errorData = await response.json();
-            console.error('❌ Error en función send-message:', errorData);
+            console.error('Error en función send-message:', errorData);
             throw new Error(`Error enviando mensaje: ${errorData.error || 'Error desconocido'}`);
           } else {
             const result = await response.json();
-            console.log(`✅ Mensaje enviado exitosamente a ${conversationCheck.channel}:`, result);
+            console.log(`Mensaje enviado exitosamente a ${conversationCheck.channel}:`, result);
           }
 
         } catch (apiError) {
-          console.error(`❌ Error en ${conversationCheck.channel} API:`, apiError);
+          console.error(`Error en ${conversationCheck.channel} API:`, apiError);
           throw apiError;
         }
       } else {
@@ -219,10 +219,10 @@ const MessagesView = () => {
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', selectedConversation);
       
-      console.log('✅ Mensaje enviado exitosamente');
+      console.log('Mensaje enviado exitosamente');
       
     } catch (error: unknown) {
-      console.error('❌ Error sending message:', error);
+      console.error('Error sending message:', error);
       
       // Restaurar el mensaje en el input si hubo error
       setNewMessage(messageContent);
@@ -266,7 +266,7 @@ const MessagesView = () => {
       refreshConversations();
 
     } catch (error: unknown) {
-      console.error('❌ Error toggling AI:', error);
+      console.error('Error toggling AI:', error);
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado de la IA",
@@ -464,19 +464,19 @@ const MessagesView = () => {
                               {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
                             </p>
                             <div className="flex items-center gap-1">
-                              <Badge 
-                                className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
-                                variant="secondary"
-                              >
-                                {conversation.crm_clients?.status || 'lead'}
-                              </Badge>
-                              <Badge 
-                                variant={conversation.status === 'open' ? 'default' : 'secondary'} 
-                                className="text-xs"
-                              >
-                                {conversation.status}
-                              </Badge>
-                            </div>
+                            <Badge 
+                              className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
+                              variant="secondary"
+                            >
+                              {conversation.crm_clients?.status || 'lead'}
+                            </Badge>
+                            <Badge 
+                              variant={conversation.status === 'open' ? 'default' : 'secondary'} 
+                              className="text-xs"
+                            >
+                              {conversation.status}
+                            </Badge>
+                          </div>
                           </div>
                           <p className="text-xs text-gray-500">
                             {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

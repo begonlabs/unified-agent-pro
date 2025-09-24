@@ -21,7 +21,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // 🎯 Nuevo sistema de persistencia de vistas
+  // Nuevo sistema de persistencia de vistas
   const [currentView, setCurrentView] = useViewFromUrlOrPersisted('messages');
   const { refreshGlobalData, refreshViewData } = useDataRefresh();
   const { detectViewChange } = useViewChangeDetector();
@@ -61,7 +61,7 @@ const Dashboard = () => {
     const hasViewChanged = detectViewChange(currentView);
     
     if (hasViewChanged && user?.id) {
-      console.log(`🎯 Vista cambiada, refrescando datos para: ${currentView}`);
+      console.log(`Vista cambiada, refrescando datos para: ${currentView}`);
       refreshViewData(currentView);
     }
   }, [currentView, detectViewChange, refreshViewData, user?.id]);
@@ -81,12 +81,12 @@ const Dashboard = () => {
       // Mostrar notificación de éxito según el tipo de canal
       if (channel === 'whatsapp' && businessName) {
         toast({
-          title: "✅ WhatsApp conectado exitosamente",
+          title: "WhatsApp conectado exitosamente",
           description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
         });
       } else if (pageId && pageName && channel) {
         toast({
-          title: "✅ Conexión exitosa", 
+          title: "Conexión exitosa", 
           description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} conectado: ${pageName}`,
         });
       }
@@ -99,15 +99,9 @@ const Dashboard = () => {
     }
   }, [toast, currentView]);
 
-  // 🎯 Función personalizada para cambiar vista con logging adicional
+  // Función personalizada para cambiar vista
   const handleViewChange = (newView: string) => {
-    console.log(`🎯 Dashboard: Changing view from ${currentView} to ${newView}`);
     setCurrentView(newView);
-    
-    // Opcional: Mostrar toast para debugging
-    if (import.meta.env.DEV) {
-      console.log(`📱 Vista activa: ${newView} (persistida en localStorage)`);
-    }
   };
 
   const handleSignOut = async () => {
@@ -138,32 +132,22 @@ const Dashboard = () => {
   };
 
   const renderView = () => {
-    console.log(`🎯 Dashboard: Rendering view: ${currentView}`);
-    
     switch (currentView) {
       case 'messages':
-        console.log('📱 Rendering MessagesView');
         return <MessagesView />;
       case 'crm':
-        console.log('👥 Rendering CRMView');
         return <CRMView />;
       case 'stats':
-        console.log('📊 Rendering StatsView');
         return <StatsView />;
       case 'channels':
-        console.log('⚙️ Rendering ChannelsView');
         return <ChannelsView />;
       case 'profile':
-        console.log('👤 Rendering ProfileView');
         return <ProfileView user={user} />;
       case 'support':
-        console.log('🔧 Rendering SupportView');
         return <SupportView />;
       case 'ai-agent':
-        console.log('🤖 Rendering AIAgentView');
         return <AIAgentView />;
       default:
-        console.log('📱 Rendering default MessagesView');
         return <MessagesView />;
     }
   };

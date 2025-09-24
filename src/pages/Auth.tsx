@@ -234,7 +234,7 @@ const Auth = () => {
             {/* Título Principal */}
             <div className="space-y-4">
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-4 py-1">
-                🚀 Revoluciona tu comunicación empresarial
+                Revoluciona tu comunicación empresarial
               </Badge>
               <h2 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
                 Centraliza y 

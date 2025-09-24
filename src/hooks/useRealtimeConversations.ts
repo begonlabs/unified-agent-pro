@@ -86,7 +86,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       setConversations(data || []);
       setError(null);
     } catch (err: unknown) {
-      console.error('❌ Error fetching conversations:', err);
+      console.error('Error fetching conversations:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error loading conversations';
       setError(errorMessage);
       
@@ -141,7 +141,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
         case 'DELETE': {
           const deletedId = payload.old?.id;
-          console.log('🗑️ Removing conversation:', deletedId);
+          console.log('Removing conversation:', deletedId);
           return prevConversations.filter(conv => conv.id !== deletedId);
         }
 
@@ -181,7 +181,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
     // Evitar múltiples suscripciones
     if (channelRef.current) {
-      console.log('🔄 Realtime subscription already exists, skipping setup');
+      // Realtime subscription already exists, skipping setup
       return;
     }
 
@@ -219,10 +219,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
               reconnectAttempts: 0
             });
             
-            toast({
-              title: "✅ Conectado en tiempo real",
-              description: "Las conversaciones se actualizarán automáticamente",
-            });
+            // Conexión establecida - no mostrar notificación innecesaria
           } else if (status === 'CLOSED') {
             setConnectionStatus(prev => ({
               ...prev,
@@ -243,7 +240,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
               }, 2000);
             }, 1000);
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Channel error, cleaning up and retrying');
+            console.error('Channel error, cleaning up and retrying');
             setConnectionStatus(prev => ({
               ...prev,
               isConnected: false,
@@ -258,10 +255,10 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         });
 
       channelRef.current = channel;
-      console.log('✅ Realtime subscription established:', channelName);
+      // Realtime subscription established
       
     } catch (error) {
-      console.error('❌ Error setting up realtime:', error);
+      console.error('Error setting up realtime:', error);
       setConnectionStatus(prev => ({
         ...prev,
         isConnecting: false,

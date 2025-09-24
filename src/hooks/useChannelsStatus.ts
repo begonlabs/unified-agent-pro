@@ -117,7 +117,7 @@ export const useChannelsStatus = () => {
     
     try {
       setLoading(true);
-      console.log('�� Sidebar: Fetching channels status...');
+      // Fetching channels status
       
       const { data } = await supabaseSelect(
         supabase
@@ -127,7 +127,7 @@ export const useChannelsStatus = () => {
           .order('created_at', { ascending: true })
       );
       
-      console.log('�� Sidebar: Channels fetched:', data?.length || 0);
+      // Channels fetched successfully
       const channelsData = (data as Channel[]) || [];
       setChannels(channelsData);
       
@@ -139,7 +139,7 @@ export const useChannelsStatus = () => {
       });
       
     } catch (error: unknown) {
-      console.error('❌ Sidebar: Error loading channels:', error);
+      console.error('Sidebar: Error loading channels:', error);
       handleSupabaseError(error, "Error al cargar estado de canales");
     } finally {
       setLoading(false);

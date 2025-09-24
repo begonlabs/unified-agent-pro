@@ -151,7 +151,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
       await fetchProfile();
       setEditingProfile(false);
       toast({
-        title: "✅ Perfil actualizado",
+        title: "Perfil actualizado",
         description: "Tu información ha sido guardada exitosamente",
       });
     } catch (error: unknown) {
@@ -917,7 +917,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                         Esta acción eliminará permanentemente tu cuenta y todos los datos asociados.
                       </p>
                       <p className="text-xs text-red-600 mt-2">
-                        ⚠️ Esta acción no se puede deshacer
+                        Esta acción no se puede deshacer
                       </p>
                     </div>
                     <Button variant="destructive" size="sm" className="ml-4">
