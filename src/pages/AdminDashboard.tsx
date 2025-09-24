@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import ResponsiveAdminSidebar from '@/components/admin/ResponsiveAdminSidebar';
 import ClientManagement from '@/components/admin/ClientManagement';
 import GeneralStats from '@/components/admin/GeneralStats';
 import ClientStats from '@/components/admin/ClientStats';
@@ -116,7 +116,7 @@ const AdminDashboard = () => {
         window.location.href = '/admin/auth';
       }, 500);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error during admin sign out:', error);
       toast({
         title: "Error al cerrar sesión",
@@ -173,19 +173,19 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <AdminSidebar 
+      <ResponsiveAdminSidebar 
         onSignOut={handleSignOut} 
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden lg:ml-0">
         <div className="h-full">
           {/* Header */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{getTabTitle()}</h1>
-                <p className="text-gray-600 mt-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{getTabTitle()}</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
                   Administrando como: <span className="font-medium">{user.email}</span>
                 </p>
               </div>
@@ -193,7 +193,7 @@ const AdminDashboard = () => {
           </div>
           
           {/* Content */}
-          <div className="p-6 h-[calc(100vh-80px)] overflow-y-auto">
+          <div className="p-3 sm:p-6 h-[calc(100vh-80px)] overflow-y-auto">
             {renderActiveTab()}
           </div>
         </div>

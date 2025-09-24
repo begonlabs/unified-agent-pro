@@ -6,7 +6,7 @@ import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
-import Sidebar from '@/components/dashboard/Sidebar';
+import ResponsiveSidebar from '@/components/dashboard/ResponsiveSidebar';
 import MessagesView from '@/components/dashboard/MessagesView';
 import CRMView from '@/components/dashboard/CRMView';
 import StatsView from '@/components/dashboard/StatsView';
@@ -178,17 +178,15 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar fijo */}
-      <div className="sticky top-0 h-screen">
-        <Sidebar 
-          currentView={currentView} 
-          setCurrentView={handleViewChange}
-          onSignOut={handleSignOut}
-          user={user}
-        />
-      </div>
+      {/* Sidebar responsive */}
+      <ResponsiveSidebar 
+        currentView={currentView} 
+        setCurrentView={handleViewChange}
+        onSignOut={handleSignOut}
+        user={user}
+      />
       {/* Contenido principal con scroll */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto lg:ml-0">
         {renderView()}
       </main>
     </div>

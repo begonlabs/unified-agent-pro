@@ -333,21 +333,21 @@ const MessagesView = () => {
               </h1>
               <p className="text-white/80 text-sm">Gestiona todas tus conversaciones en un solo lugar</p>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold">{conversationStats.total}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 text-center">
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold">{conversationStats.total}</div>
                 <div className="text-xs text-white/80">Total</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-green-200">{conversationStats.active}</div>
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold text-green-200">{conversationStats.active}</div>
                 <div className="text-xs text-white/80">Activas</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-200">{conversationStats.withAI}</div>
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold text-purple-200">{conversationStats.withAI}</div>
                 <div className="text-xs text-white/80">Con IA</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-200">{conversationStats.channels}</div>
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold text-yellow-200">{conversationStats.channels}</div>
                 <div className="text-xs text-white/80">Canales</div>
               </div>
             </div>

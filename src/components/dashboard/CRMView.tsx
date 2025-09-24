@@ -275,33 +275,33 @@ const CRMView = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Page Header */}
-      <div className="px-6 pt-6">
-        <div className="rounded-2xl p-6 bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-sm">
-          <div className="flex items-center justify-between">
+      <div className="px-3 sm:px-6 pt-3 sm:pt-6">
+        <div className="rounded-2xl p-4 sm:p-6 bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-3">
-                <Users className="h-7 w-7" />
+              <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-3">
+                <Users className="h-6 w-6 sm:h-7 sm:w-7" />
                 CRM - Gestión de Clientes
               </h1>
               <p className="text-white/80 text-sm">
                 Administra tus leads, prospectos y clientes
               </p>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold">{clientStats.total}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 text-center">
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold">{clientStats.total}</div>
                 <div className="text-xs text-white/80">Total</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-200">{clientStats.leads}</div>
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold text-yellow-200">{clientStats.leads}</div>
                 <div className="text-xs text-white/80">Leads</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-200">{clientStats.prospects}</div>
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold text-blue-200">{clientStats.prospects}</div>
                 <div className="text-xs text-white/80">Prospectos</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-green-200">{clientStats.active}</div>
+              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
+                <div className="text-xl lg:text-2xl font-bold text-green-200">{clientStats.active}</div>
                 <div className="text-xs text-white/80">Activos</div>
               </div>
             </div>
@@ -310,7 +310,7 @@ const CRMView = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-3 sm:p-6">
         <Card className="h-full flex flex-col">
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">

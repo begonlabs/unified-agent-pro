@@ -1,0 +1,166 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { 
+  Users, 
+  BarChart3, 
+  UserCheck, 
+  Settings, 
+  MessageSquare,
+  LogOut,
+  Shield,
+  ArrowLeft,
+  Home,
+  Menu
+} from 'lucide-react';
+import { useSidebar } from '@/hooks/useSidebar';
+
+interface ResponsiveAdminSidebarProps {
+  onSignOut: () => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: ResponsiveAdminSidebarProps) => {
+  const navigate = useNavigate();
+  const { isOpen, isMobile, toggleSidebar, closeSidebar } = useSidebar();
+  
+  const menuItems = [
+    { id: 'clients', title: 'Gestión de Clientes', icon: Users },
+    { id: 'general-stats', title: 'Estadísticas Generales', icon: BarChart3 },
+    { id: 'client-stats', title: 'Stats por Cliente', icon: UserCheck },
+    { id: 'support', title: 'Gestión de Soporte', icon: MessageSquare },
+    { id: 'settings', title: 'Configuración', icon: Settings },
+  ];
+
+  const handleMenuClick = (itemId: string) => {
+    if (onTabChange) {
+      onTabChange(itemId);
+    }
+    closeSidebar();
+  };
+
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
+    closeSidebar();
+  };
+
+  const SidebarContent = () => (
+    <div className="w-72 bg-white shadow-lg h-full flex flex-col border-r border-gray-200">
+      {/* Header */}
+      <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-red-500">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-white">Panel Admin</h1>
+            <p className="text-xs sm:text-sm text-orange-100">
+              Gestión de la Plataforma
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Links */}
+      <div className="flex-1 p-3 sm:p-4">
+        <div className="space-y-1 sm:space-y-2">
+          <div className="px-2 sm:px-3 py-1 sm:py-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Administración
+            </h3>
+          </div>
+          
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleMenuClick(item.id)}
+                  className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 text-sm rounded-md transition-colors ${
+                    isActive
+                      ? 'text-orange-700 bg-orange-50 border border-orange-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-orange-600' : ''}`} />
+                  <span className="hidden sm:inline">{item.title}</span>
+                  <span className="sm:hidden">{item.title.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Admin Status */}
+      <div className="p-3 sm:p-4 border-t border-gray-200 bg-orange-50">
+        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-orange-700 mb-2 sm:mb-3">
+          <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Modo Administrador</span>
+          <span className="sm:hidden">Admin</span>
+        </div>
+        <p className="text-xs text-orange-600 hidden sm:block">
+          Tienes acceso completo a todas las funciones administrativas de la plataforma.
+        </p>
+      </div>
+
+      {/* Navigation Actions */}
+      <div className="p-3 sm:p-4 border-t border-gray-200 space-y-1 sm:space-y-2">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 sm:gap-3 text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 text-sm sm:text-base h-9 sm:h-10"
+          onClick={handleBackToDashboard}
+        >
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="hidden sm:inline">Volver al Dashboard</span>
+          <span className="sm:hidden">Dashboard</span>
+        </Button>
+        
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 sm:gap-3 text-gray-700 hover:bg-gray-50 text-sm sm:text-base h-9 sm:h-10"
+          onClick={onSignOut}
+        >
+          <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="hidden sm:inline">Cerrar Sesión Admin</span>
+          <span className="sm:hidden">Salir</span>
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Desktop Sidebar (fixed)
+  if (!isMobile) {
+    return (
+      <div className="sticky top-0 h-screen">
+        <SidebarContent />
+      </div>
+    );
+  }
+
+  // Mobile Sidebar (drawer)
+  return (
+    <Sheet open={isOpen} onOpenChange={toggleSidebar}>
+      <SheetTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="fixed top-4 left-4 z-50 lg:hidden bg-white shadow-lg hover:shadow-xl"
+        >
+          <Menu className="h-4 w-4" />
+          <span className="ml-2">Admin</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="p-0 w-72">
+        <SidebarContent />
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+export default ResponsiveAdminSidebar;

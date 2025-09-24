@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -12,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import ResponsiveTable from '@/components/ui/responsive-table';
 import { 
-  MoreVertical, 
   Edit, 
   Trash2, 
   UserX, 
@@ -24,12 +23,6 @@ import {
   Search,
   Shield
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface Client {
   id: string;
@@ -268,6 +261,23 @@ const ClientManagement = () => {
     (client.phone && client.phone.includes(searchTerm))
   );
 
+  // Convert clients to the format expected by ResponsiveTable
+  const tableData = filteredClients.map(client => ({
+    ...client,
+    // Ensure all values are properly typed for the table
+    id: client.id,
+    user_id: client.user_id,
+    company_name: client.company_name,
+    email: client.email,
+    phone: client.phone,
+    plan_type: client.plan_type,
+    subscription_start: client.subscription_start,
+    subscription_end: client.subscription_end,
+    is_active: client.is_active,
+    created_at: client.created_at,
+    role: client.role || 'user'
+  }));
+
   if (loading) {
     return (
       <Card>
@@ -307,105 +317,96 @@ const ClientManagement = () => {
             </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Fecha Registro</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{client.company_name}</div>
-                        <div className="text-sm text-gray-500">{client.email}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Mail className="h-3 w-3" />
-                          {client.email}
-                        </div>
-                        {client.phone && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3" />
-                            {client.phone}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getPlanBadge(client.plan_type)}>
-                        {client.plan_type.toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getRoleBadge(client.role || 'user')}>
-                        {(client.role || 'user').toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+          <ResponsiveTable
+            columns={[
+              {
+                key: 'company_name',
+                label: 'Cliente',
+                render: (value, row) => (
+                  <div>
+                    <div className="font-medium">{String(value || '')}</div>
+                    <div className="text-sm text-gray-500">{String(row.email || '')}</div>
+                  </div>
+                )
+              },
+              {
+                key: 'email',
+                label: 'Contacto',
+                render: (value, row) => (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1 text-sm">
+                      <Mail className="h-3 w-3" />
+                      {String(value || '')}
+                    </div>
+                    {row.phone && (
                       <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(client.created_at).toLocaleDateString()}
+                        <Phone className="h-3 w-3" />
+                        {String(row.phone || '')}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={client.is_active ? "default" : "secondary"}>
-                        {client.is_active ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(client)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => toggleClientStatus(client.id, client.is_active)}
-                          >
-                            {client.is_active ? (
-                              <>
-                                <UserX className="mr-2 h-4 w-4" />
-                                Desactivar
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Activar
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => openDeleteDialog(client.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    )}
+                  </div>
+                )
+              },
+              {
+                key: 'plan_type',
+                label: 'Plan',
+                render: (value) => (
+                  <Badge className={getPlanBadge(String(value || ''))}>
+                    {String(value || '').toUpperCase()}
+                  </Badge>
+                )
+              },
+              {
+                key: 'role',
+                label: 'Rol',
+                render: (value) => (
+                  <Badge className={getRoleBadge(String(value || 'user'))}>
+                    {String(value || 'user').toUpperCase()}
+                  </Badge>
+                )
+              },
+              {
+                key: 'created_at',
+                label: 'Fecha Registro',
+                render: (value) => (
+                  <div className="flex items-center gap-1 text-sm">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(String(value || '')).toLocaleDateString()}
+                  </div>
+                ),
+                hideOnMobile: true
+              },
+              {
+                key: 'is_active',
+                label: 'Estado',
+                render: (value) => (
+                  <Badge variant={value ? "default" : "secondary"}>
+                    {value ? "Activo" : "Inactivo"}
+                  </Badge>
+                )
+              }
+            ]}
+            data={tableData}
+            actions={[
+              {
+                label: 'Editar',
+                icon: Edit,
+                onClick: (client) => openEditDialog(client as unknown as Client)
+              },
+              {
+                label: 'Cambiar Estado',
+                icon: UserCheck,
+                onClick: (client) => toggleClientStatus(String(client.id), Boolean(client.is_active))
+              },
+              {
+                label: 'Eliminar',
+                icon: Trash2,
+                onClick: (client) => openDeleteDialog(String(client.id)),
+                variant: 'destructive'
+              }
+            ]}
+            emptyMessage="No se encontraron clientes"
+          />
         </CardContent>
       </Card>
 
