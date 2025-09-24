@@ -18,7 +18,10 @@ import {
   Send, 
   User,
   Bot,
-  Filter
+  Filter,
+  Wifi,
+  WifiOff,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -333,11 +336,12 @@ const MessagesView = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex bg-gray-50">
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile: Lista de conversaciones */}
-        <div className={`w-full sm:w-80 bg-white border-r flex flex-col rounded-tr-2xl ${mobileView === 'list' ? 'block' : 'hidden sm:flex'}`}>
-          <div className="sticky top-0 z-10 bg-white border-b p-3 sm:p-4">
+        <div className={`w-full sm:w-80 bg-white border-r flex flex-col ${mobileView === 'list' ? 'block' : 'hidden sm:flex'}`}>
+          {/* Header fijo de conversaciones */}
+          <div className="flex-shrink-0 bg-white border-b p-3 sm:p-4">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
@@ -389,7 +393,8 @@ const MessagesView = () => {
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
+          {/* Lista de conversaciones con scroll independiente */}
+          <div className="flex-1 overflow-y-auto">
             <div className="p-2 space-y-2">
               {filteredConversations.length === 0 ? (
                 <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -408,43 +413,52 @@ const MessagesView = () => {
                     onClick={() => handleConversationSelect(conversation.id)}
                   >
                     <div className="p-3 sm:p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
                           <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
                             {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-semibold truncate text-sm sm:text-base">
+                          {/* Nombre del cliente - línea completa */}
+                          <div className="mb-1">
+                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 leading-tight">
                               {conversation.crm_clients?.name || 'Cliente Anónimo'}
                             </h3>
-                            <div className="flex items-center gap-1">
+                          </div>
+                          
+                          {/* Información de contacto */}
+                          <div className="mb-2">
+                            <p className="text-xs sm:text-sm text-gray-600 truncate">
+                              {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
+                            </p>
+                          </div>
+                          
+                          {/* Badges y estado en una línea */}
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <Badge 
+                                className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
+                                variant="secondary"
+                              >
+                                {conversation.crm_clients?.status || 'lead'}
+                              </Badge>
+                              <Badge 
+                                variant={conversation.status === 'open' ? 'default' : 'secondary'} 
+                                className="text-xs"
+                              >
+                                {conversation.status}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
                               {getChannelIcon(conversation.channel)}
                               {conversation.ai_enabled && (
                                 <Bot className="h-3 w-3 text-purple-600" />
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm text-gray-600 truncate">
-                              {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
-                            </p>
-                            <div className="flex items-center gap-1">
-                            <Badge 
-                              className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
-                              variant="secondary"
-                            >
-                              {conversation.crm_clients?.status || 'lead'}
-                            </Badge>
-                            <Badge 
-                              variant={conversation.status === 'open' ? 'default' : 'secondary'} 
-                              className="text-xs"
-                            >
-                              {conversation.status}
-                            </Badge>
-                          </div>
-                          </div>
+                          
+                          {/* Fecha */}
                           <p className="text-xs text-gray-500">
                             {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -455,14 +469,14 @@ const MessagesView = () => {
                 ))
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Mobile Chat Area - Tipo WhatsApp */}
         {mobileView === 'chat' && selectedConversation && (
-          <div className="sm:hidden flex-1 flex flex-col overflow-hidden bg-white">
-            {/* Header tipo WhatsApp */}
-            <div className="sticky top-0 z-10 flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+          <div className="sm:hidden flex-1 flex flex-col bg-white">
+            {/* Header fijo tipo WhatsApp */}
+            <div className="flex-shrink-0 flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
@@ -489,11 +503,20 @@ const MessagesView = () => {
                       <span className="capitalize">{selectedConv?.channel}</span>
                     </div>
                     {messagesConnected ? (
-                      <span className="bg-white/20 px-2 py-1 rounded-full">🟢 En vivo</span>
+                      <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                        <Wifi className="h-3 w-3 text-green-400" />
+                        <span className="text-xs">En Línea</span>
+                      </div>
                     ) : messagesLoading ? (
-                      <span className="bg-white/20 px-2 py-1 rounded-full">🔄 Cargando...</span>
+                      <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                        <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
+                        <span className="text-xs">Cargando</span>
+                      </div>
                     ) : (
-                      <span className="bg-white/20 px-2 py-1 rounded-full">🔴 Sin conexión</span>
+                      <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                        <WifiOff className="h-3 w-3 text-red-400" />
+                        <span className="text-xs">Sin conexión</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -511,7 +534,7 @@ const MessagesView = () => {
               </div>
             </div>
 
-            {/* Área de mensajes tipo WhatsApp */}
+            {/* Área de mensajes con scroll independiente */}
             <div className="flex-1 overflow-y-auto bg-gray-100 p-3">
               <div className="space-y-3 max-w-full">
                 {messages.length === 0 ? (
@@ -574,8 +597,8 @@ const MessagesView = () => {
               </div>
             </div>
 
-            {/* Input tipo WhatsApp */}
-            <div className="p-3 bg-white border-t">
+            {/* Input fijo tipo WhatsApp */}
+            <div className="flex-shrink-0 p-3 bg-white border-t shadow-lg">
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <Textarea
@@ -614,11 +637,11 @@ const MessagesView = () => {
         )}
 
         {/* Desktop Chat Area */}
-        <div className="hidden sm:flex flex-1 flex-col rounded-tl-2xl overflow-hidden">
+        <div className="hidden sm:flex flex-1 flex-col bg-white">
           {selectedConversation ? (
             <>
-              {/* Chat Header */}
-              <div className="sticky top-0 z-10 p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+              {/* Chat Header fijo */}
+              <div className="flex-shrink-0 p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
@@ -644,11 +667,20 @@ const MessagesView = () => {
                         {/* Estado de conexión de mensajes */}
                         <div className="flex items-center gap-1">
                           {messagesConnected ? (
-                            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">🟢 En vivo</span>
+                            <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                              <Wifi className="h-3 w-3 text-green-400" />
+                              <span className="text-xs">En Línea</span>
+                            </div>
                           ) : messagesLoading ? (
-                            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">🔄 Cargando...</span>
+                            <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                              <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
+                              <span className="text-xs">Cargando</span>
+                            </div>
                           ) : (
-                            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">🔴 Sin conexión</span>
+                            <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                              <WifiOff className="h-3 w-3 text-red-400" />
+                              <span className="text-xs">Sin conexión</span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -682,8 +714,8 @@ const MessagesView = () => {
                 </div>
               </div>
 
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-3 sm:p-4 bg-gray-50">
+              {/* Messages con scroll independiente */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50">
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {messages.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -743,10 +775,10 @@ const MessagesView = () => {
                     ))
                   )}
                 </div>
-              </ScrollArea>
+              </div>
 
-              {/* Message Input */}
-              <div className="p-3 sm:p-4 bg-white border-t">
+              {/* Message Input fijo */}
+              <div className="flex-shrink-0 p-3 sm:p-4 bg-white border-t shadow-lg">
                 <div className="max-w-4xl mx-auto">
                   <div className="flex gap-2 sm:gap-3 items-end">
                     <div className="flex-1">
