@@ -287,21 +287,21 @@ const CRMView = () => {
                 Administra tus leads, prospectos y clientes
               </p>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 text-center">
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold">{clientStats.total}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 text-center">
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold">{clientStats.total}</div>
                 <div className="text-xs text-white/80">Total</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold text-yellow-200">{clientStats.leads}</div>
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-200">{clientStats.leads}</div>
                 <div className="text-xs text-white/80">Leads</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold text-blue-200">{clientStats.prospects}</div>
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-200">{clientStats.prospects}</div>
                 <div className="text-xs text-white/80">Prospectos</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold text-green-200">{clientStats.active}</div>
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-200">{clientStats.active}</div>
                 <div className="text-xs text-white/80">Activos</div>
               </div>
             </div>
@@ -312,56 +312,58 @@ const CRMView = () => {
       {/* Main Content */}
       <div className="flex-1 p-3 sm:p-6">
         <Card className="h-full flex flex-col">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
+          <CardHeader className="border-b p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-green-600" />
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                   Base de Clientes
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Los clientes se crean automáticamente cuando reciben mensajes
                 </p>
               </div>
             </div>
 
             {/* Search and Filters */}
-            <div className="flex gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar clientes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-50"
+                  className="pl-8 sm:pl-10 bg-gray-50 text-sm sm:text-base"
                 />
               </div>
               
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="prospect">Prospecto</SelectItem>
-                  <SelectItem value="client">Cliente</SelectItem>
-                  <SelectItem value="inactive">Inactivo</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterSource} onValueChange={setFilterSource}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Origen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2 sm:gap-4">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-full sm:w-32 lg:w-40">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="prospect">Prospecto</SelectItem>
+                    <SelectItem value="client">Cliente</SelectItem>
+                    <SelectItem value="inactive">Inactivo</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterSource} onValueChange={setFilterSource}>
+                  <SelectTrigger className="w-full sm:w-32 lg:w-40">
+                    <SelectValue placeholder="Origen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
 
@@ -386,21 +388,21 @@ const CRMView = () => {
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-4 p-6">
+                <div className="grid gap-3 sm:gap-4 p-3 sm:p-6">
                   {filteredClients.map((client) => (
                     <Card key={client.id} className="hover:shadow-md transition-all duration-200">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <Avatar className="h-12 w-12">
-                              <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                            <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                              <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm sm:text-base">
                                 {client.name.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-lg">{client.name}</h3>
-                                <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                                <h3 className="font-semibold text-base sm:text-lg truncate">{client.name}</h3>
+                                <div className="flex items-center gap-1 sm:gap-2">
                                   {getSourceIcon(client.source)}
                                   <Badge 
                                     className={`${getStatusColor(client.status)} text-xs`}
@@ -410,32 +412,32 @@ const CRMView = () => {
                                   </Badge>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                                 {client.email && (
-                                  <div className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />
-                                    {client.email}
+                                  <div className="flex items-center gap-1 truncate">
+                                    <Mail className="h-3 w-3 flex-shrink-0" />
+                                    <span className="truncate">{client.email}</span>
                                   </div>
                                 )}
                                 {client.phone && (
                                   <div className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
+                                    <Phone className="h-3 w-3 flex-shrink-0" />
                                     {client.phone}
                                   </div>
                                 )}
                                 <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
+                                  <Calendar className="h-3 w-3 flex-shrink-0" />
                                   {new Date(client.created_at).toLocaleDateString('es-ES')}
                                 </div>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => openEditDialog(client)}
-                              className="h-8"
+                              className="h-8 text-xs sm:text-sm"
                             >
                               <Edit className="h-3 w-3 mr-1" />
                               Editar
@@ -444,7 +446,7 @@ const CRMView = () => {
                               value={client.status} 
                               onValueChange={(value) => updateClientStatus(client.id, value)}
                             >
-                              <SelectTrigger className="w-32">
+                              <SelectTrigger className="w-full sm:w-28 lg:w-32 h-8">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -468,49 +470,52 @@ const CRMView = () => {
 
       {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar Cliente</DialogTitle>
+        <DialogContent className="sm:max-w-md mx-4 sm:mx-0">
+          <DialogHeader className="pb-3 sm:pb-4">
+            <DialogTitle className="text-lg sm:text-xl">Editar Cliente</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <Label htmlFor="edit-name">Nombre</Label>
+              <Label htmlFor="edit-name" className="text-sm sm:text-base">Nombre</Label>
               <Input
                 id="edit-name"
                 value={editForm.name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Nombre del cliente"
+                className="text-sm sm:text-base"
               />
             </div>
             
             <div>
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email" className="text-sm sm:text-base">Email</Label>
               <Input
                 id="edit-email"
                 type="email"
                 value={editForm.email}
                 onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="email@ejemplo.com"
+                className="text-sm sm:text-base"
               />
             </div>
             
             <div>
-              <Label htmlFor="edit-phone">Teléfono</Label>
+              <Label htmlFor="edit-phone" className="text-sm sm:text-base">Teléfono</Label>
               <Input
                 id="edit-phone"
                 value={editForm.phone}
                 onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="+1 234 567 8900"
+                className="text-sm sm:text-base"
               />
             </div>
             
             <div>
-              <Label htmlFor="edit-status">Estado</Label>
+              <Label htmlFor="edit-status" className="text-sm sm:text-base">Estado</Label>
               <Select 
                 value={editForm.status} 
                 onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm sm:text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -523,11 +528,11 @@ const CRMView = () => {
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={closeEditDialog}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 pt-3 sm:pt-4">
+            <Button variant="outline" onClick={closeEditDialog} className="w-full sm:w-auto text-sm sm:text-base">
               Cancelar
             </Button>
-            <Button onClick={updateClient} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={updateClient} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto text-sm sm:text-base">
               Guardar Cambios
             </Button>
           </DialogFooter>

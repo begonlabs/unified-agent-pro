@@ -69,6 +69,7 @@ const MessagesView = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
   const [isSending, setIsSending] = useState(false);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
   const { toast } = useToast();
   
   // Hook para prevenir mensajes duplicados
@@ -313,6 +314,17 @@ const MessagesView = () => {
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 
+  // Funciones para navegación móvil tipo WhatsApp
+  const handleConversationSelect = (conversationId: string) => {
+    setSelectedConversation(conversationId);
+    setMobileView('chat'); // Cambiar a vista de chat en móvil
+  };
+
+  const handleBackToList = () => {
+    setMobileView('list'); // Volver a la lista en móvil
+    setSelectedConversation(null); // Limpiar conversación seleccionada
+  };
+
   const conversationStats = {
     total: conversations.length,
     active: conversations.filter(c => c.status === 'open').length,
@@ -323,31 +335,31 @@ const MessagesView = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Page Header */}
-      <div className="px-6 pt-6">
-        <div className="rounded-2xl p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
-          <div className="flex items-center justify-between">
+      <div className="px-3 sm:px-6 pt-3 sm:pt-6">
+        <div className="rounded-2xl p-4 sm:p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-3">
-                <MessageCircle className="h-7 w-7" />
+              <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
+                <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
                 Centro de Mensajes
               </h1>
-              <p className="text-white/80 text-sm">Gestiona todas tus conversaciones en un solo lugar</p>
+              <p className="text-white/80 text-xs sm:text-sm">Gestiona todas tus conversaciones en un solo lugar</p>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 text-center">
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold">{conversationStats.total}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 text-center">
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold">{conversationStats.total}</div>
                 <div className="text-xs text-white/80">Total</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold text-green-200">{conversationStats.active}</div>
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-200">{conversationStats.active}</div>
                 <div className="text-xs text-white/80">Activas</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold text-purple-200">{conversationStats.withAI}</div>
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-200">{conversationStats.withAI}</div>
                 <div className="text-xs text-white/80">Con IA</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 lg:p-4">
-                <div className="text-xl lg:text-2xl font-bold text-yellow-200">{conversationStats.channels}</div>
+              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-200">{conversationStats.channels}</div>
                 <div className="text-xs text-white/80">Canales</div>
               </div>
             </div>
@@ -355,15 +367,16 @@ const MessagesView = () => {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden mt-4">
-        {/* Sidebar */}
-        <div className="w-80 bg-white border-r flex flex-col rounded-tr-2xl">
-          <div className="p-4 border-b">
-            <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-1 overflow-hidden mt-3 sm:mt-4">
+        {/* Mobile: Lista de conversaciones */}
+        <div className={`w-full sm:w-80 bg-white border-r flex flex-col rounded-tr-2xl ${mobileView === 'list' ? 'block' : 'hidden sm:flex'}`}>
+          <div className="p-3 sm:p-4 border-b">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-blue-600" />
-                  Conversaciones
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <span className="sm:hidden">Chats</span>
+                  <span className="hidden sm:inline">Conversaciones</span>
                 </h2>
                 <ConversationConnectionStatus 
                   status={connectionStatus}
@@ -373,19 +386,19 @@ const MessagesView = () => {
             </div>
 
             <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar conversaciones..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-50"
+                className="pl-8 sm:pl-10 bg-gray-50 text-sm sm:text-base"
               />
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="w-full sm:flex-1 text-sm sm:text-base">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -396,7 +409,7 @@ const MessagesView = () => {
               </Select>
               
               <Select value={filterChannel} onValueChange={setFilterChannel}>
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="w-full sm:flex-1 text-sm sm:text-base">
                   <SelectValue placeholder="Canal" />
                 </SelectTrigger>
                 <SelectContent>
@@ -412,31 +425,31 @@ const MessagesView = () => {
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-2">
               {filteredConversations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No hay conversaciones</p>
+                <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                  <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm sm:text-base">No hay conversaciones</p>
                 </div>
               ) : (
                 filteredConversations.map((conversation) => (
-                  <Card 
+                  <div 
                     key={conversation.id}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-md rounded-xl border ${
+                    className={`cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${
                       selectedConversation === conversation.id 
-                        ? 'bg-blue-50 border-blue-200 shadow-sm' 
-                        : 'hover:bg-gray-50'
+                        ? 'bg-blue-50' 
+                        : 'bg-white'
                     }`}
-                    onClick={() => setSelectedConversation(conversation.id)}
+                    onClick={() => handleConversationSelect(conversation.id)}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    <div className="p-3 sm:p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
                             {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-medium truncate text-sm">
+                            <h3 className="font-semibold truncate text-sm sm:text-base">
                               {conversation.crm_clients?.name || 'Cliente Anónimo'}
                             </h3>
                             <div className="flex items-center gap-1">
@@ -446,60 +459,217 @@ const MessagesView = () => {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <Badge 
-                              className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
-                              variant="secondary"
-                            >
-                              {conversation.crm_clients?.status || 'lead'}
-                            </Badge>
-                            <Badge 
-                              variant={conversation.status === 'open' ? 'default' : 'secondary'} 
-                              className="text-xs"
-                            >
-                              {conversation.status}
-                            </Badge>
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm text-gray-600 truncate">
+                              {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <Badge 
+                                className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
+                                variant="secondary"
+                              >
+                                {conversation.crm_clients?.status || 'lead'}
+                              </Badge>
+                              <Badge 
+                                variant={conversation.status === 'open' ? 'default' : 'secondary'} 
+                                className="text-xs"
+                              >
+                                {conversation.status}
+                              </Badge>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate mt-1">
-                            {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-gray-500">
                             {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))
               )}
             </div>
           </ScrollArea>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col rounded-tl-2xl overflow-hidden">
+        {/* Mobile Chat Area - Tipo WhatsApp */}
+        {mobileView === 'chat' && selectedConversation && (
+          <div className="sm:hidden flex-1 flex flex-col overflow-hidden bg-white">
+            {/* Header tipo WhatsApp */}
+            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToList}
+                  className="text-white hover:bg-white/20 p-2 -ml-2"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </Button>
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
+                    {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold text-base">
+                    {selectedConv?.crm_clients?.name || 'Cliente Anónimo'}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-white/80">
+                    <div className="flex items-center gap-1">
+                      {getChannelIcon(selectedConv?.channel || '')}
+                      <span className="capitalize">{selectedConv?.channel}</span>
+                    </div>
+                    {messagesConnected ? (
+                      <span className="bg-white/20 px-2 py-1 rounded-full">🟢 En vivo</span>
+                    ) : messagesLoading ? (
+                      <span className="bg-white/20 px-2 py-1 rounded-full">🔄 Cargando...</span>
+                    ) : (
+                      <span className="bg-white/20 px-2 py-1 rounded-full">🔴 Sin conexión</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-2 py-1">
+                  <Bot className="h-3 w-3 text-white" />
+                  <span className="text-xs text-white">IA</span>
+                  <Switch
+                    checked={selectedConv?.ai_enabled || false}
+                    onCheckedChange={(checked) => toggleConversationAI(selectedConv?.id || '', checked)}
+                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Área de mensajes tipo WhatsApp */}
+            <div className="flex-1 overflow-y-auto bg-gray-100 p-3">
+              <div className="space-y-3 max-w-full">
+                {messages.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No hay mensajes en esta conversación</p>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex animate-fade-in ${
+                        message.sender_type === 'client' ? 'justify-start' : 'justify-end'
+                      }`}
+                    >
+                      <div className="flex items-end gap-2 max-w-[85%]">
+                        {message.sender_type === 'client' && (
+                          <Avatar className="h-6 w-6 mb-1">
+                            <AvatarFallback className="bg-gray-500 text-white text-xs">
+                              <User className="h-3 w-3" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={`px-4 py-2 rounded-2xl shadow-sm ${
+                            message.sender_type === 'client'
+                              ? 'bg-white text-gray-900 rounded-tl-md'
+                              : message.is_automated
+                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white rounded-tr-md'
+                              : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed">{message.content}</p>
+                          <div className="flex items-center justify-end gap-2 mt-1">
+                            <p className="text-xs opacity-70">
+                              {new Date(message.created_at).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                            {message.is_automated && (
+                              <div className="flex items-center gap-1">
+                                <Bot className="h-3 w-3" />
+                                <span className="text-xs">IA</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {message.sender_type !== 'client' && (
+                          <Avatar className="h-6 w-6 mb-1">
+                            <AvatarFallback className="bg-blue-500 text-white text-xs">
+                              {message.is_automated ? <Bot className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Input tipo WhatsApp */}
+            <div className="p-3 bg-white border-t">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Textarea
+                    placeholder="Escribe tu mensaje..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    className="min-h-[44px] max-h-32 resize-none text-sm rounded-full border-gray-300 focus:border-blue-500"
+                    rows={1}
+                  />
+                </div>
+                <Button 
+                  onClick={sendMessage} 
+                  disabled={!newMessage.trim() || isSending}
+                  size="lg"
+                  className={`h-[44px] w-[44px] rounded-full transition-all duration-200 ${
+                    isSending 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                  }`}
+                >
+                  {isSending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Chat Area */}
+        <div className="hidden sm:flex flex-1 flex-col rounded-tl-2xl overflow-hidden">
           {selectedConversation ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-white/20 text-white">
+              <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+                      <AvatarFallback className="bg-white/20 text-white text-sm sm:text-base">
                         {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold text-lg">
+                      <h3 className="font-semibold text-base sm:text-lg">
                         {selectedConv?.crm_clients?.name || 'Cliente Anónimo'}
                       </h3>
-                      <div className="flex items-center gap-3 text-sm text-white/80">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-white/80">
                         <div className="flex items-center gap-1">
                           {getChannelIcon(selectedConv?.channel || '')}
                           <span className="capitalize">{selectedConv?.channel}</span>
                         </div>
                         {selectedConv?.crm_clients?.email && (
-                          <span>{selectedConv.crm_clients.email}</span>
+                          <span className="truncate">{selectedConv.crm_clients.email}</span>
                         )}
                         {selectedConv?.crm_clients?.phone && (
                           <span>{selectedConv.crm_clients.phone}</span>
@@ -517,9 +687,9 @@ const MessagesView = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-                      <Bot className="h-4 w-4 text-white" />
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 bg-white/10 rounded-lg px-2 sm:px-3 py-1 sm:py-2">
+                      <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       <span className="text-xs text-white">IA</span>
                       <Switch
                         checked={selectedConv?.ai_enabled || false}
@@ -527,29 +697,31 @@ const MessagesView = () => {
                         className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/20"
                       />
                     </div>
+                    <div className="flex gap-2">
                     <Badge 
-                      className={`bg-white/20 text-white border-white/20 ${getStatusColor(selectedConv?.crm_clients?.status || 'lead')}`}
+                        className={`bg-white/20 text-white border-white/20 text-xs ${getStatusColor(selectedConv?.crm_clients?.status || 'lead')}`}
                       variant="secondary"
                     >
                       {selectedConv?.crm_clients?.status || 'lead'}
                     </Badge>
                     <Badge 
-                      className="bg-white/20 text-white border-white/20"
+                        className="bg-white/20 text-white border-white/20 text-xs"
                       variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}
                     >
                       {selectedConv?.status}
                     </Badge>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4 bg-gray-50">
-                <div className="space-y-4 max-w-4xl mx-auto">
+              <ScrollArea className="flex-1 p-3 sm:p-4 bg-gray-50">
+                <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {messages.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No hay mensajes en esta conversación</p>
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                      <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm sm:text-base">No hay mensajes en esta conversación</p>
                     </div>
                   ) : (
                     messages.map((message) => (
@@ -559,16 +731,16 @@ const MessagesView = () => {
                           message.sender_type === 'client' ? 'justify-start' : 'justify-end'
                         }`}
                       >
-                        <div className="flex items-start gap-2 max-w-xs lg:max-w-md">
+                        <div className="flex items-start gap-2 max-w-xs sm:max-w-sm lg:max-w-md">
                           {message.sender_type === 'client' && (
-                            <Avatar className="h-8 w-8 mt-1">
+                            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 mt-1">
                               <AvatarFallback className="bg-gray-500 text-white text-xs">
-                                <User className="h-4 w-4" />
+                                <User className="h-3 w-3 sm:h-4 sm:w-4" />
                               </AvatarFallback>
                             </Avatar>
                           )}
                           <div
-                            className={`px-4 py-3 rounded-2xl shadow-sm ${
+                            className={`px-3 sm:px-4 py-2 sm:py-3 rounded-2xl shadow-sm ${
                               message.sender_type === 'client'
                                 ? 'bg-white text-gray-900 rounded-tl-md'
                                 : message.is_automated
@@ -576,8 +748,8 @@ const MessagesView = () => {
                                 : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
                             }`}
                           >
-                            <p className="text-sm leading-relaxed">{message.content}</p>
-                            <div className="flex items-center justify-between gap-2 mt-2">
+                            <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
+                            <div className="flex items-center justify-between gap-2 mt-1 sm:mt-2">
                               <p className="text-xs opacity-70">
                                 {new Date(message.created_at).toLocaleTimeString([], { 
                                   hour: '2-digit', 
@@ -593,9 +765,9 @@ const MessagesView = () => {
                             </div>
                           </div>
                           {message.sender_type !== 'client' && (
-                            <Avatar className="h-8 w-8 mt-1">
+                            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 mt-1">
                               <AvatarFallback className="bg-blue-500 text-white text-xs">
-                                {message.is_automated ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                                {message.is_automated ? <Bot className="h-3 w-3 sm:h-4 sm:w-4" /> : <User className="h-3 w-3 sm:h-4 sm:w-4" />}
                               </AvatarFallback>
                             </Avatar>
                           )}
@@ -607,9 +779,9 @@ const MessagesView = () => {
               </ScrollArea>
 
               {/* Message Input */}
-              <div className="p-4 bg-white border-t">
+              <div className="p-3 sm:p-4 bg-white border-t">
                 <div className="max-w-4xl mx-auto">
-                  <div className="flex gap-3 items-end">
+                  <div className="flex gap-2 sm:gap-3 items-end">
                     <div className="flex-1">
                       <Textarea
                         placeholder="Escribe tu mensaje..."
@@ -621,7 +793,7 @@ const MessagesView = () => {
                             sendMessage();
                           }
                         }}
-                        className="min-h-[60px] max-h-32 resize-none"
+                        className="min-h-[50px] sm:min-h-[60px] max-h-32 resize-none text-sm sm:text-base"
                         rows={2}
                       />
                     </div>
@@ -629,20 +801,20 @@ const MessagesView = () => {
                       onClick={sendMessage} 
                       disabled={!newMessage.trim() || isSending}
                       size="lg"
-                      className={`h-[60px] px-6 transition-all duration-200 ${
+                      className={`h-[50px] sm:h-[60px] px-3 sm:px-6 transition-all duration-200 ${
                         isSending 
                           ? 'bg-gray-400 cursor-not-allowed' 
                           : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                       }`}
                     >
                       {isSending ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent" />
                           <span className="text-xs">Enviando...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <Send className="h-5 w-5" />
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                           <span className="text-xs hidden sm:inline">Enviar</span>
                         </div>
                       )}
@@ -654,12 +826,12 @@ const MessagesView = () => {
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
               <div className="text-center">
-                <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md mx-auto">
-                  <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg max-w-md mx-auto">
+                  <MessageCircle className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                     Selecciona una conversación
                   </h3>
-                  <p className="text-gray-500 leading-relaxed">
+                  <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
                     Elige una conversación de la lista para ver los mensajes y comenzar a chatear con tus clientes.
                   </p>
                 </div>

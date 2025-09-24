@@ -1177,18 +1177,18 @@ const ChannelsView = () => {
     children 
   }: ChannelCardProps) => (
     <Card className="h-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg ${color}`}>
-              <Icon className="h-6 w-6 text-white" />
+      <CardHeader className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className={`p-2 sm:p-3 rounded-lg ${color}`}>
+              <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <CardTitle className="text-xl">{title}</CardTitle>
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
             </div>
           </div>
-          <Badge variant={connected ? "default" : "secondary"} className="flex items-center gap-1">
+          <Badge variant={connected ? "default" : "secondary"} className="flex items-center gap-1 text-xs sm:text-sm w-fit">
             {connected ? (
               <>
                 <CheckCircle className="h-3 w-3" />
@@ -1203,7 +1203,7 @@ const ChannelsView = () => {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 sm:p-6 pt-0">
         {children}
       </CardContent>
     </Card>
@@ -1242,14 +1242,14 @@ const ChannelsView = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 min-h-screen">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Configuración de Canales</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Configuración de Canales</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Conecta tus redes sociales de manera sencilla
             {channels.length > 0 && (
-              <span className="ml-2">
+              <span className="block sm:inline sm:ml-2 mt-1 sm:mt-0">
                 • {channels.length} canal{channels.length !== 1 ? 'es' : ''} 
                 {channels.some(c => c.channel_type === 'instagram' && c.is_connected) && (
                   <span className="ml-1 text-pink-600 font-medium">📱 Instagram detectado</span>
@@ -1258,7 +1258,7 @@ const ChannelsView = () => {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -1266,17 +1266,18 @@ const ChannelsView = () => {
               console.log('🔄 Manual refresh triggered');
               fetchChannels();
             }}
+            className="w-full sm:w-auto"
           >
             🔄 Actualizar
           </Button>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Settings className="h-5 w-5" />
-            <span className="text-sm">Configuración</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-xs sm:text-sm">Configuración</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* WhatsApp */}
         <ChannelCard
           title="WhatsApp Business"
@@ -1307,7 +1308,7 @@ const ChannelsView = () => {
                 </Button>
 
                 <div className="bg-green-50 p-3 rounded-lg border">
-                  <h4 className="font-medium text-green-900 text-sm mb-1">Embedded Signup automático:</h4>
+                  <h4 className="font-medium text-green-900 text-xs sm:text-sm mb-1">Embedded Signup automático:</h4>
                   <ul className="text-xs text-green-800 space-y-1 list-disc list-inside">
                     <li>Autoriza tu cuenta de WhatsApp Business</li>
                     <li>Selecciona el número de teléfono a conectar</li>
@@ -1324,12 +1325,12 @@ const ChannelsView = () => {
                     const config = channel.channel_config as WhatsAppConfig;
                     return (
                       <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-green-600" />
-                            <span className="font-medium text-green-900">{config?.verified_name || config?.business_name || 'WhatsApp Business'}</span>
+                            <span className="font-medium text-green-900 text-sm sm:text-base">{config?.verified_name || config?.business_name || 'WhatsApp Business'}</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                             <Badge variant="default" className="bg-green-600 text-xs">
                               Conectado
                             </Badge>
@@ -1355,7 +1356,7 @@ const ChannelsView = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1 text-green-600 border-green-300 hover:bg-green-100"
+                            className="flex-1 text-green-600 border-green-300 hover:bg-green-100 text-xs sm:text-sm"
                             onClick={() => handleWhatsAppLogin()}
                             disabled={isConnectingWhatsApp}
                           >
@@ -1390,7 +1391,7 @@ const ChannelsView = () => {
                 </Button>
 
                 <div className="bg-blue-50 p-3 rounded-lg border">
-                  <h4 className="font-medium text-blue-900 text-sm mb-1">Conexión automática:</h4>
+                  <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
                   <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
                     <li>Inicia sesión con tu cuenta de Facebook</li>
                     <li>Selecciona las páginas que quieres conectar</li>
@@ -1406,12 +1407,12 @@ const ChannelsView = () => {
                     const config = channel.channel_config as FacebookConfig;
                     return (
                       <div key={channel.id} className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2">
                             <Facebook className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium text-blue-900">{config?.page_name || 'Página de Facebook'}</span>
+                            <span className="font-medium text-blue-900 text-sm sm:text-base">{config?.page_name || 'Página de Facebook'}</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                             <Badge variant="default" className="bg-blue-600 text-xs">
                               Conectado
                             </Badge>
@@ -1431,31 +1432,33 @@ const ChannelsView = () => {
                             <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
                           )}
                         </div>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-100"
+                            className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-100 text-xs sm:text-sm"
                             onClick={() => handleFacebookLogin()}
                           >
                             Reconectar
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs border-green-300 hover:bg-green-100 text-green-700"
-                            onClick={() => handleTestWebhook(channel.id)}
-                          >
-                            Test Webhook
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs border-purple-300 hover:bg-purple-100 text-purple-700"
-                            onClick={() => setShowWebhookMonitor(true)}
-                          >
-                            Monitorear
-                          </Button>
+                          <div className="flex gap-1 sm:gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 sm:flex-none text-xs border-green-300 hover:bg-green-100 text-green-700"
+                              onClick={() => handleTestWebhook(channel.id)}
+                            >
+                              Test Webhook
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 sm:flex-none text-xs border-purple-300 hover:bg-purple-100 text-purple-700"
+                              onClick={() => setShowWebhookMonitor(true)}
+                            >
+                              Monitorear
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1485,7 +1488,7 @@ const ChannelsView = () => {
                 </Button>
 
                 <div className="bg-pink-50 p-3 rounded-lg border">
-                  <h4 className="font-medium text-pink-900 text-sm mb-1">Conexión automática:</h4>
+                  <h4 className="font-medium text-pink-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
                   <ul className="text-xs text-pink-800 space-y-1 list-disc list-inside">
                     <li>Inicia sesión con tu cuenta de Instagram</li>
                     <li>Selecciona las cuentas profesionales</li>
@@ -1505,12 +1508,12 @@ const ChannelsView = () => {
                     
                     return (
                       <div key={channel.id} className="bg-pink-50 p-3 rounded-lg border border-pink-200">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2">
                             <Instagram className="h-4 w-4 text-pink-600" />
-                            <span className="font-medium text-pink-900">@{config?.username || 'Cuenta de Instagram'}</span>
+                            <span className="font-medium text-pink-900 text-sm sm:text-base">@{config?.username || 'Cuenta de Instagram'}</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                             <Badge variant="default" className="bg-pink-600 text-xs">
                               Conectado
                             </Badge>
@@ -1591,11 +1594,11 @@ const ChannelsView = () => {
                             </p>
                           )}
                         </div>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1 text-pink-600 border-pink-300 hover:bg-pink-100"
+                            className="flex-1 text-pink-600 border-pink-300 hover:bg-pink-100 text-xs sm:text-sm"
                             onClick={() => handleInstagramLogin()}
                           >
                             Reconectar
@@ -1604,7 +1607,7 @@ const ChannelsView = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-xs border-green-300 hover:bg-green-100 text-green-700"
+                            className="flex-1 sm:flex-none text-xs border-green-300 hover:bg-green-100 text-green-700"
                             onClick={() => handleTestWebhook(channel.id)}
                           >
                             Test Webhook
@@ -1622,13 +1625,13 @@ const ChannelsView = () => {
 
       {/* Estado de canales conectados */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
             Estado de Canales
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {getChannelStatus('whatsapp') && (
@@ -1663,8 +1666,8 @@ const ChannelsView = () => {
             {/* Debug info for development */}
             {channels.length > 0 && (
               <div className="bg-gray-50 p-3 rounded-lg">
-                <h4 className="font-medium text-gray-700 text-sm mb-2">Estado de Conexiones (Debug):</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <h4 className="font-medium text-gray-700 text-xs sm:text-sm mb-2">Estado de Conexiones (Debug):</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
                   {channels.map(channel => {
                     const config = channel.channel_config as InstagramConfig | FacebookConfig | WhatsAppConfig;
                     const isConnected = getChannelStatus(channel.channel_type);
@@ -1707,25 +1710,26 @@ const ChannelsView = () => {
 
       {/* Monitor de Webhook en tiempo real */}
       {showWebhookMonitor && (
-        <Card className="mt-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+        <Card className="mt-4 sm:mt-6">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 Monitor de Webhook en Tiempo Real
               </CardTitle>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowWebhookMonitor(false)}
+                className="w-full sm:w-auto"
               >
                 Cerrar
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Monitorea los eventos que recibe tu webhook de Facebook (logs en consola)
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Instrucciones para monitorear:</h4>

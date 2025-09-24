@@ -176,79 +176,85 @@ const AIAgentView = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="p-2 bg-purple-600 rounded-lg">
-            <Bot className="h-6 w-6 text-white" />
+            <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Mi Agente IA</h1>
-            <p className="text-gray-500">Configura y entrena tu asistente inteligente</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Mi Agente IA</h1>
+            <p className="text-sm sm:text-base text-gray-500">Configura y entrena tu asistente inteligente</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={config.is_active ? "default" : "secondary"}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+          <Badge variant={config.is_active ? "default" : "secondary"} className="text-xs sm:text-sm w-fit">
             {config.is_active ? "Activo" : "Inactivo"}
           </Badge>
-          <Button onClick={saveAIConfig} disabled={loading}>
+          <Button onClick={saveAIConfig} disabled={loading} className="w-full sm:w-auto text-sm sm:text-base">
             {loading ? 'Guardando...' : 'Guardar Configuración'}
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="goals" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="goals" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Objetivos
+        <TabsList className="flex w-full bg-white shadow-sm overflow-x-auto justify-start md:grid md:grid-cols-5">
+          <TabsTrigger value="goals" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
+            <Target className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Objetivos</span>
+            <span className="inline sm:hidden text-xs">Obj.</span>
           </TabsTrigger>
-          <TabsTrigger value="restrictions" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Restricciones
+          <TabsTrigger value="restrictions" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Restricciones</span>
+            <span className="inline sm:hidden text-xs">Rest.</span>
           </TabsTrigger>
-          <TabsTrigger value="knowledge" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Conocimiento
+          <TabsTrigger value="knowledge" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
+            <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Conocimiento</span>
+            <span className="inline sm:hidden text-xs">Conoc.</span>
           </TabsTrigger>
-          <TabsTrigger value="faq" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            FAQs
+          <TabsTrigger value="faq" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
+            <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">FAQs</span>
+            <span className="inline sm:hidden text-xs">FAQ</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Configuración
+          <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[100px] md:min-w-0">
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Configuración</span>
+            <span className="inline sm:hidden text-xs">Config.</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="goals" className="space-y-6">
+        <TabsContent value="goals" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-green-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 ¿Qué quieres lograr con tu IA?
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
               <div className="space-y-2">
-                <Label htmlFor="goals">Objetivos de tu Agente IA</Label>
+                <Label htmlFor="goals" className="text-sm sm:text-base">Objetivos de tu Agente IA</Label>
                 <Textarea
                   id="goals"
                   placeholder="Ejemplo: Quiero que mi IA ayude a los clientes con consultas sobre productos, tome pedidos básicos y programe citas..."
                   rows={6}
                   value={config.goals}
                   onChange={(e) => setConfig(prev => ({ ...prev, goals: e.target.value }))}
+                  className="text-sm sm:text-base"
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <h4 className="col-span-full font-medium text-gray-700 mb-2">Ejemplos por Industria:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <h4 className="col-span-full font-medium text-gray-700 mb-2 text-sm sm:text-base">Ejemplos por Industria:</h4>
                 {exampleScenarios.map((scenario, index) => (
-                  <Card key={index} className="cursor-pointer hover:bg-gray-50" 
+                  <Card key={index} className="cursor-pointer hover:bg-gray-50 transition-colors" 
                         onClick={() => setConfig(prev => ({ ...prev, goals: scenario.goals, restrictions: scenario.restrictions }))}>
-                    <CardContent className="p-4">
+                    <CardContent className="p-3 sm:p-4">
                       <h5 className="font-medium text-sm mb-2">{scenario.title}</h5>
-                      <p className="text-xs text-gray-600 line-clamp-3">{scenario.goals}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">{scenario.goals}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -257,29 +263,30 @@ const AIAgentView = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="restrictions" className="space-y-6">
+        <TabsContent value="restrictions" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-red-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                 ¿Qué NO quieres que haga tu IA?
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
               <div className="space-y-2">
-                <Label htmlFor="restrictions">Restricciones y Límites</Label>
+                <Label htmlFor="restrictions" className="text-sm sm:text-base">Restricciones y Límites</Label>
                 <Textarea
                   id="restrictions"
                   placeholder="Ejemplo: No responder preguntas personales, no dar información de otros competidores, no confirmar precios sin autorización..."
                   rows={6}
                   value={config.restrictions}
                   onChange={(e) => setConfig(prev => ({ ...prev, restrictions: e.target.value }))}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-medium text-yellow-800 mb-2">Restricciones Recomendadas:</h4>
-                <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+              <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg">
+                <h4 className="font-medium text-yellow-800 mb-2 text-sm sm:text-base">Restricciones Recomendadas:</h4>
+                <ul className="text-xs sm:text-sm text-yellow-700 space-y-1 list-disc list-inside">
                   <li>No compartir información confidencial de la empresa</li>
                   <li>No hacer promesas que no se pueden cumplir</li>
                   <li>No responder temas políticos o controvertidos</li>
@@ -291,76 +298,79 @@ const AIAgentView = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="knowledge" className="space-y-6">
+        <TabsContent value="knowledge" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-blue-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 Base de Conocimiento
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
               <div className="space-y-2">
-                <Label htmlFor="knowledge">Información y Documentos para Entrenar la IA</Label>
+                <Label htmlFor="knowledge" className="text-sm sm:text-base">Información y Documentos para Entrenar la IA</Label>
                 <Textarea
                   id="knowledge"
                   placeholder="Pega aquí información sobre tu empresa, productos, servicios, políticas, etc. También puedes incluir ejemplos de conversaciones exitosas..."
                   rows={8}
                   value={config.knowledge_base}
                   onChange={(e) => setConfig(prev => ({ ...prev, knowledge_base: e.target.value }))}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Subir Documentos</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs sm:text-sm text-gray-600">Subir Documentos</p>
                   <p className="text-xs text-gray-400">PDF, DOC, TXT (Próximamente)</p>
                 </div>
-                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                  <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Conectar Website</p>
+                <div className="p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs sm:text-sm text-gray-600">Conectar Website</p>
                   <p className="text-xs text-gray-400">Importar contenido web (Próximamente)</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="common-questions">Preguntas Frecuentes de tus Clientes</Label>
+                <Label htmlFor="common-questions" className="text-sm sm:text-base">Preguntas Frecuentes de tus Clientes</Label>
                 <Textarea
                   id="common-questions"
                   placeholder="Lista las preguntas más comunes que reciben de tus clientes..."
                   rows={4}
                   value={config.common_questions}
                   onChange={(e) => setConfig(prev => ({ ...prev, common_questions: e.target.value }))}
+                  className="text-sm sm:text-base"
                 />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="faq" className="space-y-6">
+        <TabsContent value="faq" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-green-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 Respuestas Predefinidas
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
               <div className="space-y-2">
-                <Label htmlFor="faq">Respuestas Frecuentes Personalizadas</Label>
+                <Label htmlFor="faq" className="text-sm sm:text-base">Respuestas Frecuentes Personalizadas</Label>
                 <Textarea
                   id="faq"
                   placeholder="Formato: Pregunta: ¿Cuáles son sus horarios?&#10;Respuesta: Estamos abiertos de lunes a viernes de 9:00 AM a 6:00 PM.&#10;&#10;Pregunta: ¿Hacen envíos?&#10;Respuesta: Sí, hacemos envíos a todo el país. El tiempo de entrega es de 2-3 días hábiles."
                   rows={10}
                   value={config.faq}
                   onChange={(e) => setConfig(prev => ({ ...prev, faq: e.target.value }))}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">Formato Recomendado:</h4>
-                <pre className="text-sm text-blue-700 whitespace-pre-wrap">
+              <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">Formato Recomendado:</h4>
+                <pre className="text-xs sm:text-sm text-blue-700 whitespace-pre-wrap overflow-x-auto">
 {`Pregunta: ¿Cuáles son sus horarios?
 Respuesta: Estamos abiertos de lunes a viernes de 9:00 AM a 6:00 PM.
 
@@ -372,18 +382,18 @@ Respuesta: Sí, hacemos envíos a todo el país.`}
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-6">
+        <TabsContent value="settings" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-purple-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                 Configuración de Comportamiento
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="response-time">Tiempo de Respuesta (segundos)</Label>
+                  <Label htmlFor="response-time" className="text-sm sm:text-base">Tiempo de Respuesta (segundos)</Label>
                   <div className="mt-2">
                     <Slider
                       value={[config.response_time]}
@@ -393,21 +403,21 @@ Respuesta: Sí, hacemos envíos a todo el país.`}
                       step={5}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-sm text-gray-500 mt-1">
+                    <div className="flex justify-between text-xs sm:text-sm text-gray-500 mt-1">
                       <span>5s (Inmediato)</span>
                       <span className="font-medium">{config.response_time}s</span>
                       <span>300s (5 min)</span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-xs sm:text-sm text-gray-500 mt-2">
                     Tiempo que espera la IA antes de responder automáticamente
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg gap-3 sm:gap-0">
                   <div>
-                    <h4 className="font-medium">Estado del Agente</h4>
-                    <p className="text-sm text-gray-500">Activar o desactivar respuestas automáticas</p>
+                    <h4 className="font-medium text-sm sm:text-base">Estado del Agente</h4>
+                    <p className="text-xs sm:text-sm text-gray-500">Activar o desactivar respuestas automáticas</p>
                   </div>
                   <button
                     onClick={() => setConfig(prev => ({ ...prev, is_active: !prev.is_active }))}
@@ -423,24 +433,24 @@ Respuesta: Sí, hacemos envíos a todo el país.`}
                   </button>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-800 mb-2">Estado de Entrenamiento:</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-800 mb-2 text-sm sm:text-base">Estado de Entrenamiento:</h4>
+                  <div className="space-y-2 text-xs sm:text-sm">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Objetivos configurados:</span>
-                      <Badge variant={config.goals ? "default" : "secondary"}>
+                      <Badge variant={config.goals ? "default" : "secondary"} className="text-xs w-fit">
                         {config.goals ? "✓ Completado" : "Pendiente"}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Restricciones definidas:</span>
-                      <Badge variant={config.restrictions ? "default" : "secondary"}>
+                      <Badge variant={config.restrictions ? "default" : "secondary"} className="text-xs w-fit">
                         {config.restrictions ? "✓ Completado" : "Pendiente"}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Base de conocimiento:</span>
-                      <Badge variant={config.knowledge_base ? "default" : "secondary"}>
+                      <Badge variant={config.knowledge_base ? "default" : "secondary"} className="text-xs w-fit">
                         {config.knowledge_base ? "✓ Completado" : "Pendiente"}
                       </Badge>
                     </div>
