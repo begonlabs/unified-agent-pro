@@ -334,43 +334,10 @@ const MessagesView = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Page Header */}
-      <div className="px-3 sm:px-6 pt-3 sm:pt-6">
-        <div className="rounded-2xl p-4 sm:p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
-                <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
-                Centro de Mensajes
-              </h1>
-              <p className="text-white/80 text-xs sm:text-sm">Gestiona todas tus conversaciones en un solo lugar</p>
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 text-center">
-              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold">{conversationStats.total}</div>
-                <div className="text-xs text-white/80">Total</div>
-              </div>
-              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-200">{conversationStats.active}</div>
-                <div className="text-xs text-white/80">Activas</div>
-              </div>
-              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-200">{conversationStats.withAI}</div>
-                <div className="text-xs text-white/80">Con IA</div>
-              </div>
-              <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-200">{conversationStats.channels}</div>
-                <div className="text-xs text-white/80">Canales</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden mt-3 sm:mt-4">
+      <div className="flex flex-1 overflow-hidden">
         {/* Mobile: Lista de conversaciones */}
         <div className={`w-full sm:w-80 bg-white border-r flex flex-col rounded-tr-2xl ${mobileView === 'list' ? 'block' : 'hidden sm:flex'}`}>
-          <div className="p-3 sm:p-4 border-b">
+          <div className="sticky top-0 z-10 bg-white border-b p-3 sm:p-4">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
@@ -495,7 +462,7 @@ const MessagesView = () => {
         {mobileView === 'chat' && selectedConversation && (
           <div className="sm:hidden flex-1 flex flex-col overflow-hidden bg-white">
             {/* Header tipo WhatsApp */}
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
@@ -651,7 +618,7 @@ const MessagesView = () => {
           {selectedConversation ? (
             <>
               {/* Chat Header */}
-              <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+              <div className="sticky top-0 z-10 p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">

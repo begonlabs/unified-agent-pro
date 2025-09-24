@@ -181,7 +181,7 @@ const AdminDashboard = () => {
       <main className="flex-1 overflow-hidden lg:ml-0">
         <div className="h-full">
           {/* Header */}
-          <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
+          <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 mt-12 lg:mt-0">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{getTabTitle()}</h1>

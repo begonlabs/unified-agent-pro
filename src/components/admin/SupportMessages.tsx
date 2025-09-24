@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,11 +39,7 @@ const SupportMessages = () => {
   const [response, setResponse] = useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchSupportMessages();
-  }, []);
-
-  const fetchSupportMessages = async () => {
+  const fetchSupportMessages = useCallback(async () => {
     try {
       // Simulando datos ya que no existe la tabla support_messages
       const mockMessages: SupportMessage[] = [
@@ -92,16 +88,21 @@ const SupportMessages = () => {
       ];
 
       setMessages(mockMessages);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: "Error al cargar mensajes",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchSupportMessages();
+  }, [fetchSupportMessages]);
 
   const updateMessageStatus = async (messageId: string, newStatus: 'open' | 'in_progress' | 'resolved') => {
     try {
@@ -116,10 +117,11 @@ const SupportMessages = () => {
         title: "Estado actualizado",
         description: `El mensaje ha sido marcado como ${newStatus}.`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: "Error al actualizar estado",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -138,10 +140,11 @@ const SupportMessages = () => {
       setResponse('');
       updateMessageStatus(selectedMessage.id, 'resolved');
       setSelectedMessage(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: "Error al enviar respuesta",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }

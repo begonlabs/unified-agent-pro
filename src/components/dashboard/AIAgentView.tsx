@@ -174,7 +174,7 @@ const AIAgentView = () => {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-12 lg:mt-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="p-2 bg-purple-600 rounded-lg">
             <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />

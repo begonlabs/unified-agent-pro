@@ -319,7 +319,7 @@ const StatsView = () => {
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Estadísticas de {user.email}</h1>
+        <h1 className="text-3xl font-bold mt-12 lg:mt-0">Estadísticas de {user.email}</h1>
         <div className="flex gap-2">
           {['24h', '7d', '30d', '90d'].map((range) => (
             <button

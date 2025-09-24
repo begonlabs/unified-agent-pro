@@ -210,10 +210,9 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
         <Button
           variant="outline"
           size="sm"
-          className="fixed top-4 left-4 z-50 lg:hidden bg-white shadow-lg hover:shadow-xl"
+          className="fixed top-2 left-0 z-50 lg:hidden bg-white shadow-lg hover:shadow-xl rounded-l-none rounded-r-lg p-2"
         >
           <Menu className="h-4 w-4" />
-          <span className="ml-2">Menú</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-64">

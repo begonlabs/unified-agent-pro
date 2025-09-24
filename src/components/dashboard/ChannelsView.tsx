@@ -1111,7 +1111,7 @@ const ChannelsView = () => {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-12 lg:mt-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Configuración de Canales</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
