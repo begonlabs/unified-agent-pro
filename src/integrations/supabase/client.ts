@@ -3,6 +3,7 @@ import type { Database } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SERVICE_ROLE_KEY = import.meta.env.SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL) {
   throw new Error('Missing VITE_SUPABASE_URL environment variable');
@@ -10,6 +11,10 @@ if (!SUPABASE_URL) {
 
 if (!SUPABASE_ANON_KEY) {
   throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable');
+}
+
+if (!SERVICE_ROLE_KEY) {
+  throw new Error('Missing SERVICE_ROLE_KEY environment variable');
 }
 
 // Import the supabase client like this:
@@ -20,5 +25,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  }
+});
+
+// Cliente con service role para operaciones administrativas
+export const supabaseAdmin = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
 });

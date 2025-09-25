@@ -31,17 +31,23 @@ import {
   Zap,
   Key,
   Smartphone,
-  Globe
+  Globe,
+  MapPin,
+  Flag
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import ChangePasswordDialog from './ChangePasswordDialog';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface Profile {
   id: string;
   company_name: string;
   email: string;
   phone?: string;
+  phone_country_code?: string;
+  country?: string;
   plan_type: string;
   subscription_start?: string;
   subscription_end?: string;
@@ -68,7 +74,8 @@ const ProfileView = ({ user }: ProfileViewProps) => {
   const [profileData, setProfileData] = useState({
     company_name: '',
     email: '',
-    phone: ''
+    phone: '',
+    country: ''
   });
   const [notifications, setNotifications] = useState<NotificationSettings>({
     new_messages: true,
@@ -91,10 +98,15 @@ const ProfileView = ({ user }: ProfileViewProps) => {
       
       if (data) {
       setProfile(data);
+      const fullPhone = data.phone_country_code && data.phone 
+        ? `${data.phone_country_code} ${data.phone}`
+        : data.phone || '';
+      
       setProfileData({
         company_name: data.company_name || '',
         email: data.email || '',
-        phone: data.phone || ''
+        phone: fullPhone,
+        country: data.country || 'US'
       });
       }
     } catch (error: unknown) {
@@ -124,6 +136,17 @@ const ProfileView = ({ user }: ProfileViewProps) => {
     }
   }, [user, fetchProfile]);
 
+  const parsePhoneNumber = (phoneNumber: string) => {
+    if (!phoneNumber) return { countryCode: '+1', number: '' };
+    
+    const match = phoneNumber.match(/^(\+\d{1,4})\s?(.*)$/);
+    if (match) {
+      return { countryCode: match[1], number: match[2] };
+    }
+    
+    return { countryCode: '+1', number: phoneNumber };
+  };
+
   const updateProfile = async () => {
     if (!profileData.company_name.trim() || !profileData.email.trim()) {
       toast({
@@ -136,13 +159,17 @@ const ProfileView = ({ user }: ProfileViewProps) => {
 
     setLoading(true);
     try {
+      const { countryCode, number } = parsePhoneNumber(profileData.phone);
+      
       await supabaseUpdate(
         supabase
           .from('profiles')
           .update({
             company_name: profileData.company_name.trim(),
             email: profileData.email.trim(),
-            phone: profileData.phone.trim() || null,
+            phone: number || null,
+            phone_country_code: countryCode,
+            country: profileData.country || 'US',
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user?.id)
@@ -169,10 +196,15 @@ const ProfileView = ({ user }: ProfileViewProps) => {
   const cancelEdit = () => {
     setEditingProfile(false);
     if (profile) {
+      const fullPhone = profile.phone_country_code && profile.phone 
+        ? `${profile.phone_country_code} ${profile.phone}`
+        : profile.phone || '';
+        
       setProfileData({
         company_name: profile.company_name || '',
         email: profile.email || '',
-        phone: profile.phone || ''
+        phone: fullPhone,
+        country: profile.country || 'US'
       });
     }
   };
@@ -288,6 +320,12 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                 <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                 Miembro desde {formatDate(profile.created_at)}
               </p>
+              {profile.country && (
+                <p className="text-xs sm:text-sm text-gray-500 flex items-center justify-center sm:justify-start gap-1 mt-1">
+                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {profile.country}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
@@ -422,19 +460,37 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-1">
-                  <Phone className="h-3 w-3 sm:h-4 sm:w-4" />
-                  Teléfono de Contacto
-                </Label>
-                <Input
-                  id="phone"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                  disabled={!editingProfile}
-                  className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
-                  placeholder="+1 (555) 123-4567"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-1">
+                    <Phone className="h-3 w-3 sm:h-4 sm:w-4" />
+                    Teléfono de Contacto
+                  </Label>
+                  <PhoneInput
+                    placeholder="Ingresa número de teléfono"
+                    value={profileData.phone}
+                    onChange={(value) => setProfileData(prev => ({ ...prev, phone: value || '' }))}
+                    disabled={!editingProfile}
+                    defaultCountry="US"
+                    international
+                    countryCallingCodeEditable={false}
+                    className="text-sm sm:text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country" className="text-sm font-medium flex items-center gap-1">
+                    <Flag className="h-3 w-3 sm:h-4 sm:w-4" />
+                    País
+                  </Label>
+                  <Input
+                    id="country"
+                    value={profileData.country}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, country: e.target.value }))}
+                    disabled={!editingProfile}
+                    className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
+                    placeholder="US, MX, ES, etc."
+                  />
+                </div>
               </div>
               {editingProfile && (
                 <div className="text-xs sm:text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">
@@ -839,24 +895,34 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                       Cambiar
                     </Button>
                   </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  {/* TODO: Implementar autenticación de dos factores (2FA)
+                      - Configurar TOTP (Time-based One-Time Password) en Supabase Auth
+                      - Generar QR Code para configurar app autenticadora
+                      - Validar códigos de 2FA
+                      - Mostrar códigos de respaldo
+                      - Gestionar estado de 2FA (habilitado/deshabilitado)
+                      - Agregar campos en BD: two_factor_enabled, two_factor_secret, two_factor_backup_codes
+                      - Instalar dependencias: npm install qrcode @types/qrcode
+                      
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 opacity-50">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-green-100 rounded-lg">
                         <Smartphone className="h-4 w-4 text-green-600" />
                       </div>
-                <div>
+                      <div>
                         <h5 className="font-medium">Autenticación de dos factores</h5>
                         <p className="text-sm text-gray-500">Agrega una capa extra de seguridad con 2FA</p>
                         <Badge variant="outline" className="mt-1 text-xs">
-                          No configurado
+                          Próximamente
                         </Badge>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" disabled>
                       <Smartphone className="h-4 w-4 mr-1" />
                       Configurar
                     </Button>
                   </div>
+                  */}
                 </div>
               </div>
 

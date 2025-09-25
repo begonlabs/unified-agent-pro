@@ -374,7 +374,7 @@ const MessagesView = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="open">Abiertos</SelectItem>
+                  <SelectItem value="open">Leído</SelectItem>
                   <SelectItem value="closed">Cerrados</SelectItem>
                 </SelectContent>
               </Select>
@@ -438,16 +438,10 @@ const MessagesView = () => {
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-1 flex-wrap">
                             <Badge 
-                              className={`text-xs ${getStatusColor(conversation.crm_clients?.status || 'lead')}`}
-                              variant="secondary"
-                            >
-                              {conversation.crm_clients?.status || 'lead'}
-                            </Badge>
-                            <Badge 
                               variant={conversation.status === 'open' ? 'default' : 'secondary'} 
                               className="text-xs"
                             >
-                              {conversation.status}
+                              {conversation.status === 'open' ? 'Leído' : conversation.status}
                             </Badge>
                           </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
@@ -505,7 +499,7 @@ const MessagesView = () => {
                     {messagesConnected ? (
                       <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
                         <Wifi className="h-3 w-3 text-green-400" />
-                        <span className="text-xs">En Línea</span>
+                        <span className="text-xs">Online</span>
                       </div>
                     ) : messagesLoading ? (
                       <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
@@ -669,7 +663,7 @@ const MessagesView = () => {
                           {messagesConnected ? (
                             <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
                               <Wifi className="h-3 w-3 text-green-400" />
-                              <span className="text-xs">En Línea</span>
+                              <span className="text-xs">Online</span>
                             </div>
                           ) : messagesLoading ? (
                             <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
@@ -698,16 +692,10 @@ const MessagesView = () => {
                     </div>
                     <div className="flex gap-2">
                     <Badge 
-                        className={`bg-white/20 text-white border-white/20 text-xs ${getStatusColor(selectedConv?.crm_clients?.status || 'lead')}`}
-                      variant="secondary"
-                    >
-                      {selectedConv?.crm_clients?.status || 'lead'}
-                    </Badge>
-                    <Badge 
                         className="bg-white/20 text-white border-white/20 text-xs"
                       variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}
                     >
-                      {selectedConv?.status}
+                      {selectedConv?.status === 'open' ? 'Leído' : selectedConv?.status}
                     </Badge>
                     </div>
                   </div>

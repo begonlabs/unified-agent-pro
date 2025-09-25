@@ -7,12 +7,14 @@ import GeneralStats from './GeneralStats';
 import ClientStats from './ClientStats';
 import AdminSettings from './AdminSettings';
 import SupportMessages from './SupportMessages';
+import SupportStats from './SupportStats';
 import { 
   Users, 
   BarChart3, 
   UserCheck, 
   Settings, 
-  MessageSquare 
+  MessageSquare,
+  TrendingUp
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -21,6 +23,7 @@ interface AdminPanelProps {
 
 const AdminPanel = ({ user }: AdminPanelProps) => {
   const [activeTab, setActiveTab] = useState('clients');
+  const [supportView, setSupportView] = useState('messages');
 
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
@@ -99,7 +102,37 @@ const AdminPanel = ({ user }: AdminPanelProps) => {
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">
-            <SupportMessages />
+            <div className="space-y-6">
+              {/* Sub-navegación para Soporte */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => setSupportView('messages')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    supportView === 'messages'
+                      ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <MessageSquare className="h-4 w-4 inline mr-2" />
+                  Mensajes
+                </button>
+                <button
+                  onClick={() => setSupportView('stats')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    supportView === 'stats'
+                      ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <TrendingUp className="h-4 w-4 inline mr-2" />
+                  Estadísticas
+                </button>
+              </div>
+
+              {/* Contenido de Soporte */}
+              {supportView === 'messages' && <SupportMessages />}
+              {supportView === 'stats' && <SupportStats />}
+            </div>
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">

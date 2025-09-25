@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { supabaseSelect, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,8 @@ const ClientManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editForm, setEditForm] = useState({
     company_name: '',
     email: '',
@@ -73,9 +75,9 @@ const ClientManagement = () => {
     try {
       setLoading(true);
 
-      // Obtener clientes (sin roles por ahora, hasta que se cree la tabla)
+      // Obtener clientes usando service role (sin roles por ahora, hasta que se cree la tabla)
       const { data: profiles, error: profilesError } = await supabaseSelect(
-        supabase
+        supabaseAdmin
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false })
@@ -108,16 +110,32 @@ const ClientManagement = () => {
 
   const toggleClientStatus = async (clientId: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
+      setIsUpdating(true);
+      
+      // Primero obtener el perfil para asegurar que existe
+      const { data: profile, error: fetchError } = await supabaseAdmin
         .from('profiles')
-        .update({ is_active: !currentStatus })
+        .select('id, user_id, company_name, is_active')
+        .eq('id', clientId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!profile) throw new Error('Cliente no encontrado');
+
+      // Actualizar el estado is_active usando service role
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({ 
+          is_active: !currentStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', clientId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
         title: "Estado actualizado",
-        description: `Cliente ${!currentStatus ? 'activado' : 'desactivado'} exitosamente.`,
+        description: `${profile.company_name} ha sido ${!currentStatus ? 'activado' : 'desactivado'} exitosamente.`,
       });
       
       fetchClients();
@@ -128,6 +146,8 @@ const ClientManagement = () => {
         description: errorInfo.description,
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -161,15 +181,28 @@ const ClientManagement = () => {
     if (!editingClient) return;
 
     try {
-      // Actualizar perfil
-      const { error: profileError } = await supabase
+      setIsUpdating(true);
+      
+      // Validar datos requeridos
+      if (!editForm.company_name.trim() || !editForm.email.trim()) {
+        toast({
+          title: "Error de validación",
+          description: "El nombre de la empresa y el email son obligatorios.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Actualizar perfil usando service role
+      const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({
-          company_name: editForm.company_name,
-          email: editForm.email,
-          phone: editForm.phone || null,
+          company_name: editForm.company_name.trim(),
+          email: editForm.email.trim(),
+          phone: editForm.phone?.trim() || null,
           plan_type: editForm.plan_type,
-          is_active: editForm.is_active
+          is_active: editForm.is_active,
+          updated_at: new Date().toISOString()
         })
         .eq('id', editingClient.id);
 
@@ -180,7 +213,7 @@ const ClientManagement = () => {
 
       toast({
         title: "Cliente actualizado",
-        description: "Los datos del cliente han sido actualizados correctamente",
+        description: `${editForm.company_name} ha sido actualizado correctamente`,
       });
       
       closeEditDialog();
@@ -192,6 +225,8 @@ const ClientManagement = () => {
         description: errorInfo.description,
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -209,18 +244,47 @@ const ClientManagement = () => {
     if (!deleteClientId) return;
 
     try {
-      // Eliminar perfil
-      const { error } = await supabase
+      setIsDeleting(true);
+      
+      // Primero obtener el perfil para obtener el user_id usando service role
+      const { data: profile, error: fetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, user_id, company_name')
+        .eq('id', deleteClientId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!profile) throw new Error('Cliente no encontrado');
+
+      const companyName = profile.company_name;
+      const userId = profile.user_id;
+
+      // Eliminar el perfil primero usando service role (esto activará el CASCADE en la base de datos)
+      const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .delete()
         .eq('id', deleteClientId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      toast({
-        title: "Cliente eliminado",
-        description: "El cliente ha sido eliminado exitosamente",
-      });
+      // Eliminar el usuario del auth de Supabase usando service role
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        console.warn('Error al eliminar usuario del auth:', authError);
+        // No lanzamos error aquí porque el perfil ya se eliminó
+        // Solo mostramos una advertencia en el toast
+        toast({
+          title: "Cliente eliminado parcialmente",
+          description: `${companyName} ha sido eliminado del perfil, pero puede haber quedado en el sistema de autenticación.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Cliente eliminado",
+          description: `${companyName} ha sido eliminado completamente del sistema.`,
+        });
+      }
       
       closeDeleteDialog();
       fetchClients();
@@ -231,6 +295,8 @@ const ClientManagement = () => {
         description: errorInfo.description,
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -497,8 +563,19 @@ const ClientManagement = () => {
             <Button variant="outline" onClick={closeEditDialog}>
               Cancelar
             </Button>
-            <Button onClick={updateClient} className="bg-blue-600 hover:bg-blue-700">
-              Guardar Cambios
+            <Button 
+              onClick={updateClient} 
+              disabled={isUpdating}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isUpdating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Cambios'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -518,9 +595,17 @@ const ClientManagement = () => {
             <AlertDialogCancel onClick={closeDeleteDialog}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={deleteClient}
+              disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700"
             >
-              Eliminar
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

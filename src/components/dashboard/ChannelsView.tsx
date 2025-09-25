@@ -201,7 +201,6 @@ interface Channel {
 const ChannelsView = () => {
   const { user, loading: authLoading } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [showWebhookMonitor, setShowWebhookMonitor] = useState(false);
   const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
   const [igVerifications, setIgVerifications] = useState<Record<string, InstagramVerification>>({});
   const [isGeneratingCode, setIsGeneratingCode] = useState<Record<string, boolean>>({});
@@ -876,6 +875,88 @@ const ChannelsView = () => {
     }
   };
 
+  // Función para desconectar un canal (eliminar de la base de datos)
+  const handleDisconnectChannel = async (channelId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "Debes estar autenticado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Confirmar desconexión
+      const channel = channels.find(c => c.id === channelId);
+      if (!channel) {
+        toast({
+          title: "Error",
+          description: "Canal no encontrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const channelName = channel.channel_type === 'whatsapp' ? 'WhatsApp' :
+                         channel.channel_type === 'facebook' ? 'Facebook' :
+                         channel.channel_type === 'instagram' ? 'Instagram' : 'Canal';
+
+      if (!confirm(`¿Estás seguro de que quieres desconectar ${channelName}? Esta acción eliminará la conexión permanentemente.`)) {
+        return;
+      }
+
+      // Eliminar canal de la base de datos
+      const { error } = await supabase
+        .from('communication_channels')
+        .delete()
+        .eq('id', channelId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Actualizar estado local
+      setChannels(prev => prev.filter(c => c.id !== channelId));
+
+      // Limpiar verificaciones de Instagram si es necesario
+      if (channel.channel_type === 'instagram') {
+        setIgVerifications(prev => {
+          const updated = { ...prev };
+          delete updated[channelId];
+          return updated;
+        });
+
+        // Limpiar polling si existe
+        const timeout = verificationPolling[channelId];
+        if (timeout) {
+          clearInterval(timeout);
+          setVerificationPolling(prev => {
+            const updated = { ...prev };
+            delete updated[channelId];
+            return updated;
+          });
+        }
+      }
+
+      toast({
+        title: `${channelName} desconectado`,
+        description: "La conexión ha sido eliminada exitosamente",
+      });
+
+    } catch (error: unknown) {
+      console.error('Error disconnecting channel:', error);
+      const errorMessage = error instanceof Error ? error.message : "No se pudo desconectar el canal";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTestWebhook = async (channelId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1126,22 +1207,9 @@ const ChannelsView = () => {
             )}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              console.log('🔄 Manual refresh triggered');
-              fetchChannels();
-            }}
-            className="w-full sm:w-auto"
-          >
-            🔄 Actualizar
-          </Button>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-xs sm:text-sm">Configuración</span>
-          </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Configuración</span>
         </div>
       </div>
 
@@ -1220,7 +1288,7 @@ const ChannelsView = () => {
                             <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
                           )}
                         </div>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2">
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -1229,6 +1297,14 @@ const ChannelsView = () => {
                             disabled={isConnectingWhatsApp}
                           >
                             {isConnectingWhatsApp ? 'Conectando...' : 'Reconectar'}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
+                            onClick={() => handleDisconnectChannel(channel.id)}
+                          >
+                            Desconectar
                           </Button>
                         </div>
                       </div>
@@ -1309,24 +1385,14 @@ const ChannelsView = () => {
                           >
                             Reconectar
                           </Button>
-                          <div className="flex gap-1 sm:gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1 sm:flex-none text-xs border-green-300 hover:bg-green-100 text-green-700"
-                              onClick={() => handleTestWebhook(channel.id)}
-                            >
-                              Test Webhook
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1 sm:flex-none text-xs border-purple-300 hover:bg-purple-100 text-purple-700"
-                              onClick={() => setShowWebhookMonitor(true)}
-                            >
-                              Monitorear
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
+                            onClick={() => handleDisconnectChannel(channel.id)}
+                          >
+                            Desconectar
+                          </Button>
                         </div>
                       </div>
                     );
@@ -1471,16 +1537,14 @@ const ChannelsView = () => {
                           >
                             Reconectar
                           </Button>
-                          {!needsVerification && (
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1 sm:flex-none text-xs border-green-300 hover:bg-green-100 text-green-700"
-                            onClick={() => handleTestWebhook(channel.id)}
+                            className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
+                            onClick={() => handleDisconnectChannel(channel.id)}
                           >
-                            Test Webhook
+                            Desconectar
                           </Button>
-                          )}
                         </div>
                       </div>
                     );
@@ -1576,71 +1640,6 @@ const ChannelsView = () => {
         </CardContent>
       </Card>
 
-      {/* Monitor de Webhook en tiempo real */}
-      {showWebhookMonitor && (
-        <Card className="mt-4 sm:mt-6">
-          <CardHeader className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                Monitor de Webhook en Tiempo Real
-              </CardTitle>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowWebhookMonitor(false)}
-                className="w-full sm:w-auto"
-              >
-                Cerrar
-              </Button>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Monitorea los eventos que recibe tu webhook de Facebook (logs en consola)
-            </p>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Instrucciones para monitorear:</h4>
-                <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                  <li>Mantén esta ventana abierta</li>
-                  <li>Envía un mensaje a tu página de Facebook</li>
-                  <li>Observa los logs en tu terminal de Docker</li>
-                  <li>Los eventos aparecerán en tiempo real</li>
-                  <li>Usa "Test Webhook" para probar la funcionalidad</li>
-                </ol>
-              </div>
-              
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">Comando para ver logs:</h4>
-                <code className="text-sm bg-blue-100 p-2 rounded block">
-                  docker logs contenedor_supabase -f | grep -E "(webhook|messenger|facebook)"
-                </code>
-                <p className="text-xs text-blue-600 mt-2">
-                  Los logs detallados se muestran en la consola del contenedor
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-2">Test rápido:</h4>
-                <p className="text-sm text-green-700 mb-2">
-                  Haz clic en "Test Webhook" para simular un mensaje entrante y verificar el procesamiento
-                </p>
-                <Button 
-                  size="sm"
-                  onClick={() => {
-                    const facebookChannel = channels.find(c => c.channel_type === 'facebook');
-                    if (facebookChannel) {
-                      handleTestWebhook(facebookChannel.id);
-                    }
-                  }}
-                >
-                  Ejecutar Test
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

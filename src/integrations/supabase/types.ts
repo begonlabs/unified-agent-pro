@@ -298,31 +298,84 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_read: boolean | null
           message: string
+          message_type: string | null
           priority: string
           status: string
           subject: string
+          ticket_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_read?: boolean | null
           message: string
+          message_type?: string | null
           priority?: string
           status?: string
           subject: string
+          ticket_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_read?: boolean | null
           message?: string
+          message_type?: string | null
           priority?: string
           status?: string
           subject?: string
+          ticket_id?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          closed_at: string | null
+          created_at: string | null
+          id: string
+          priority: string
+          status: string
+          subject: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          subject: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          subject?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -369,6 +422,22 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_tickets_with_message_count: {
+        Args: {
+          _user_id: string
+        }
+        Returns: {
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          message_count: number
+          priority: string
+          status: string
+          subject: string
+          unread_count: number
+          updated_at: string | null
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string

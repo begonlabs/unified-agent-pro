@@ -21,6 +21,7 @@ services:
         VITE_META_APP_SECRET: ${VITE_META_APP_SECRET}
         VITE_META_VERIFY_TOKEN: ${VITE_META_VERIFY_TOKEN}
         VITE_META_GRAPH_VERSION: ${VITE_META_GRAPH_VERSION}
+        SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
     container_name: ondai-frontend
     restart: unless-stopped
     ports:

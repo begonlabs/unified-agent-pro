@@ -19,24 +19,48 @@ import {
   Facebook,
   Instagram,
   MessageCircle,
-  User
+  User,
+  MapPin,
+  Globe,
+  FileText,
+  Flag
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface Client {
   id: string;
   name: string;
   email?: string;
   phone?: string;
+  phone_country_code?: string;
   status: string;
+  custom_status?: string;
+  country?: string;
+  address?: string;
+  city?: string;
+  notes?: string;
   tags?: string[];
   last_interaction?: string;
   created_at: string;
   source?: string;
 }
+
+// Función para extraer código de país y número del teléfono
+const parsePhoneNumber = (phoneNumber: string) => {
+  if (!phoneNumber) return { countryCode: '+1', number: '' };
+  
+  const match = phoneNumber.match(/^(\+\d{1,4})\s?(.*)$/);
+  if (match) {
+    return { countryCode: match[1], number: match[2] };
+  }
+  
+  return { countryCode: '+1', number: phoneNumber };
+};
 
 const CRMView = () => {
   console.log('CRMView: Component is rendering!');
@@ -54,6 +78,11 @@ const CRMView = () => {
     email: '',
     phone: '',
     status: 'lead',
+    custom_status: '',
+    country: '',
+    address: '',
+    city: '',
+    notes: '',
     tags: [] as string[]
   });
   const { toast } = useToast();
@@ -159,11 +188,20 @@ const CRMView = () => {
 
   const openEditDialog = (client: Client) => {
     setEditingClient(client);
+    const fullPhone = client.phone_country_code && client.phone 
+      ? `${client.phone_country_code} ${client.phone}`
+      : client.phone || '';
+    
     setEditForm({
       name: client.name,
       email: client.email || '',
-      phone: client.phone || '',
+      phone: fullPhone,
       status: client.status,
+      custom_status: client.custom_status || '',
+      country: client.country || '',
+      address: client.address || '',
+      city: client.city || '',
+      notes: client.notes || '',
       tags: client.tags || []
     });
     setIsEditDialogOpen(true);
@@ -177,6 +215,11 @@ const CRMView = () => {
       email: '',
       phone: '',
       status: 'lead',
+      custom_status: '',
+      country: '',
+      address: '',
+      city: '',
+      notes: '',
       tags: []
     });
   };
@@ -185,13 +228,21 @@ const CRMView = () => {
     if (!editingClient || !user?.id) return;
 
     try {
+      const { countryCode, number } = parsePhoneNumber(editForm.phone);
+      
       const { error } = await supabase
         .from('crm_clients')
         .update({
           name: editForm.name,
           email: editForm.email || null,
-          phone: editForm.phone || null,
+          phone: number || null,
+          phone_country_code: countryCode,
           status: editForm.status,
+          custom_status: editForm.custom_status || null,
+          country: editForm.country || null,
+          address: editForm.address || null,
+          city: editForm.city || null,
+          notes: editForm.notes || null,
           tags: editForm.tags
         })
         .eq('id', editingClient.id)
@@ -201,7 +252,12 @@ const CRMView = () => {
 
       setClients(prev => prev.map(client => 
         client.id === editingClient.id 
-          ? { ...client, ...editForm }
+          ? { 
+              ...client, 
+              ...editForm,
+              phone: number,
+              phone_country_code: countryCode
+            }
           : client
       ));
       
@@ -230,7 +286,7 @@ const CRMView = () => {
       case 'inactive':
         return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-purple-100 text-purple-800';
     }
   };
 
@@ -408,7 +464,7 @@ const CRMView = () => {
                                     className={`${getStatusColor(client.status)} text-xs`}
                                     variant="secondary"
                                   >
-                                    {client.status}
+                                    {client.custom_status || client.status}
                                   </Badge>
                                 </div>
                               </div>
@@ -422,7 +478,24 @@ const CRMView = () => {
                                 {client.phone && (
                                   <div className="flex items-center gap-1">
                                     <Phone className="h-3 w-3 flex-shrink-0" />
-                                    {client.phone}
+                                    <span className="flex items-center gap-1">
+                                      {client.phone_country_code && (
+                                        <span className="text-xs">{client.phone_country_code}</span>
+                                      )}
+                                      {client.phone}
+                                    </span>
+                                  </div>
+                                )}
+                                {client.country && (
+                                  <div className="flex items-center gap-1">
+                                    <Globe className="h-3 w-3 flex-shrink-0" />
+                                    {client.country}
+                                  </div>
+                                )}
+                                {client.city && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                                    {client.city}
                                   </div>
                                 )}
                                 <div className="flex items-center gap-1">
@@ -470,7 +543,7 @@ const CRMView = () => {
 
       {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md mx-4 sm:mx-0">
+        <DialogContent className="sm:max-w-2xl mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pb-3 sm:pb-4">
             <DialogTitle className="text-lg sm:text-xl">Editar Cliente</DialogTitle>
           </DialogHeader>
@@ -500,31 +573,91 @@ const CRMView = () => {
             
             <div>
               <Label htmlFor="edit-phone" className="text-sm sm:text-base">Teléfono</Label>
-              <Input
-                id="edit-phone"
+              <PhoneInput
+                placeholder="Ingresa número de teléfono"
                 value={editForm.phone}
-                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+1 234 567 8900"
+                onChange={(value) => setEditForm(prev => ({ ...prev, phone: value || '' }))}
+                defaultCountry="US"
+                international
+                countryCallingCodeEditable={false}
                 className="text-sm sm:text-base"
               />
             </div>
             
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="edit-country" className="text-sm sm:text-base">País</Label>
+                <Input
+                  id="edit-country"
+                  value={editForm.country}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, country: e.target.value }))}
+                  placeholder="País del cliente"
+                  className="text-sm sm:text-base"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-city" className="text-sm sm:text-base">Ciudad</Label>
+                <Input
+                  id="edit-city"
+                  value={editForm.city}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Ciudad del cliente"
+                  className="text-sm sm:text-base"
+                />
+              </div>
+            </div>
+            
             <div>
-              <Label htmlFor="edit-status" className="text-sm sm:text-base">Estado</Label>
-              <Select 
-                value={editForm.status} 
-                onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger className="text-sm sm:text-base">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="prospect">Prospecto</SelectItem>
-                  <SelectItem value="client">Cliente</SelectItem>
-                  <SelectItem value="inactive">Inactivo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="edit-address" className="text-sm sm:text-base">Dirección</Label>
+              <Input
+                id="edit-address"
+                value={editForm.address}
+                onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="Dirección completa del cliente"
+                className="text-sm sm:text-base"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="edit-status" className="text-sm sm:text-base">Estado</Label>
+                <Select 
+                  value={editForm.status} 
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger className="text-sm sm:text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="prospect">Prospecto</SelectItem>
+                    <SelectItem value="client">Cliente</SelectItem>
+                    <SelectItem value="inactive">Inactivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-custom-status" className="text-sm sm:text-base">Estado Personalizado</Label>
+                <Input
+                  id="edit-custom-status"
+                  value={editForm.custom_status}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, custom_status: e.target.value }))}
+                  placeholder="Ej: Cliente VIP, En proceso..."
+                  className="text-sm sm:text-base"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-notes" className="text-sm sm:text-base">Notas</Label>
+              <textarea
+                id="edit-notes"
+                value={editForm.notes}
+                onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notas adicionales sobre el cliente..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm sm:text-base min-h-[80px] resize-none"
+                rows={3}
+              />
             </div>
           </div>
           
