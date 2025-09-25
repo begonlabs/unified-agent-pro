@@ -23,7 +23,8 @@ import {
   MapPin,
   Globe,
   FileText,
-  Flag
+  Flag,
+  Download
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -303,6 +304,106 @@ const CRMView = () => {
     }
   };
 
+  // Función para generar CSV
+  const generateCSV = (clients: Client[]) => {
+    const headers = [
+      'Nombre',
+      'Email',
+      'Teléfono',
+      'Código País',
+      'Estado',
+      'Estado Personalizado',
+      'País',
+      'Ciudad',
+      'Dirección',
+      'Notas',
+      'Origen',
+      'Fecha Registro'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...clients.map(client => [
+        `"${client.name}"`,
+        `"${client.email || ''}"`,
+        `"${client.phone || ''}"`,
+        `"${client.phone_country_code || ''}"`,
+        `"${client.status}"`,
+        `"${client.custom_status || ''}"`,
+        `"${client.country || ''}"`,
+        `"${client.city || ''}"`,
+        `"${client.address || ''}"`,
+        `"${client.notes || ''}"`,
+        `"${client.source || 'manual'}"`,
+        `"${new Date(client.created_at).toLocaleDateString('es-ES')}"`
+      ].join(','))
+    ].join('\n');
+
+    return csvContent;
+  };
+
+  // Función para generar Excel (usando formato CSV con extensión .xlsx)
+  const generateExcel = (clients: Client[]) => {
+    // Para simplificar, generamos un CSV que se puede abrir en Excel
+    // En una implementación más avanzada se podría usar una librería como xlsx
+    return generateCSV(clients);
+  };
+
+  // Función para descargar archivo
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Función para exportar como CSV
+  const exportToCSV = () => {
+    try {
+      const csvContent = generateCSV(filteredClients);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `clientes_${timestamp}.csv`;
+      downloadFile(csvContent, filename, 'text/csv;charset=utf-8;');
+      
+      toast({
+        title: "Exportación exitosa",
+        description: `${filteredClients.length} clientes exportados a CSV`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error de exportación",
+        description: "No se pudo generar el archivo CSV",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función para exportar como Excel
+  const exportToExcel = () => {
+    try {
+      const excelContent = generateExcel(filteredClients);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `clientes_${timestamp}.xlsx`;
+      downloadFile(excelContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      
+      toast({
+        title: "Exportación exitosa",
+        description: `${filteredClients.length} clientes exportados a Excel`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error de exportación",
+        description: "No se pudo generar el archivo Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -419,6 +520,30 @@ const CRMView = () => {
                     <SelectItem value="instagram">Instagram</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Botón de exportación */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportToCSV}
+                    disabled={filteredClients.length === 0}
+                    className="h-8 text-xs sm:text-sm"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportToExcel}
+                    disabled={filteredClients.length === 0}
+                    className="h-8 text-xs sm:text-sm"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Excel
+                  </Button>
+                </div>
               </div>
             </div>
           </CardHeader>
