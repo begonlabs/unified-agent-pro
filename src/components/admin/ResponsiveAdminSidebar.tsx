@@ -15,6 +15,7 @@ import {
   Menu
 } from 'lucide-react';
 import { useSidebar } from '@/hooks/useSidebar';
+import logoWhite from '@/assets/logo_white.png';
 
 interface ResponsiveAdminSidebarProps {
   onSignOut: () => void;
@@ -61,14 +62,14 @@ const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange 
   const SidebarContent = () => (
     <div className="w-72 bg-white shadow-lg h-full flex flex-col border-r border-gray-200">
       {/* Header */}
-      <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-red-500">
+      <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-            <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          <div className="relative">
+            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-white">Panel Admin</h1>
-            <p className="text-xs sm:text-sm text-orange-100">
+            <p className="text-xs sm:text-sm text-white/80">
               Gestión de la Plataforma
             </p>
           </div>
@@ -95,11 +96,11 @@ const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange 
                   onClick={() => handleMenuClick(item.id)}
                   className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 text-sm rounded-md transition-colors ${
                     isActive
-                      ? 'text-orange-700 bg-orange-50 border border-orange-200'
+                      ? 'text-[#3a0caa] bg-gradient-to-r from-[#3a0caa]/10 to-[#710db2]/10 border border-[#3a0caa]/20'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-orange-600' : ''}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-[#3a0caa]' : ''}`} />
                   <span className="hidden sm:inline">{item.title}</span>
                   <span className="sm:hidden">{item.title.split(' ')[0]}</span>
                 </button>
@@ -110,13 +111,13 @@ const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange 
       </div>
 
       {/* Admin Status */}
-      <div className="p-3 sm:p-4 border-t border-gray-200 bg-orange-50">
-        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-orange-700 mb-2 sm:mb-3">
+      <div className="p-3 sm:p-4 border-t border-gray-200 bg-gradient-to-r from-[#3a0caa]/5 to-[#710db2]/5">
+        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-[#3a0caa] mb-2 sm:mb-3">
           <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">Modo Administrador</span>
           <span className="sm:hidden">Admin</span>
         </div>
-        <p className="text-xs text-orange-600 hidden sm:block">
+        <p className="text-xs text-[#3a0caa]/70 hidden sm:block">
           Tienes acceso completo a todas las funciones administrativas de la plataforma.
         </p>
       </div>
@@ -125,7 +126,7 @@ const ResponsiveAdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange 
       <div className="p-3 sm:p-4 border-t border-gray-200 space-y-1 sm:space-y-2">
         <Button
           variant="outline"
-          className="w-full justify-start gap-2 sm:gap-3 text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 text-sm sm:text-base h-9 sm:h-10"
+          className="w-full justify-start gap-2 sm:gap-3 text-[#3a0caa] hover:bg-[#3a0caa]/10 border-[#3a0caa]/20 hover:border-[#3a0caa]/30 text-sm sm:text-base h-9 sm:h-10"
           onClick={handleBackToDashboard}
         >
           <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />

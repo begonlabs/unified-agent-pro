@@ -26,6 +26,7 @@ import {
 import { useAdmin } from '@/hooks/useAdmin';
 import { useChannelsStatus } from '@/hooks/useChannelsStatus';
 import { useSidebar } from '@/hooks/useSidebar';
+import logoWhite from '@/assets/logo_white.png';
 
 interface ResponsiveSidebarProps {
   currentView: string;
@@ -75,13 +76,13 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
   const SidebarContent = () => (
     <div className="w-64 bg-white shadow-lg h-full flex flex-col">
       {/* Header - Simplified for mobile */}
-      <div className="p-3 sm:p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+      <div className="p-3 sm:p-6 border-b bg-gradient-to-r from-[#3a0caa]/5 to-[#710db2]/5">
         <div className="flex items-center gap-2 sm:gap-3 group">
-          <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300">
-            <Waves className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+          <div className="relative">
+            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6 sm:h-8 sm:w-8 group-hover:scale-110 transition-all duration-300" />
           </div>
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">
+            <h1 className="text-lg sm:text-xl font-bold text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text group-hover:from-[#270a59] group-hover:to-[#2b0a63] transition-all duration-300">
               OndAI
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 font-medium hidden sm:block">Powered by AI</p>
@@ -116,10 +117,10 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
 
       {/* Admin Access Section - Simplified */}
       {!adminLoading && isAdmin && (
-        <div className="p-2 sm:p-4 border-t border-orange-200 bg-gradient-to-b from-orange-50 to-orange-100">
+        <div className="p-2 sm:p-4 border-t border-[#3a0caa]/20 bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5">
           <Button
             onClick={handleAdminAccess}
-            className="w-full justify-start gap-2 sm:gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base h-9 sm:h-10"
+            className="w-full justify-start gap-2 sm:gap-3 bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base h-9 sm:h-10"
           >
             <Shield className="h-4 w-4 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Administración</span>
@@ -129,9 +130,9 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
       )}
 
       {/* Quick Channel Status - Compact for mobile */}
-      <div className="p-2 sm:p-4 border-t bg-gradient-to-b from-gray-50 to-white">
-        <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2">
-          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+      <div className="p-2 sm:p-4 border-t bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5">
+        <h3 className="text-xs sm:text-sm font-semibold text-[#3a0caa] mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2">
+        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-[#3a0caa] to-[#710db2] rounded-full"></div>
           <span className="hidden sm:inline">Canales Conectados</span>
           <span className="sm:hidden">Canales</span>
         </h3>
@@ -143,32 +144,32 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
           </div>
         ) : (
           <div className="space-y-1 sm:space-y-3">
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-              <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-[#3a0caa]/5 transition-colors duration-200">
+              <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-[#3a0caa]" />
               <span className="font-medium">WhatsApp</span>
               <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ml-auto ${
                 channelsStatus.whatsapp 
-                  ? 'bg-green-500 animate-pulse' 
+                  ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] animate-pulse' 
                   : 'bg-gray-400'
               }`}></div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-              <Facebook className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-[#3a0caa]/5 transition-colors duration-200">
+              <Facebook className="h-3 w-3 sm:h-4 sm:w-4 text-[#710db2]" />
               <span className="font-medium">Facebook</span>
               <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ml-auto ${
                 channelsStatus.facebook 
-                  ? 'bg-green-500 animate-pulse' 
+                  ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] animate-pulse' 
                   : 'bg-gray-400'
               }`}></div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm p-1 sm:p-2 rounded-lg hover:bg-[#3a0caa]/5 transition-colors duration-200">
               <Instagram className="h-3 w-3 sm:h-4 sm:w-4 text-pink-600" />
               <span className="font-medium">Instagram</span>
               <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ml-auto ${
                 channelsStatus.instagram 
-                  ? 'bg-green-500 animate-pulse' 
+                  ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] animate-pulse' 
                   : 'bg-gray-400'
               }`}></div>
             </div>
@@ -177,10 +178,10 @@ const ResponsiveSidebar = ({ currentView, setCurrentView, onSignOut, user }: Res
       </div>
 
       {/* Sign Out - Always visible */}
-      <div className="p-2 sm:p-4 border-t bg-gradient-to-b from-white to-gray-50 flex-shrink-0">
+      <div className="p-2 sm:p-4 border-t bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5 flex-shrink-0">
         <Button
           variant="outline"
-          className="w-full justify-start gap-2 sm:gap-3 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all duration-300 text-sm sm:text-base h-9 sm:h-10"
+          className="w-full justify-start gap-2 sm:gap-3 text-[#3a0caa] hover:bg-[#3a0caa]/10 border-[#3a0caa]/20 hover:border-[#3a0caa]/30 transition-all duration-300 text-sm sm:text-base h-9 sm:h-10"
           onClick={onSignOut}
         >
           <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />

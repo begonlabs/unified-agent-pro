@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Star } from 'lucide-react';
+import logoWhite from '@/assets/logo_white.png';
 
 const TestimonialsSection = () => {
   const testimonials = [
@@ -32,7 +33,7 @@ const TestimonialsSection = () => {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-20">
-          <h2 className="text-4xl lg:text-6xl font-black uppercase tracking-widest text-white mb-6 hover:text-transparent hover:bg-gradient-to-r hover:from-blue-400 hover:to-purple-400 hover:bg-clip-text transition-all duration-700 cursor-default">
+          <h2 className="text-4xl lg:text-6xl font-black uppercase tracking-widest text-white mb-6 hover:text-transparent hover:bg-gradient-to-r hover:from-[#3a0caa] hover:to-[#710db2] hover:bg-clip-text transition-all duration-700 cursor-default">
             LO QUE DICEN NUESTROS CLIENTES
           </h2>
           <p className="text-lg font-mono text-zinc-400 tracking-wide hover:text-zinc-300 transition-colors duration-300">
@@ -44,7 +45,7 @@ const TestimonialsSection = () => {
           {testimonials.map((testimonial, index) => (
             <Card 
               key={index} 
-              className="group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 border-zinc-700 hover:border-blue-500/50 bg-zinc-800/50 backdrop-blur-sm hover:bg-zinc-800/80 hover:-translate-y-4 transform"
+              className="group hover:shadow-2xl hover:shadow-[#3a0caa]/10 transition-all duration-500 border-zinc-700 hover:border-[#3a0caa]/50 bg-zinc-800/50 backdrop-blur-sm hover:bg-zinc-800/80 hover:-translate-y-4 transform"
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-1 mb-4">
@@ -52,7 +53,7 @@ const TestimonialsSection = () => {
                     <Star key={i} className="h-4 w-4 text-yellow-400 fill-current group-hover:scale-110 transition-transform duration-300" style={{transitionDelay: `${i * 50}ms`}} />
                   ))}
                 </div>
-                <CardTitle className="text-lg font-black uppercase tracking-wider text-white group-hover:text-blue-400 transition-colors duration-300">
+                <CardTitle className="text-lg font-black uppercase tracking-wider text-white group-hover:text-[#3a0caa] transition-colors duration-300">
                   {testimonial.name}
                 </CardTitle>
                 <CardDescription className="text-sm font-mono tracking-wider text-zinc-400 uppercase group-hover:text-zinc-300 transition-colors duration-300">

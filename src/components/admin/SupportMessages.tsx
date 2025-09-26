@@ -559,9 +559,9 @@ const SupportMessages = () => {
                           <User className="h-4 w-4 text-green-600" />
                         </div>
                       )}
-                    </div>
+            </div>
                   ))}
-                </div>
+            </div>
               )}
             </div>
 
@@ -580,9 +580,9 @@ const SupportMessages = () => {
                   disabled={!response.trim()}
                   className="self-end"
                 >
-                  <Send className="w-4 h-4 mr-2" />
+                    <Send className="w-4 h-4 mr-2" />
                   Enviar
-                </Button>
+                  </Button>
               </div>
             )}
 

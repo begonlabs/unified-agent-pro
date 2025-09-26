@@ -319,7 +319,12 @@ const StatsView = () => {
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold mt-12 lg:mt-0">Estadísticas de {user.email}</h1>
+        <div className="flex items-center gap-3">
+          <div className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
+            <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text mt-12 lg:mt-0">Estadísticas de {user.email}</h1>
+        </div>
         <div className="flex gap-2">
           {['24h', '7d', '30d', '90d'].map((range) => (
             <button
@@ -327,7 +332,7 @@ const StatsView = () => {
               onClick={() => setTimeRange(range)}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 timeRange === range
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-100'
               }`}
             >

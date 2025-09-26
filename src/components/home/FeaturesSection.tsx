@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Bot, BarChart3, Users, Zap, Shield } from 'lucide-react';
+import logoWhite from '@/assets/logo_white.png';
 
 const FeaturesSection = () => {
   const features = [
@@ -50,7 +51,7 @@ const FeaturesSection = () => {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-20">
-          <h2 className="text-4xl lg:text-6xl font-black uppercase tracking-widest text-white mb-6 hover:text-transparent hover:bg-gradient-to-r hover:from-blue-400 hover:to-purple-400 hover:bg-clip-text transition-all duration-700 cursor-default">
+          <h2 className="text-4xl lg:text-6xl font-black uppercase tracking-widest text-white mb-6 hover:text-transparent hover:bg-gradient-to-r hover:from-[#3a0caa] hover:to-[#710db2] hover:bg-clip-text transition-all duration-700 cursor-default">
             TODO LO QUE NECESITAS
           </h2>
           <p className="text-lg font-mono text-zinc-400 max-w-3xl mx-auto tracking-wide hover:text-zinc-300 transition-colors duration-300">
@@ -64,13 +65,13 @@ const FeaturesSection = () => {
             return (
               <Card 
                 key={index} 
-                className="group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 border-zinc-700 hover:border-blue-500/50 bg-zinc-800/50 backdrop-blur-sm hover:bg-zinc-800/80 hover:-translate-y-4 transform"
+                className="group hover:shadow-2xl hover:shadow-[#3a0caa]/10 transition-all duration-500 border-zinc-700 hover:border-[#3a0caa]/50 bg-zinc-800/50 backdrop-blur-sm hover:bg-zinc-800/80 hover:-translate-y-4 transform"
               >
                 <CardHeader className="pb-4">
                   <div className={`p-4 w-fit rounded-sm bg-zinc-700/50 mb-6 group-hover:bg-zinc-600/50 transition-all duration-300 group-hover:shadow-lg`}>
                     <Icon className={`h-8 w-8 ${feature.color} transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-lg`} />
                   </div>
-                  <CardTitle className="text-xl font-black uppercase tracking-wider text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text transition-all duration-300">
+                  <CardTitle className="text-xl font-black uppercase tracking-wider text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#3a0caa] group-hover:to-[#710db2] group-hover:bg-clip-text transition-all duration-300">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>

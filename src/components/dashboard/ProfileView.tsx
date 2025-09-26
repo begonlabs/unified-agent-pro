@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import logoWhite from '@/assets/logo_white.png';
 import { 
   User2, 
   CreditCard, 
@@ -306,7 +307,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <Avatar className="h-12 w-12 sm:h-16 sm:w-16 mx-auto sm:mx-0">
-              <AvatarFallback className="text-sm sm:text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+              <AvatarFallback className="text-sm sm:text-lg font-semibold bg-gradient-to-r from-[#3a0caa] to-[#710db2] text-white">
                 {getInitials(profile.company_name)}
               </AvatarFallback>
             </Avatar>
@@ -335,7 +336,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
               <span className="sm:hidden">{profile.plan_type?.charAt(0).toUpperCase()}{profile.plan_type?.slice(1)}</span>
             </Badge>
             {profile.is_active ? (
-              <Badge variant="default" className="bg-green-100 text-green-800 border-green-300 text-xs sm:text-sm">
+              <Badge variant="default" className="bg-gradient-to-r from-[#3a0caa]/10 to-[#710db2]/10 text-[#3a0caa] border-[#3a0caa]/20 text-xs sm:text-sm">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Activo
               </Badge>
@@ -351,19 +352,19 @@ const ProfileView = ({ user }: ProfileViewProps) => {
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-white shadow-sm h-auto">
-          <TabsTrigger value="profile" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 py-3 sm:py-2">
+          <TabsTrigger value="profile" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] py-3 sm:py-2">
             <User2 className="h-4 w-4" />
             <span className="text-xs sm:text-sm">Perfil</span>
           </TabsTrigger>
-          <TabsTrigger value="subscription" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 py-3 sm:py-2">
+          <TabsTrigger value="subscription" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] py-3 sm:py-2">
             <CreditCard className="h-4 w-4" />
             <span className="text-xs sm:text-sm">Suscripción</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 py-3 sm:py-2">
+          <TabsTrigger value="notifications" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] py-3 sm:py-2">
             <Bell className="h-4 w-4" />
             <span className="text-xs sm:text-sm">Notificaciones</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 py-3 sm:py-2">
+          <TabsTrigger value="security" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] py-3 sm:py-2">
             <Shield className="h-4 w-4" />
             <span className="text-xs sm:text-sm">Seguridad</span>
           </TabsTrigger>
@@ -399,7 +400,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                         size="sm"
                         onClick={updateProfile}
                         disabled={loading}
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
                       >
                         {loading ? (
                           <>

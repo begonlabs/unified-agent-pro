@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Menu, X, Waves, Sparkles } from 'lucide-react';
+import { MessageSquare, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logoWhite from '@/assets/logo_white.png';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,15 +14,10 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex items-center gap-4 group cursor-pointer">
             <div className="relative">
-              <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300 transform group-hover:scale-110">
-                <Waves className="h-6 w-6 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <Sparkles className="h-3 w-3 text-yellow-400 animate-pulse" />
-              </div>
+              <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 group-hover:scale-110 transition-all duration-300" />
             </div>
             <div>
-              <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text transition-all duration-300">
+              <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#3a0caa] group-hover:to-[#710db2] group-hover:bg-clip-text transition-all duration-300">
                 OndAI
               </span>
               <p className="text-xs text-gray-400 font-medium">Powered by AI</p>
@@ -31,15 +27,15 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             <Link to="/auth">
-              <button className="px-6 py-2 text-sm font-mono tracking-wider uppercase border border-zinc-600 text-zinc-300 hover:border-blue-400 hover:text-blue-400 transition-all duration-300 group relative overflow-hidden">
-                <span className="relative z-10 border-b border-transparent group-hover:border-blue-400 transition-all duration-300">
+              <button className="px-6 py-2 text-sm font-mono tracking-wider uppercase border border-zinc-600 text-zinc-300 hover:border-[#3a0caa] hover:text-[#3a0caa] transition-all duration-300 group relative overflow-hidden">
+                <span className="relative z-10 border-b border-transparent group-hover:border-[#3a0caa] transition-all duration-300">
                   INICIAR SESIÓN
                 </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#3a0caa]/10 to-[#710db2]/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
               </button>
             </Link>
             <Link to="/auth">
-              <button className="px-6 py-2 text-sm font-mono tracking-wider uppercase bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25">
+              <button className="px-6 py-2 text-sm font-mono tracking-wider uppercase bg-gradient-to-r from-[#3a0caa] to-[#710db2] text-white hover:from-[#270a59] hover:to-[#2b0a63] transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-[#3a0caa]/25">
                 COMENZAR GRATIS
               </button>
             </Link>
@@ -47,7 +43,7 @@ const Navigation = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-zinc-300 hover:text-blue-400 transition-colors duration-300"
+            className="md:hidden p-2 text-zinc-300 hover:text-[#3a0caa] transition-colors duration-300"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
@@ -63,12 +59,12 @@ const Navigation = () => {
           <div className="md:hidden pb-6 border-t border-zinc-800 mt-4 pt-6 bg-zinc-950/95 backdrop-blur-sm">
             <div className="flex flex-col gap-4">
               <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                <button className="w-full px-6 py-3 text-sm font-mono tracking-wider uppercase border border-zinc-600 text-zinc-300 hover:border-blue-400 hover:text-blue-400 transition-all duration-300">
+                <button className="w-full px-6 py-3 text-sm font-mono tracking-wider uppercase border border-zinc-600 text-zinc-300 hover:border-[#3a0caa] hover:text-[#3a0caa] transition-all duration-300">
                   INICIAR SESIÓN
                 </button>
               </Link>
               <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                <button className="w-full px-6 py-3 text-sm font-mono tracking-wider uppercase bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all duration-300">
+                <button className="w-full px-6 py-3 text-sm font-mono tracking-wider uppercase bg-gradient-to-r from-[#3a0caa] to-[#710db2] text-white hover:from-[#270a59] hover:to-[#2b0a63] transition-all duration-300">
                   COMENZAR GRATIS
                 </button>
               </Link>

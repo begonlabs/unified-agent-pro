@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, handleSupabaseError } from '@/lib/supabaseUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import logoWhite from '@/assets/logo_white.png';
 import { 
   Users, 
   MessageSquare, 
@@ -210,7 +211,12 @@ const GeneralStats = () => {
     <div className="space-y-6">
       {/* Estadísticas de Clientes */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Resumen de Clientes</h3>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="relative">
+            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+          </div>
+          <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Resumen de Clientes</span>
+        </h3>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -266,7 +272,12 @@ const GeneralStats = () => {
 
       {/* Estadísticas Generales de la Plataforma */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Actividad de la Plataforma</h3>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="relative">
+            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+          </div>
+          <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Actividad de la Plataforma</span>
+        </h3>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -318,7 +329,12 @@ const GeneralStats = () => {
 
       {/* Estadísticas por Canal */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Actividad por Canal</h3>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="relative">
+            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+          </div>
+          <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Actividad por Canal</span>
+        </h3>
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

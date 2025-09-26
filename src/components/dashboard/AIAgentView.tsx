@@ -177,11 +177,11 @@ const AIAgentView = () => {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-12 lg:mt-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-2 bg-purple-600 rounded-lg">
+          <div className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
             <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Mi Agente IA</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Mi Agente IA</h1>
             <p className="text-sm sm:text-base text-gray-500">Configura y entrena tu asistente inteligente</p>
           </div>
         </div>
@@ -189,7 +189,7 @@ const AIAgentView = () => {
           <Badge variant={config.is_active ? "default" : "secondary"} className="text-xs sm:text-sm w-fit">
             {config.is_active ? "Activo" : "Inactivo"}
           </Badge>
-          <Button onClick={saveAIConfig} disabled={loading} className="w-full sm:w-auto text-sm sm:text-base">
+          <Button onClick={saveAIConfig} disabled={loading} className="w-full sm:w-auto text-sm sm:text-base bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white">
             {loading ? 'Guardando...' : 'Guardar Configuración'}
           </Button>
         </div>
@@ -200,7 +200,7 @@ const AIAgentView = () => {
           <TabsList className="flex w-full bg-white shadow-sm overflow-x-auto justify-start">
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="goals" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                <TabsTrigger value="goals" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
                   <Target className="h-4 w-4" />
                 </TabsTrigger>
               </TooltipTrigger>
@@ -211,7 +211,7 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="restrictions" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                <TabsTrigger value="restrictions" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
                   <Shield className="h-4 w-4" />
                 </TabsTrigger>
               </TooltipTrigger>
@@ -222,7 +222,7 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="knowledge" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                <TabsTrigger value="knowledge" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
                   <Brain className="h-4 w-4" />
                 </TabsTrigger>
               </TooltipTrigger>
@@ -233,7 +233,7 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="faq" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                <TabsTrigger value="faq" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
                   <MessageSquare className="h-4 w-4" />
                 </TabsTrigger>
               </TooltipTrigger>
@@ -244,7 +244,7 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="settings" className="flex items-center justify-center data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 min-w-[60px] p-3">
+                <TabsTrigger value="settings" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
                   <Clock className="h-4 w-4" />
                 </TabsTrigger>
               </TooltipTrigger>

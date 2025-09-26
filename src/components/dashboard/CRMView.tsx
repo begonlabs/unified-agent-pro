@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import logoWhite from '@/assets/logo_white.png';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import PhoneInput from 'react-phone-number-input';
@@ -433,16 +434,20 @@ const CRMView = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Page Header */}
       <div className="px-3 sm:px-6 pt-3 sm:pt-6">
-        <div className="rounded-2xl p-4 sm:p-6 bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-sm">
+        <div className="rounded-2xl p-4 sm:p-6 bg-gradient-to-r from-[#3a0caa] to-[#710db2] text-white shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-3">
-                <Users className="h-6 w-6 sm:h-7 sm:w-7" />
-                CRM - Gestión de Clientes
-              </h1>
-              <p className="text-white/80 text-sm">
-                Administra tus leads, prospectos y clientes
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-white/20">
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold">
+                  CRM - Gestión de Clientes
+                </h1>
+                <p className="text-white/80 text-sm">
+                  Administra tus leads, prospectos y clientes
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 text-center">
               <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
@@ -528,7 +533,7 @@ const CRMView = () => {
                     size="sm"
                     onClick={exportToCSV}
                     disabled={filteredClients.length === 0}
-                    className="h-8 text-xs sm:text-sm"
+                    className="h-8 text-xs sm:text-sm border-[#3a0caa] text-[#3a0caa] hover:bg-[#3a0caa] hover:text-white"
                   >
                     <Download className="h-3 w-3 mr-1" />
                     CSV
@@ -538,7 +543,7 @@ const CRMView = () => {
                     size="sm"
                     onClick={exportToExcel}
                     disabled={filteredClients.length === 0}
-                    className="h-8 text-xs sm:text-sm"
+                    className="h-8 text-xs sm:text-sm border-[#710db2] text-[#710db2] hover:bg-[#710db2] hover:text-white"
                   >
                     <Download className="h-3 w-3 mr-1" />
                     Excel

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { MessageSquare, Waves, Sparkles } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
+import logoWhite from '@/assets/logo_white.png';
 
 const Footer = () => {
   return (
@@ -10,15 +11,10 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-4 mb-6 group">
               <div className="relative">
-                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300 transform group-hover:scale-110">
-                  <Waves className="h-6 w-6 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1">
-                  <Sparkles className="h-3 w-3 text-yellow-400 animate-pulse" />
-                </div>
+                <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 group-hover:scale-110 transition-all duration-300" />
               </div>
               <div>
-                <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text transition-all duration-300">
+                <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#3a0caa] group-hover:to-[#710db2] group-hover:bg-clip-text transition-all duration-300">
                   OndAI
                 </span>
                 <p className="text-xs text-gray-400 font-medium">Powered by AI</p>

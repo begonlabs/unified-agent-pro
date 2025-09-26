@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import logoWhite from '@/assets/logo_white.png';
 import { Eye, Phone, Facebook, Instagram, MessageCircle, User, X } from 'lucide-react';
 
 interface ClientWithStats {
@@ -204,8 +205,10 @@ const ClientStats = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-blue-600" />
-            Estadísticas por Cliente
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Estadísticas por Cliente</span>
           </CardTitle>
           <CardDescription>
             Resumen de actividad y rendimiento de cada cliente
@@ -418,20 +421,20 @@ const ClientStats = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{selectedClient.stats.total_messages.toLocaleString()}</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-[#3a0caa]/10 to-[#710db2]/10 rounded-lg">
+                      <div className="text-2xl font-bold text-[#3a0caa]">{selectedClient.stats.total_messages.toLocaleString()}</div>
                       <div className="text-sm text-gray-500">Total Mensajes</div>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{selectedClient.stats.total_leads.toLocaleString()}</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-[#710db2]/10 to-[#3a0caa]/10 rounded-lg">
+                      <div className="text-2xl font-bold text-[#710db2]">{selectedClient.stats.total_leads.toLocaleString()}</div>
                       <div className="text-sm text-gray-500">Total Leads</div>
                     </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">{selectedClient.stats.total_conversations.toLocaleString()}</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-[#3a0caa]/10 to-[#710db2]/10 rounded-lg">
+                      <div className="text-2xl font-bold text-[#3a0caa]">{selectedClient.stats.total_conversations.toLocaleString()}</div>
                       <div className="text-sm text-gray-500">Conversaciones</div>
                     </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">{selectedClient.stats.response_rate.toFixed(2)}</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-[#710db2]/10 to-[#3a0caa]/10 rounded-lg">
+                      <div className="text-2xl font-bold text-[#710db2]">{selectedClient.stats.response_rate.toFixed(2)}</div>
                       <div className="text-sm text-gray-500">Tasa Respuesta</div>
                     </div>
                   </div>

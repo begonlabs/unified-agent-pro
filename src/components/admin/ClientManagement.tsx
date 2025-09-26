@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import ResponsiveTable from '@/components/ui/responsive-table';
+import logoWhite from '@/assets/logo_white.png';
 import { 
   Edit, 
   Trash2, 
@@ -359,8 +360,10 @@ const ClientManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600" />
-            Gestión de Clientes
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Gestión de Clientes</span>
           </CardTitle>
           <CardDescription>
             Administra todos los clientes de la plataforma
@@ -566,7 +569,7 @@ const ClientManagement = () => {
             <Button 
               onClick={updateClient} 
               disabled={isUpdating}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
             >
               {isUpdating ? (
                 <>
@@ -596,7 +599,7 @@ const ClientManagement = () => {
             <AlertDialogAction 
               onClick={deleteClient}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
             >
               {isDeleting ? (
                 <>

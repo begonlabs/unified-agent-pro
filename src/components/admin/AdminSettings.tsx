@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import logoWhite from '@/assets/logo_white.png';
 import { 
   Bell, 
   Mail, 
@@ -58,8 +59,10 @@ const AdminSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notificaciones
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Notificaciones</span>
           </CardTitle>
           <CardDescription>
             Configura las alertas y notificaciones del sistema
@@ -140,8 +143,10 @@ const AdminSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Configuración de Email
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Configuración de Email</span>
           </CardTitle>
           <CardDescription>
             Configura el servidor SMTP para envío de emails
@@ -231,8 +236,10 @@ const AdminSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Seguridad
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Seguridad</span>
           </CardTitle>
           <CardDescription>
             Configuraciones de seguridad del sistema
@@ -294,8 +301,10 @@ const AdminSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Mantenimiento
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Mantenimiento</span>
           </CardTitle>
           <CardDescription>
             Configuraciones de mantenimiento del sistema
@@ -340,7 +349,7 @@ const AdminSettings = () => {
 
       {/* Botón de Guardar */}
       <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} className="flex items-center gap-2">
+        <Button onClick={handleSaveSettings} className="flex items-center gap-2 bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white">
           <Save className="h-4 w-4" />
           Guardar Configuración
         </Button>

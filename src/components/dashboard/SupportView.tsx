@@ -434,7 +434,7 @@ const SupportView = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white" disabled={loading}>
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -455,8 +455,10 @@ const SupportView = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5" />
-              Mis Consultas
+              <div className="p-1.5 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
+                <HelpCircle className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Mis Consultas</span>
             </CardTitle>
             <CardDescription>
               Revisa el estado de tus consultas anteriores

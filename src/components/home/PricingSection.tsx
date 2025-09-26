@@ -79,8 +79,8 @@ const PricingSection = () => {
                 <Link to="/auth">
                   <button className={`w-full px-6 py-3 text-sm font-mono tracking-wider uppercase transition-all duration-300 ${
                     plan.popular 
-                      ? 'bg-zinc-900 text-white hover:bg-zinc-700' 
-                      : 'border-2 border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900'
+                      ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] text-white hover:from-[#270a59] hover:to-[#2b0a63]' 
+                      : 'border-2 border-[#3a0caa] text-[#3a0caa] hover:bg-[#3a0caa] hover:text-white'
                   }`}>
                     {plan.name === 'FREE' ? 'COMENZAR GRATIS' : 'ELEGIR PLAN'}
                   </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import logoWhite from '@/assets/logo_white.png';
 import { 
   MessageSquare, 
   Clock, 
@@ -108,7 +109,9 @@ const SupportStats = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-4 w-4" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTickets}</div>
@@ -216,7 +219,12 @@ const SupportStats = () => {
       {/* Distribución por Estado */}
       <Card>
         <CardHeader>
-          <CardTitle>Distribución de Tickets</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Distribución de Tickets</span>
+          </CardTitle>
           <CardDescription>
             Estado actual de todos los tickets de soporte
           </CardDescription>

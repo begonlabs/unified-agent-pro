@@ -283,7 +283,7 @@ const ChannelsView = () => {
               }
             }
           }
-        }    
+        }
         setChannels((data as Channel[]) || []);
       }
     } catch (error: unknown) {
@@ -397,7 +397,7 @@ const ChannelsView = () => {
         // Instagram is CONNECTED if it has basic OAuth data (separate from verification)
         // Verification is a separate process for messaging functionality
         return hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && 
-               isConnected && isTokenValid;
+                      isConnected && isTokenValid;
       }
       
       default:
@@ -1193,19 +1193,24 @@ const ChannelsView = () => {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-12 lg:mt-0">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Configuración de Canales</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Conecta tus redes sociales de manera sencilla
-            {channels.length > 0 && (
-              <span className="block sm:inline sm:ml-2 mt-1 sm:mt-0">
-                • {channels.length} canal{channels.length !== 1 ? 'es' : ''} 
-                {channels.some(c => c.channel_type === 'instagram' && c.is_connected) && (
-                  <span className="ml-1 text-pink-600 font-medium flex items-center"><Smartphone className="h-3 w-3 mr-1" /> Instagram detectado</span>
-                )}
-              </span>
-            )}
-          </p>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
+            <Settings className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Configuración de Canales</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Conecta tus redes sociales de manera sencilla
+              {channels.length > 0 && (
+                <span className="block sm:inline sm:ml-2 mt-1 sm:mt-0">
+                  • {channels.length} canal{channels.length !== 1 ? 'es' : ''} 
+                  {channels.some(c => c.channel_type === 'instagram' && c.is_connected) && (
+                    <span className="ml-1 text-pink-600 font-medium flex items-center"><Smartphone className="h-3 w-3 mr-1" /> Instagram detectado</span>
+                  )}
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1228,7 +1233,7 @@ const ChannelsView = () => {
                   <Button 
                   onClick={handleWhatsAppLogin}
                   disabled={isConnectingWhatsApp}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] disabled:opacity-50 text-white"
                 >
                   {isConnectingWhatsApp ? (
                     <>
@@ -1328,7 +1333,7 @@ const ChannelsView = () => {
               <>
                 <Button 
                   onClick={handleFacebookLogin}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
                 >
                   <Facebook className="h-4 w-4 mr-2" />
                   Conectar con Facebook
@@ -1415,7 +1420,7 @@ const ChannelsView = () => {
               <>
                 <Button 
                   onClick={handleInstagramLogin}
-                  className="w-full bg-pink-600 hover:bg-pink-700"
+                  className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
                 >
                   <Instagram className="h-4 w-4 mr-2" />
                   Conectar con Instagram

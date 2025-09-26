@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import logoWhite from '@/assets/logo_white.png';
 import { MoreVertical, Eye, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,7 +49,12 @@ export const ResponsiveTable = ({
     return (
       <Card className={className}>
         <CardContent className="flex items-center justify-center h-32">
-          <p className="text-muted-foreground">{emptyMessage}</p>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            </div>
+            <p className="text-muted-foreground">{emptyMessage}</p>
+          </div>
         </CardContent>
       </Card>
     );

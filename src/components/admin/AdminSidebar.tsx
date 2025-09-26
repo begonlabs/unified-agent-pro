@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import logoWhite from '@/assets/logo_white.png';
 import { 
   Users, 
   BarChart3, 
@@ -44,14 +45,14 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
   return (
     <div className="w-72 bg-white shadow-lg h-screen flex flex-col border-r border-gray-200">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-red-500">
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-            <Shield className="h-6 w-6 text-white" />
+          <div className="relative">
+            <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Panel Admin</h1>
-            <p className="text-sm text-orange-100">
+            <p className="text-sm text-white/80">
               Gestión de la Plataforma
             </p>
           </div>
@@ -78,11 +79,11 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
                   onClick={() => handleMenuClick(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
                     isActive
-                      ? 'text-orange-700 bg-orange-50 border border-orange-200'
+                      ? 'text-[#3a0caa] bg-gradient-to-r from-[#3a0caa]/10 to-[#710db2]/10 border border-[#3a0caa]/20'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-orange-600' : ''}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-[#3a0caa]' : ''}`} />
                   <span>{item.title}</span>
                 </button>
               );
@@ -92,12 +93,12 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
       </div>
 
       {/* Admin Status */}
-      <div className="p-4 border-t border-gray-200 bg-orange-50">
-        <div className="flex items-center gap-2 text-sm font-medium text-orange-700 mb-3">
+      <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-[#3a0caa]/5 to-[#710db2]/5">
+        <div className="flex items-center gap-2 text-sm font-medium text-[#3a0caa] mb-3">
           <Shield className="h-4 w-4" />
           Modo Administrador
         </div>
-        <p className="text-xs text-orange-600">
+        <p className="text-xs text-[#3a0caa]/70">
           Tienes acceso completo a todas las funciones administrativas de la plataforma.
         </p>
       </div>
@@ -106,7 +107,7 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
       <div className="p-4 border-t border-gray-200 space-y-2">
         <Button
           variant="outline"
-          className="w-full justify-start gap-3 text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
+          className="w-full justify-start gap-3 text-[#3a0caa] hover:bg-[#3a0caa]/10 border-[#3a0caa]/20 hover:border-[#3a0caa]/30"
           onClick={handleBackToDashboard}
         >
           <ArrowLeft className="h-5 w-5" />
@@ -115,7 +116,7 @@ const AdminSidebar = ({ onSignOut, activeTab = 'clients', onTabChange }: AdminSi
         
         <Button
           variant="outline"
-          className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-50"
+          className="w-full justify-start gap-3 text-[#3a0caa] hover:bg-[#3a0caa]/10 border-[#3a0caa]/20 hover:border-[#3a0caa]/30"
           onClick={onSignOut}
         >
           <LogOut className="h-5 w-5" />
