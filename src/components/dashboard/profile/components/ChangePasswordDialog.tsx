@@ -22,18 +22,7 @@ import {
   AlertCircle,
   Shield
 } from 'lucide-react';
-
-interface ChangePasswordDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-interface PasswordStrength {
-  score: number;
-  feedback: string[];
-  color: string;
-  text: string;
-}
+import { ChangePasswordDialogProps, PasswordStrength } from '../types';
 
 const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps) => {
   const [currentPassword, setCurrentPassword] = useState('');
