@@ -217,30 +217,82 @@ const SupportMessages = () => {
   const sendResponse = async () => {
     if (!selectedTicket || !response.trim()) return;
 
+    const messageText = response.trim();
+    
     try {
-      const { error } = await supabase
+      // Crear mensaje optimista (aparece inmediatamente en la UI)
+      const optimisticMessage: SupportMessage = {
+        id: `temp-${Date.now()}`, // ID temporal
+        ticket_id: selectedTicket.id,
+        user_id: selectedTicket.user_id,
+        message: messageText,
+        message_type: 'admin',
+        is_read: false,
+        created_at: new Date().toISOString()
+      };
+
+      // Agregar mensaje optimista a la lista local
+      setMessages(prev => [...prev, optimisticMessage]);
+      
+      // Limpiar input inmediatamente
+      setResponse('');
+
+      // Enviar mensaje real a la base de datos
+      const { data: savedMessage, error } = await supabase
         .from('support_messages')
         .insert({
           ticket_id: selectedTicket.id,
           user_id: selectedTicket.user_id,
-          message: response.trim(),
+          message: messageText,
           message_type: 'admin',
           subject: selectedTicket.subject,
           priority: selectedTicket.priority,
           status: selectedTicket.status
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Reemplazar mensaje optimista con el real
+      if (savedMessage) {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === optimisticMessage.id 
+              ? {
+                  ...msg,
+                  id: savedMessage.id,
+                  created_at: savedMessage.created_at
+                }
+              : msg
+          )
+        );
+      }
+
+      // Actualizar solo el contador de mensajes del ticket seleccionado
+      setTickets(prev => 
+        prev.map(ticket => 
+          ticket.id === selectedTicket.id 
+            ? { 
+                ...ticket, 
+                message_count: ticket.message_count + 1,
+                last_message_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            : ticket
+        )
+      );
 
       toast({
         title: "Respuesta enviada",
         description: "La respuesta ha sido enviada al cliente.",
       });
       
-      setResponse('');
-      await fetchMessages(selectedTicket.id);
-      await fetchTickets(); // Actualizar contadores
     } catch (error: unknown) {
+      // Si hay error, remover mensaje optimista y restaurar input
+      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
+      setResponse(messageText);
+      
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: "Error al enviar respuesta",

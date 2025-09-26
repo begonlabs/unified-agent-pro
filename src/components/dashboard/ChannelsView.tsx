@@ -405,6 +405,9 @@ const ChannelsView = () => {
     }
   }, [channels]);
 
+  // Estado para controlar notificaciones mostradas
+  const [notificationsShown, setNotificationsShown] = useState<Set<string>>(new Set());
+
   // Auto-detect Instagram channels that need verification on load
   useEffect(() => {
     if (channels.length > 0 && user) {
@@ -421,19 +424,24 @@ const ChannelsView = () => {
         const needsVerification = instagramNeedsVerification(config);
         const hasExistingVerification = igVerifications[channel.id];
         const isConnected = getChannelStatus('instagram');
+        const notificationKey = `instagram-verification-${channel.id}`;
         
         // Only show notification for connected Instagram that needs verification
-        if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at) {
+        // and only if we haven't shown it before
+        if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !notificationsShown.has(notificationKey)) {
           setTimeout(() => {
             toast({
               title: "Instagram detectado - Verificación requerida",
               description: `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
             });
-          }, 1000); // Delay to avoid spamming notifications on page load
+            
+            // Mark this notification as shown
+            setNotificationsShown(prev => new Set(prev).add(notificationKey));
+          }, 3000); // Increased delay to 3 seconds
         }
       });
     }
-  }, [channels, user, igVerifications, toast, getChannelStatus, instagramNeedsVerification]);
+  }, [channels, user, igVerifications, toast, getChannelStatus, instagramNeedsVerification, notificationsShown]);
 
   // Check verification status by polling the channel configuration
   const checkVerificationStatus = async (channelId: string) => {

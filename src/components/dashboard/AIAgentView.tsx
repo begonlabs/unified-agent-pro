@@ -200,8 +200,9 @@ const AIAgentView = () => {
           <TabsList className="flex w-full bg-white shadow-sm overflow-x-auto justify-start">
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="goals" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
+                <TabsTrigger value="goals" className="flex flex-col items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1">
                   <Target className="h-4 w-4" />
+                  <span className="text-xs hidden sm:block">Objetivos</span>
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent>
@@ -211,8 +212,9 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="restrictions" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
+                <TabsTrigger value="restrictions" className="flex flex-col items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1">
                   <Shield className="h-4 w-4" />
+                  <span className="text-xs hidden sm:block">Restricciones</span>
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent>
@@ -222,8 +224,9 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="knowledge" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
+                <TabsTrigger value="knowledge" className="flex flex-col items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1">
                   <Brain className="h-4 w-4" />
+                  <span className="text-xs hidden sm:block">Conocimiento</span>
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent>
@@ -233,8 +236,9 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="faq" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
+                <TabsTrigger value="faq" className="flex flex-col items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1">
                   <MessageSquare className="h-4 w-4" />
+                  <span className="text-xs hidden sm:block">FAQs</span>
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent>
@@ -244,8 +248,9 @@ const AIAgentView = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="settings" className="flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] p-3">
+                <TabsTrigger value="settings" className="flex flex-col items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1">
                   <Clock className="h-4 w-4" />
+                  <span className="text-xs hidden sm:block">Configuración</span>
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent>

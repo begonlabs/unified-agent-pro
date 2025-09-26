@@ -929,7 +929,15 @@ const ProfileView = ({ user }: ProfileViewProps) => {
 
               <Separator />
 
-              {/* Sesiones Activas */}
+              {/* TODO: Implementar gestión de sesiones activas
+                  - Integrar con Supabase Auth para obtener sesiones del usuario
+                  - Mostrar información de sesiones: dispositivo, ubicación, última actividad
+                  - Permitir cerrar sesiones remotas
+                  - Mostrar detalles de seguridad: IP, User Agent, etc.
+                  - Implementar endpoint para obtener sesiones: supabase.auth.getSessions()
+                  - Agregar funcionalidad para revocar sesiones específicas
+                  - Mostrar alertas de seguridad para sesiones sospechosas
+                  
               <div>
                 <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
                   <Globe className="h-4 w-4" />
@@ -967,6 +975,7 @@ const ProfileView = ({ user }: ProfileViewProps) => {
                   </div>
                 </div>
               </div>
+              */}
 
               <Separator />
 

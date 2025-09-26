@@ -258,11 +258,15 @@ const MessagesView = () => {
 
       if (error) throw error;
 
+      // Obtener el nombre del cliente para el mensaje personalizado
+      const conversation = conversations.find(c => c.id === conversationId);
+      const clientName = conversation?.crm_clients?.name || 'este cliente';
+
       toast({
         title: aiEnabled ? "🤖 IA Activada" : "👤 IA Desactivada",
         description: aiEnabled 
-          ? "La IA responderá automáticamente a los nuevos mensajes" 
-          : "Solo tú responderás a los mensajes",
+          ? `La IA responderá automáticamente a los nuevos mensajes de ${clientName}` 
+          : `Solo tú responderás a los mensajes de ${clientName}`,
       });
 
       // Refrescar conversaciones para mostrar el nuevo estado
