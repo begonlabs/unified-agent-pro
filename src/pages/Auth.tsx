@@ -35,6 +35,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -244,6 +246,42 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Attempting password reset for email:', forgotPasswordEmail);
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: "Email enviado",
+        description: "Revisa tu correo electrónico para restablecer tu contraseña.",
+      });
+
+      // Volver al formulario de login
+      setShowForgotPassword(false);
+      setForgotPasswordEmail('');
+      
+    } catch (error: unknown) {
+      console.error('Forgot password catch block:', error);
+      toast({
+        title: "Error al enviar email",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* Elementos de fondo decorativos */}
@@ -413,6 +451,17 @@ const Auth = () => {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
+                      </div>
+                      
+                      {/* Forgot Password Link */}
+                      <div className="text-right">
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-sm text-[#3a0caa] hover:text-[#710db2] font-medium transition-colors"
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </button>
                       </div>
                       
                       <Button 
@@ -600,6 +649,73 @@ const Auth = () => {
       </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md bg-white shadow-2xl">
+            <CardHeader className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="p-2 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
+                  <Lock className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">
+                  Restablecer Contraseña
+                </CardTitle>
+              </div>
+              <CardDescription className="text-gray-600">
+                Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="email"
+                      placeholder="tu@empresa.com"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      className="pl-10 h-12 border-gray-200 focus:border-purple-400"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordEmail('');
+                    }}
+                    className="flex-1 h-12"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 h-12 bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white font-semibold"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Enviando...
+                      </div>
+                    ) : (
+                      'Enviar Email'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Animaciones CSS - agregadas al componente como classes de Tailwind personalizadas */}
       <style>
