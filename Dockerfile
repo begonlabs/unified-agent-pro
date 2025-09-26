@@ -58,6 +58,9 @@ COPY . .
 # Construir la aplicación
 RUN pnpm build
 
+# Verificar que el favicon se haya copiado
+RUN ls -la /app/dist/ | grep favicon || echo "Favicon not found in dist"
+
 # Etapa de producción con Nginx
 FROM nginx:alpine AS production
 
@@ -69,6 +72,14 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copiar archivos construidos desde la etapa builder
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Asegurar que el favicon esté en la raíz
+RUN if [ -f /usr/share/nginx/html/favicon.ico ]; then \
+      echo "Favicon found in dist"; \
+    else \
+      echo "Favicon not found, creating placeholder"; \
+      echo "Favicon missing from build" > /usr/share/nginx/html/favicon.ico; \
+    fi
 
 # Crear usuario no-root para seguridad
 RUN addgroup -g 1001 -S nodejs && \

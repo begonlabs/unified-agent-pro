@@ -19,4 +19,20 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Asegurar que los archivos estáticos se copien correctamente
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          // Mantener el nombre original para favicon.ico
+          if (assetInfo.name === 'favicon.ico') {
+            return 'favicon.ico';
+          }
+          return 'assets/[name]-[hash][extname]';
+        }
+      }
+    }
+  },
+  // Configuración para copiar archivos estáticos
+  publicDir: 'public',
 }));
