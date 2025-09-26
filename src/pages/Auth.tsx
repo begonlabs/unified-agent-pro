@@ -13,7 +13,6 @@ import {
   Zap, 
   Shield, 
   Sparkles,
-  Waves,
   CheckCircle,
   ArrowRight,
   Mail,
@@ -23,6 +22,7 @@ import {
   EyeOff,
   ArrowLeft
 } from 'lucide-react';
+import logoWhite from '@/assets/logo_white.png';
 import { useToast } from '@/hooks/use-toast';
 import { prepareForSignIn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -30,11 +30,45 @@ import { Link } from 'react-router-dom';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Password validation functions
+  const getPasswordStrength = (password: string) => {
+    let score = 0;
+    const requirements = {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+
+    Object.values(requirements).forEach(req => {
+      if (req) score++;
+    });
+
+    return { score, requirements };
+  };
+
+  const getPasswordStrengthColor = (score: number) => {
+    if (score <= 2) return 'bg-red-500';
+    if (score <= 3) return 'bg-yellow-500';
+    if (score <= 4) return 'bg-blue-500';
+    return 'bg-green-500';
+  };
+
+  const getPasswordStrengthText = (score: number) => {
+    if (score <= 2) return 'Débil';
+    if (score <= 3) return 'Regular';
+    if (score <= 4) return 'Buena';
+    return 'Fuerte';
+  };
 
   useEffect(() => {
     console.log('Auth component mounted, checking session...');
@@ -103,11 +137,11 @@ const Auth = () => {
           window.location.href = '/dashboard';
         }, 500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in catch block:', error);
       toast({
         title: "Error al iniciar sesión",
-        description: error.message || "Error desconocido",
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
     } finally {
@@ -118,6 +152,28 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Attempting sign up with email:', email, 'company:', companyName);
+    
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error en la contraseña",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate password strength
+    const { score, requirements } = getPasswordStrength(password);
+    if (score < 4) {
+      toast({
+        title: "Contraseña muy débil",
+        description: "La contraseña debe cumplir todos los requisitos de seguridad",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -176,11 +232,11 @@ const Auth = () => {
         }, 1000);
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up catch block:', error);
       toast({
         title: "Error en el registro",
-        description: error.message || "Error desconocido",
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
     } finally {
@@ -216,12 +272,7 @@ const Auth = () => {
             {/* Logo y Marca */}
             <div className="flex items-center justify-center lg:justify-start gap-4 mb-8">
               <div className="relative">
-                <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg">
-                  <Waves className="h-10 w-10 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1">
-                  <Sparkles className="h-5 w-5 text-yellow-400 animate-pulse" />
-                </div>
+                <img src={logoWhite} alt="OndAI Logo" className="h-16 w-16" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -233,12 +284,12 @@ const Auth = () => {
             
             {/* Título Principal */}
             <div className="space-y-4">
-              <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-4 py-1">
+              <Badge className="bg-gradient-to-r from-[#3a0caa]/20 to-[#710db2]/20 text-[#3a0caa] border-[#3a0caa]/30 px-4 py-1">
                 Revoluciona tu comunicación empresarial
               </Badge>
               <h2 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
                 Centraliza y 
-                <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"> automatiza </span>
+                <span className="bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text text-transparent"> automatiza </span>
                 tus conversaciones
               </h2>
               <p className="text-xl text-gray-300 leading-relaxed">
@@ -250,7 +301,7 @@ const Auth = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8">
               <div className="group hover:scale-105 transition-transform duration-300">
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 hover:border-purple-400/50 transition-colors">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+                  <div className="p-3 bg-gradient-to-r from-[#3a0caa] to-[#710db2] rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
                     <MessageSquare className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="font-semibold text-white mb-2">Omnicanal</h3>
@@ -260,7 +311,7 @@ const Auth = () => {
               
               <div className="group hover:scale-105 transition-transform duration-300">
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 hover:border-purple-400/50 transition-colors">
-                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-400 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+                  <div className="p-3 bg-gradient-to-r from-[#710db2] to-[#3a0caa] rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
                     <Bot className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="font-semibold text-white mb-2">IA Avanzada</h3>
@@ -270,7 +321,7 @@ const Auth = () => {
               
               <div className="group hover:scale-105 transition-transform duration-300">
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 hover:border-purple-400/50 transition-colors">
-                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-400 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+                  <div className="p-3 bg-gradient-to-r from-[#3a0caa] to-[#710db2] rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
                     <BarChart3 className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="font-semibold text-white mb-2">Analytics</h3>
@@ -301,8 +352,10 @@ const Auth = () => {
             <Card className="w-full max-w-md bg-white/95 backdrop-blur-lg shadow-2xl border-0">
               <CardHeader className="text-center space-y-2 pb-8">
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <Zap className="h-5 w-5 text-yellow-500" />
-                  <Badge className="bg-green-100 text-green-800 px-3 py-1">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
+                    <Zap className="h-4 w-4 text-white" />
+                  </div>
+                  <Badge className="bg-gradient-to-r from-[#3a0caa]/10 to-[#710db2]/10 text-[#3a0caa] border-[#3a0caa]/20 px-3 py-1">
                     Prueba Gratuita
                   </Badge>
                 </div>
@@ -364,7 +417,7 @@ const Auth = () => {
                       
                       <Button 
                         type="submit" 
-                        className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+                        className="w-full h-12 bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white font-semibold"
                         disabled={loading}
                       >
                         {loading ? (
@@ -431,12 +484,83 @@ const Auth = () => {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
+                        
+                        {/* Password Strength Meter */}
+                        {password && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(getPasswordStrength(password).score)}`}
+                                  style={{ width: `${(getPasswordStrength(password).score / 5) * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs font-medium text-gray-600">
+                                {getPasswordStrengthText(getPasswordStrength(password).score)}
+                              </span>
+                            </div>
+                            
+                            {/* Password Requirements */}
+                            <div className="grid grid-cols-2 gap-1 text-xs">
+                              <div className={`flex items-center gap-1 ${getPasswordStrength(password).requirements.length ? 'text-green-600' : 'text-gray-400'}`}>
+                                <CheckCircle className="h-3 w-3" />
+                                <span>Mínimo 8 caracteres</span>
+                              </div>
+                              <div className={`flex items-center gap-1 ${getPasswordStrength(password).requirements.lowercase ? 'text-green-600' : 'text-gray-400'}`}>
+                                <CheckCircle className="h-3 w-3" />
+                                <span>Letra minúscula</span>
+                              </div>
+                              <div className={`flex items-center gap-1 ${getPasswordStrength(password).requirements.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                                <CheckCircle className="h-3 w-3" />
+                                <span>Letra mayúscula</span>
+                              </div>
+                              <div className={`flex items-center gap-1 ${getPasswordStrength(password).requirements.number ? 'text-green-600' : 'text-gray-400'}`}>
+                                <CheckCircle className="h-3 w-3" />
+                                <span>Número</span>
+                              </div>
+                              <div className={`flex items-center gap-1 col-span-2 ${getPasswordStrength(password).requirements.special ? 'text-green-600' : 'text-gray-400'}`}>
+                                <CheckCircle className="h-3 w-3" />
+                                <span>Carácter especial</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Confirm Password Field */}
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            placeholder="Confirma tu contraseña"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
+                      required
+                    />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        
+                        {/* Password Match Indicator */}
+                        {confirmPassword && (
+                          <div className={`flex items-center gap-1 text-xs ${password === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
+                            <CheckCircle className="h-3 w-3" />
+                            <span>{password === confirmPassword ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}</span>
+                          </div>
+                        )}
                       </div>
                       
                       <Button 
                         type="submit" 
-                        className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold"
-                        disabled={loading}
+                        className="w-full h-12 bg-gradient-to-r from-[#710db2] to-[#3a0caa] hover:from-[#2b0a63] hover:to-[#270a59] text-white font-semibold"
+                        disabled={loading || password !== confirmPassword || getPasswordStrength(password).score < 4}
                       >
                         {loading ? (
                           <div className="flex items-center gap-2">
