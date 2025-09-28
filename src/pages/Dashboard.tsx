@@ -6,14 +6,16 @@ import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
-import ResponsiveSidebar from '@/components/dashboard/ResponsiveSidebar';
-import MessagesView from '@/components/dashboard/MessagesView';
-import CRMView from '@/components/dashboard/CRMView';
-import StatsView from '@/components/dashboard/StatsView';
-import ChannelsView from '@/components/dashboard/ChannelsView';
-import ProfileView from '@/components/dashboard/ProfileView';
-import SupportView from '@/components/dashboard/SupportView';
-import AIAgentView from '@/components/dashboard/AIAgentView';
+import {
+  ResponsiveSidebar,
+  MessagesView,
+  CRMView,
+  StatsView,
+  ChannelsView,
+  ProfileView,
+  SupportView,
+  AIAgentView
+} from '@/components/dashboard';
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -136,11 +138,11 @@ const Dashboard = () => {
       case 'messages':
         return <MessagesView />;
       case 'crm':
-        return <CRMView />;
+        return <CRMView user={user} />;
       case 'stats':
         return <StatsView />;
       case 'channels':
-        return <ChannelsView />;
+        return <ChannelsView user={user} />;
       case 'profile':
         return <ProfileView user={user} />;
       case 'support':
