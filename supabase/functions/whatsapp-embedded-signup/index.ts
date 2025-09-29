@@ -1,7 +1,8 @@
-// whatsapp-embedded-signup/index.ts
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-// Deno Edge Function: WhatsApp Embedded Signup Handler
+// Deno Edge Function: WhatsApp Business API Embedded Signup Handler
+// whatsapp-embedded-signup/index.ts
+// Production Ready WhatsApp Business API Embedded Signup Handler with Enhanced Debugging and Retry Mechanism
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -58,6 +59,14 @@ const MAX_RETRY_ATTEMPTS = 3;
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10;
 
+// Retry configuration for WABA fetch - Optimized for Supabase timeout
+const WABA_RETRY_CONFIG = {
+  maxAttempts: 6, // Reduced to prevent timeout
+  baseDelay: 2000, // 2 seconds
+  maxDelay: 30000, // 30 seconds max
+  backoffMultiplier: 1.5 // Faster backoff
+};
+
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
@@ -109,11 +118,14 @@ function validateConfiguration(): ConfigurationVariables {
   return config as ConfigurationVariables;
 }
 
-function sanitizeInput(input: unknown): unknown {
+function sanitizeInput(input: unknown): string | number | boolean | null {
   if (typeof input === 'string') {
     return input.trim().slice(0, 1000); // Limit string length
   }
-  return input;
+  if (typeof input === 'number' || typeof input === 'boolean') {
+    return input;
+  }
+  return null;
 }
 
 function validateStateParameter(state: string): StateData {
@@ -223,29 +235,341 @@ async function exchangeCodeForToken(code: string, config: ConfigurationVariables
   return tokenData.access_token;
 }
 
-async function fetchWhatsAppBusinessAccounts(token: string, config: ConfigurationVariables): Promise<WhatsAppBusinessAccount[]> {
-  logEvent('info', 'Fetching WhatsApp Business Accounts');
+// Helper function to perform a single WABA search attempt
+async function performWABASearch(token: string, config: ConfigurationVariables): Promise<WhatsAppBusinessAccount[]> {
+  const allWabas: WhatsAppBusinessAccount[] = [];
   
-  const response = await fetchWithRetry(
-    `https://graph.facebook.com/${config.graphVersion}/me/whatsapp_business_accounts?access_token=${token}`
+  // Debug del token para entender qué permisos tiene
+  const debugResponse = await fetchWithRetry(
+    `https://graph.facebook.com/${config.graphVersion}/debug_token?input_token=${token}&access_token=${config.appId}|${config.appSecret}`,
+    { method: 'GET' }
   );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    logEvent('error', 'WABA fetch failed', { status: response.status, error: errorText });
-    throw new Error(`Failed to fetch WhatsApp Business Accounts: ${response.status} - ${errorText}`);
+  if (debugResponse.ok) {
+    const debugData = await debugResponse.json();
+    logEvent('info', 'Token debug info', { 
+      scopes: debugData.data?.scopes,
+      appId: debugData.data?.app_id,
+      userId: debugData.data?.user_id,
+      isValid: debugData.data?.is_valid,
+      expiresAt: debugData.data?.expires_at
+    });
+  } else {
+    logEvent('warn', 'Token debug failed', { status: debugResponse.status });
   }
 
-  const wabaData = await response.json();
-  const wabas = wabaData.data || [];
+  // Debug de permisos específicos
+  const permissionsResponse = await fetchWithRetry(
+    `https://graph.facebook.com/${config.graphVersion}/me/permissions?access_token=${token}`,
+    { method: 'GET' }
+  );
 
-      if (wabas.length === 0) {
-    logEvent('error', 'No WhatsApp Business Accounts found');
-    throw new Error('No WhatsApp Business Accounts found for this user');
+  if (permissionsResponse.ok) {
+    const permissionsData = await permissionsResponse.json();
+    logEvent('info', 'User permissions', { 
+      permissions: permissionsData.data?.map(p => `${p.permission}:${p.status}`) 
+    });
   }
 
-  logEvent('info', 'WhatsApp Business Accounts fetched', { count: wabas.length });
-  return wabas;
+  // Enfoque 1: Obtener información del usuario para conseguir los Business IDs
+  const userBusinesses: Array<{ id: string; name: string }> = [];
+  try {
+    const userResponse = await fetchWithRetry(
+      `https://graph.facebook.com/${config.graphVersion}/me?fields=id,name&access_token=${token}`,
+      { method: 'GET' }
+    );
+
+    if (userResponse.ok) {
+      const userData = await userResponse.json();
+      logEvent('info', 'User data obtained', { userId: userData.id, userName: userData.name });
+      
+      // Intentar obtener los negocios del usuario
+      const businessesResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/me/businesses?access_token=${token}`,
+        { method: 'GET' }
+      );
+
+      if (businessesResponse.ok) {
+        const businessesData = await businessesResponse.json();
+        userBusinesses = businessesData.data || [];
+        logEvent('info', 'User businesses found', { 
+          businessCount: userBusinesses.length,
+          businesses: userBusinesses.map(b => ({ id: b.id, name: b.name }))
+        });
+      } else {
+        const errorText = await businessesResponse.text();
+        logEvent('warn', 'User businesses fetch failed', { 
+          status: businessesResponse.status, 
+          error: errorText 
+        });
+        
+        // If user has no businesses, this is likely the root cause
+        if (businessesResponse.status === 400) {
+          logEvent('error', 'User has no Business Manager account', {
+            userId: userData.id,
+            suggestion: 'User must create a Meta Business Manager account first'
+          });
+        }
+      }
+    } else {
+      const errorText = await userResponse.text();
+      logEvent('warn', 'User data fetch failed', { 
+        status: userResponse.status, 
+        error: errorText 
+      });
+    }
+  } catch (userError) {
+    logEvent('warn', 'User data fetch failed', { error: userError.message });
+  }
+
+  // Enfoque 2: Para cada business, intentar obtener sus WABAs
+  for (const business of userBusinesses) {
+    try {
+      logEvent('info', 'Checking business for WABAs', { 
+        businessId: business.id, 
+        businessName: business.name 
+      });
+
+      // Intentar obtener WABAs propias del negocio
+      const ownedWabasResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/${business.id}/owned_whatsapp_business_accounts?access_token=${token}`,
+        { method: 'GET' }
+      );
+
+      if (ownedWabasResponse.ok) {
+        const ownedWabasData = await ownedWabasResponse.json();
+        const ownedWabas = ownedWabasData.data || [];
+        allWabas.push(...ownedWabas);
+        logEvent('info', 'Owned WABAs found', { 
+          businessId: business.id, 
+          wabaCount: ownedWabas.length,
+          wabas: ownedWabas.map(w => ({ id: w.id, name: w.name }))
+        });
+      } else {
+        const errorText = await ownedWabasResponse.text();
+        logEvent('warn', 'Owned WABAs fetch failed', { 
+          businessId: business.id, 
+          status: ownedWabasResponse.status,
+          error: errorText 
+        });
+      }
+
+      // Intentar obtener WABAs compartidas con el negocio
+      const clientWabasResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/${business.id}/client_whatsapp_business_accounts?access_token=${token}`,
+        { method: 'GET' }
+      );
+
+      if (clientWabasResponse.ok) {
+        const clientWabasData = await clientWabasResponse.json();
+        const clientWabas = clientWabasData.data || [];
+        allWabas.push(...clientWabas);
+        logEvent('info', 'Client WABAs found', { 
+          businessId: business.id, 
+          wabaCount: clientWabas.length,
+          wabas: clientWabas.map(w => ({ id: w.id, name: w.name }))
+        });
+      } else {
+        const errorText = await clientWabasResponse.text();
+        logEvent('warn', 'Client WABAs fetch failed', { 
+          businessId: business.id, 
+          status: clientWabasResponse.status,
+          error: errorText 
+        });
+      }
+    } catch (businessError) {
+      logEvent('warn', 'Business WABA fetch failed', { 
+        businessId: business.id, 
+        error: businessError.message 
+      });
+    }
+  }
+
+  // Enfoque 3: Si no encontramos negocios, intentar directamente con el token de la app
+  if (userBusinesses.length === 0) {
+    logEvent('info', 'No businesses found, trying app-level endpoints');
+    
+    try {
+      // Obtener información de la aplicación
+      const appResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/${config.appId}?fields=id,name&access_token=${token}`,
+        { method: 'GET' }
+      );
+
+      if (appResponse.ok) {
+        const appData = await appResponse.json();
+        logEvent('info', 'App data obtained', { appId: appData.id, appName: appData.name });
+      } else {
+        const errorText = await appResponse.text();
+        logEvent('warn', 'App data fetch failed', { 
+          status: appResponse.status, 
+          error: errorText 
+        });
+      }
+
+      // Para el flujo de Embedded Signup, las WABAs podrían estar disponibles directamente 
+      // a través de la Graph API usando un endpoint específico para aplicaciones
+      logEvent('info', 'Trying me/accounts endpoint for WABAs');
+      const embeddedWabasResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/me/accounts?type=whatsapp_business_account&access_token=${token}`,
+        { method: 'GET' }
+      );
+
+      if (embeddedWabasResponse.ok) {
+        const embeddedWabasData = await embeddedWabasResponse.json();
+        const embeddedWabas = embeddedWabasData.data || [];
+        allWabas.push(...embeddedWabas);
+        logEvent('info', 'Embedded WABAs found', { 
+          wabaCount: embeddedWabas.length,
+          wabas: embeddedWabas.map(w => ({ id: w.id, name: w.name }))
+        });
+      } else {
+        const errorText = await embeddedWabasResponse.text();
+        logEvent('warn', 'Embedded WABAs fetch failed', { 
+          status: embeddedWabasResponse.status, 
+          error: errorText 
+        });
+      }
+
+      // Note: me/whatsapp_business_accounts endpoint is deprecated
+      // This endpoint no longer exists in the current Graph API
+      logEvent('info', 'Skipping deprecated endpoint: me/whatsapp_business_accounts');
+
+    } catch (appError) {
+      logEvent('warn', 'App-based WABA fetch failed', { error: appError.message });
+    }
+  }
+
+  // Eliminar duplicados basados en ID
+  const uniqueWabas = allWabas.filter((waba, index, self) => 
+    index === self.findIndex(w => w.id === waba.id)
+  );
+
+  return uniqueWabas;
+}
+
+// Enhanced function with retry mechanism for WABA propagation delays
+async function fetchWhatsAppBusinessAccounts(token: string, config: ConfigurationVariables): Promise<WhatsAppBusinessAccount[]> {
+  logEvent('info', 'Fetching WhatsApp Business Accounts with retry mechanism');
+  
+  let attempts = 0;
+  const { maxAttempts, baseDelay, maxDelay, backoffMultiplier } = WABA_RETRY_CONFIG;
+  let lastError: Error | null = null;
+  
+  while (attempts < maxAttempts) {
+    attempts++;
+    
+    try {
+      logEvent('info', `WABA search attempt ${attempts}/${maxAttempts}`);
+      
+      // Perform the WABA search
+      const uniqueWabas = await performWABASearch(token, config);
+      
+      if (uniqueWabas.length > 0) {
+        logEvent('info', `WABAs found on attempt ${attempts}`, { 
+          count: uniqueWabas.length,
+          wabas: uniqueWabas.map(w => ({ id: w.id, name: w.name, status: w.account_review_status }))
+        });
+        return uniqueWabas;
+      }
+      
+      // No WABAs found, log attempt details
+      logEvent('info', `No WABAs found on attempt ${attempts}`, {
+        attemptsRemaining: maxAttempts - attempts
+      });
+      
+      // If this isn't the last attempt, wait before retrying
+      if (attempts < maxAttempts) {
+        const delay = Math.min(baseDelay * Math.pow(backoffMultiplier, attempts - 1), maxDelay);
+        logEvent('info', `Waiting ${delay}ms before next attempt`, { 
+          attempt: attempts,
+          nextAttempt: attempts + 1,
+          delay 
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+    } catch (error) {
+      lastError = error;
+      logEvent('error', `WABA search attempt ${attempts} failed`, { 
+        error: error.message,
+        attemptsRemaining: maxAttempts - attempts
+      });
+      
+      // If this is the last attempt, we'll throw the error below
+      if (attempts === maxAttempts) {
+        break;
+      }
+      
+      // Wait before retry with exponential backoff
+      const delay = Math.min(baseDelay * Math.pow(backoffMultiplier, attempts - 1), maxDelay);
+      logEvent('info', `Waiting ${delay}ms before retry after error`, { 
+        attempt: attempts,
+        delay 
+      });
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  // If we get here, all attempts failed
+  logEvent('info', 'WABA search summary', {
+    totalAttempts: attempts,
+    searchApproaches: {
+      userBusinessesChecked: true,
+      appLevelSearchChecked: true,
+      retryMechanismUsed: true
+    }
+  });
+
+  // Enfoque 4: Si estamos en desarrollo y no encontramos WABAs, crear una mock
+  if (config.environment === 'development') {
+    logEvent('info', 'Development mode: creating mock WABA after all retries failed');
+    return [{
+      id: 'dev_waba_' + Date.now(),
+      name: 'Development WABA',
+      account_review_status: 'APPROVED',
+      business_verification_status: 'VERIFIED'
+    }];
+  }
+
+  // Información detallada del error para debugging
+  const errorDetails = {
+    totalAttempts: attempts,
+    lastError: lastError?.message,
+    environment: config.environment,
+    possibleCauses: [
+      'Meta servers are still propagating the newly created WABA (this is common)',
+      'User closed the Embedded Signup dialog before completing all steps',
+      'WhatsApp Business Account creation failed in Meta\'s system',
+      'Network issues preventing WABA data retrieval',
+      'Token permissions insufficient for WABA access'
+    ],
+    suggestedActions: [
+      'Wait a few minutes and try the connection process again',
+      'Ensure the Embedded Signup process was completed entirely',
+      'Check Meta Business Manager to verify WABA was created',
+      'Verify app permissions in Meta for Developers console'
+    ]
+  };
+
+  logEvent('error', 'No WABAs found after all retry attempts', errorDetails);
+  
+  const errorMessage = `No WhatsApp Business Accounts found after ${attempts} attempts.
+
+This usually happens because:
+• The Embedded Signup process wasn't completed fully
+• User doesn't have a Meta Business Manager account
+• The WhatsApp Business Account creation failed
+
+NEXT STEPS:
+1️⃣ Complete the WhatsApp Embedded Signup process in Meta Business Manager
+2️⃣ Ensure you have a Business Manager account at https://business.facebook.com
+3️⃣ Create a WhatsApp Business Account through the Embedded Signup flow
+4️⃣ Wait 2-5 minutes after completing setup and try again
+
+IMPORTANT: You must complete the full Embedded Signup process in Meta's interface before this integration can work.`;
+
+  throw new Error(errorMessage);
 }
 
 async function fetchWABADetails(wabaId: string, token: string, config: ConfigurationVariables): Promise<WhatsAppBusinessAccount> {
@@ -253,7 +577,7 @@ async function fetchWABADetails(wabaId: string, token: string, config: Configura
   
   const response = await fetchWithRetry(
     `https://graph.facebook.com/${config.graphVersion}/${wabaId}?` +
-        `fields=name,account_review_status,business_verification_status&` +
+    `fields=name,account_review_status,business_verification_status&` +
     `access_token=${token}`
   );
 
@@ -284,7 +608,7 @@ async function fetchPhoneNumbers(wabaId: string, token: string, config: Configur
   const phoneNumbersData = await response.json();
   const phoneNumbers = phoneNumbersData.data || [];
 
-      if (phoneNumbers.length === 0) {
+  if (phoneNumbers.length === 0) {
     logEvent('error', 'No phone numbers found', { wabaId });
     throw new Error('No phone numbers found for this WhatsApp Business Account');
   }
@@ -362,7 +686,7 @@ async function configureWebhooks(wabaId: string, token: string, config: Configur
   }
 }
 
-async function saveToDatabase(userId: string, channelConfig: unknown, config: ConfigurationVariables): Promise<void> {
+async function saveToDatabase(userId: string, channelConfig: Record<string, unknown>, config: ConfigurationVariables): Promise<void> {
   logEvent('info', 'Saving configuration to database', { userId });
   
   const supabase = createClient(config.supabaseUrl, config.supabaseServiceKey);
@@ -423,10 +747,10 @@ async function saveToDatabase(userId: string, channelConfig: unknown, config: Co
   }
 }
 
-function createSuccessResponse(data: unknown, isCallback: boolean = false, config: ConfigurationVariables) {
+function createSuccessResponse(data: Record<string, unknown>, isCallback: boolean = false, config: ConfigurationVariables) {
   if (isCallback) {
     // OAuth callback - redirect to frontend
-    const redirectUrl = `${config.frontendUrl}/dashboard?success=true&channel=whatsapp&business_name=${encodeURIComponent(data.businessName)}&phone_number=${encodeURIComponent(data.phoneNumber)}`;
+    const redirectUrl = `${config.frontendUrl}/dashboard?success=true&channel=whatsapp&business_name=${encodeURIComponent(String(data.businessName || ''))}&phone_number=${encodeURIComponent(String(data.phoneNumber || ''))}`;
     
     return new Response(null, {
       status: 302,
@@ -451,7 +775,7 @@ function createSuccessResponse(data: unknown, isCallback: boolean = false, confi
   );
 }
 
-function createErrorResponse(error: string, status: number = 400, debug?: unknown) {
+function createErrorResponse(error: string, status: number = 400, debug?: Record<string, unknown>) {
   const response = {
     success: false,
     error,
@@ -459,7 +783,7 @@ function createErrorResponse(error: string, status: number = 400, debug?: unknow
     ...(debug && Deno.env.get('ENVIRONMENT') !== 'production' ? { debug } : {})
   };
 
-  return new Response(
+      return new Response(
     JSON.stringify(response),
     { 
       status, 
@@ -473,6 +797,14 @@ serve(async (req) => {
   const startTime = Date.now();
   const clientIP = getClientIP(req);
   
+  // Validate configuration first, outside try-catch
+  let config: ConfigurationVariables;
+  try {
+    config = validateConfiguration();
+  } catch (configError) {
+    return createErrorResponse('Configuration error: ' + configError.message, 500);
+  }
+  
   try {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -484,9 +816,6 @@ serve(async (req) => {
       logEvent('warn', 'Rate limit exceeded', { clientIP });
       return createErrorResponse('Rate limit exceeded. Try again later.', 429);
     }
-
-    // Validate configuration
-    const config = validateConfiguration();
     
     logEvent('info', 'Request received', { 
       method: req.method, 
@@ -501,7 +830,8 @@ serve(async (req) => {
           status: 'healthy',
           service: 'whatsapp-embedded-signup',
           timestamp: new Date().toISOString(),
-          environment: config.environment
+          environment: config.environment,
+          retryConfig: WABA_RETRY_CONFIG
         }),
         { 
           status: 200, 
@@ -551,7 +881,7 @@ serve(async (req) => {
     // Step 1: Exchange code for token
     const businessIntegrationToken = await exchangeCodeForToken(code, config);
 
-    // Step 2: Get WhatsApp Business Accounts
+    // Step 2: Get WhatsApp Business Accounts (with retry mechanism)
     const wabas = await fetchWhatsAppBusinessAccounts(businessIntegrationToken, config);
     const selectedWaba = wabas[0]; // Use first WABA
 
@@ -622,7 +952,7 @@ serve(async (req) => {
     });
 
     return createErrorResponse(
-      config?.environment === 'development' ? error.message : 'Internal server error',
+      error.message.includes('fetch') || error.message.includes('timeout') ? 'Service temporarily unavailable' : error.message,
       500,
       config?.environment === 'development' ? { stack: error.stack } : undefined
     );

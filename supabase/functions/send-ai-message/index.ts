@@ -46,6 +46,22 @@ interface Message {
   has_new_messages?: boolean;
 }
 
+interface DaySchedule {
+  enabled: boolean;
+  start: string;
+  end: string;
+}
+
+interface OperatingHours {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
 interface AIConfig {
   goals?: string;
   restrictions?: string;
@@ -54,11 +70,16 @@ interface AIConfig {
   knowledge_base?: string;
   faq?: string;
   is_active?: boolean;
+  // Nuevas funcionalidades
+  advisor_enabled?: boolean;
+  advisor_message?: string;
+  always_active?: boolean;
+  operating_hours?: OperatingHours;
 }
 
 // Simplified function to wait and get context with new message check
 async function waitAndGetContextWithNewMessageCheck(
-  supabase: SupabaseClient, 
+  supabase: { rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }, 
   conversationId: string, 
   delaySeconds: number = 15,
   limit: number = 150
@@ -81,22 +102,22 @@ async function waitAndGetContextWithNewMessageCheck(
     return { context: [], hasNewMessages: false };
   }
   
-  if (!contextData || contextData.length === 0) {
+  if (!contextData || !Array.isArray(contextData) || contextData.length === 0) {
     return { context: [], hasNewMessages: false };
   }
   
   // verify if there are new messages
-  const hasNewMessages = contextData[0]?.has_new_messages || false;
+  const hasNewMessages = (contextData[0] as Record<string, unknown>)?.has_new_messages || false;
   
   // convert to expected format and sort chronologically (oldest first)
-  const context: Message[] = contextData
+  const context: Message[] = (contextData as Record<string, unknown>[])
     .map(row => ({
-      id: row.id,
-      content: row.content,
-      sender_type: row.sender_type,
-      sender_name: row.sender_name,
-      created_at: row.created_at,
-      metadata: row.metadata
+      id: row.id as string,
+      content: row.content as string,
+      sender_type: row.sender_type as 'user' | 'ia',
+      sender_name: row.sender_name as string,
+      created_at: row.created_at as string,
+      metadata: row.metadata as Record<string, unknown>
     }))
     .reverse();
   
@@ -182,12 +203,52 @@ serve(async (req) => {
 
     // check if AI should respond
     if (!shouldAIRespond(message, aiConfig)) {
-      console.log('🚫 No se debe responder a esta mensaje');
+      console.log('🚫 No se debe responder a este mensaje');
+      
+      // Check if it's because of schedule
+      const isScheduleIssue = aiConfig && !aiConfig.always_active && aiConfig.operating_hours;
+      
+      if (isScheduleIssue) {
+        // Send out-of-hours message
+        const outOfHoursMessage = 'Disculpe, nuestro agente virtual está fuera de horario. Por favor, intente nuevamente durante nuestro horario de atención o contacte directamente con nuestro equipo.';
+        
+        // Send message to Facebook/Instagram API
+        const channelType = conversation.channel === 'instagram' ? 'instagram' : 'facebook';
+        const { data: channels } = await supabase
+          .from('communication_channels')
+          .select('*')
+          .eq('user_id', user_id)
+          .eq('channel_type', channelType)
+          .eq('is_connected', true)
+          .single();
+
+        if (channels) {
+          const accessToken = channelType === 'instagram' 
+            ? channels.channel_config.access_token 
+            : channels.channel_config.page_access_token;
+          
+          const apiUrl = channelType === 'instagram' 
+            ? `https://graph.instagram.com/v23.0/me/messages`
+            : `https://graph.facebook.com/v23.0/me/messages`;
+
+          await fetch(`${apiUrl}?access_token=${accessToken}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: { id: conversation.channel_thread_id },
+              message: { text: outOfHoursMessage },
+              messaging_type: 'RESPONSE'
+            })
+          });
+        }
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'AI determinado no responder a este mensaje',
-          should_respond: false 
+          should_respond: false,
+          reason: isScheduleIssue ? 'out_of_hours' : 'other'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

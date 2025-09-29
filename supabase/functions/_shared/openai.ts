@@ -2,6 +2,22 @@
 // @ts-nocheck
 // CRM AI Engine - Clean and efficient OpenAI integration
 
+interface DaySchedule {
+  enabled: boolean;
+  start: string;
+  end: string;
+}
+
+interface OperatingHours {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
 interface AIConfig {
   goals?: string;
   restrictions?: string;
@@ -10,6 +26,11 @@ interface AIConfig {
   knowledge_base?: string;
   faq?: string;
   is_active?: boolean;
+  // Nuevas funcionalidades
+  advisor_enabled?: boolean;
+  advisor_message?: string;
+  always_active?: boolean;
+  operating_hours?: OperatingHours;
 }
 
 interface AIResponse {
@@ -76,6 +97,52 @@ function checkCustomFAQ(message: string, faq: string): string | null {
 }
 
 /**
+ * Verifica si el agente debe responder según los horarios configurados
+ * @param aiConfig - AI configuration from database
+ * @returns boolean - Whether AI should respond based on schedule
+ */
+export function isAgentActiveNow(aiConfig: AIConfig): boolean {
+  try {
+    // Si no hay configuración, permitir respuesta
+    if (!aiConfig) {
+      return true;
+    }
+
+    // Si está configurado para estar siempre activo
+    if (aiConfig.always_active === true) {
+      return true;
+    }
+
+    // Si no tiene horarios configurados, permitir respuesta
+    if (!aiConfig.operating_hours) {
+      return true;
+    }
+
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const currentTime = now.toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    // Obtener configuración del día actual
+    const dayConfig = aiConfig.operating_hours[currentDay];
+    
+    // Si el día no está habilitado
+    if (!dayConfig || !dayConfig.enabled) {
+      return false;
+    }
+
+    // Verificar si estamos dentro del horario
+    return currentTime >= dayConfig.start && currentTime <= dayConfig.end;
+  } catch (error) {
+    console.error('Error checking agent schedule:', error);
+    return true; // En caso de error, permitir respuesta
+  }
+}
+
+/**
  * Determines if the AI should respond to a given message
  * @param message - The incoming message text
  * @param aiConfig - AI configuration from database
@@ -88,6 +155,11 @@ export function shouldAIRespond(message: string, aiConfig: AIConfig): boolean {
     }
 
     if (message.length < 2) {
+      return false;
+    }
+
+    // Verificar horarios de funcionamiento
+    if (!isAgentActiveNow(aiConfig)) {
       return false;
     }
 
@@ -147,6 +219,11 @@ INFORMACIÓN DE LA EMPRESA:`;
     systemPrompt += `\n\nRESTRICCIONES Y PAUTAS:\n${aiConfig.restrictions}`;
   }
 
+  // Add advisor configuration
+  if (aiConfig?.advisor_enabled && aiConfig?.advisor_message?.trim()) {
+    systemPrompt += `\n\nCONFIGURACIÓN DE ASESOR HUMANO:\nCuando no puedas resolver una consulta o el cliente solicite hablar con un humano, responde exactamente con este mensaje:\n"${aiConfig.advisor_message}"`;
+  }
+
   // Add conversation context
   if (conversationHistory.length > 0) {
     systemPrompt += `\n\nCONTEXTO DE CONVERSACIÓN (${conversationHistory.length} mensajes previos):`;
@@ -169,7 +246,9 @@ INFORMACIÓN DE LA EMPRESA:`;
 8. Usa la fecha/hora actual cuando sea relevante
 9. Mantén tono profesional y natural
 10. NO inventes información que no esté en tu base de conocimiento
-11. NUNCA contradices información que ya proporcionaste en mensajes anteriores de esta conversación`;
+11. NUNCA contradices información que ya proporcionaste en mensajes anteriores de esta conversación
+12. ASESOR HUMANO: Si el cliente solicita hablar con un humano, o si no puedes resolver su consulta, usa EXACTAMENTE el mensaje de asesor configurado
+13. Detecta señales de frustración del cliente y ofrece derivación al asesor cuando sea apropiado`;
 
   return systemPrompt;
 }
@@ -220,30 +299,16 @@ export async function generateAIResponse(
       }
     }
 
-    // Get OpenAI API key from environment variables
+    // Get OpenAI API key (hardcoded as requested)
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    
     if (!openaiApiKey) {
-      console.error('❌ OpenAI API key not configured in environment variables');
-      console.error('🔧 Make sure OPENAI_API_KEY is set in your .env file');
+      console.error('OpenAI API key not configured');
       return {
         success: true,
         response: createFallbackResponse(message),
         confidence_score: 0.3
       };
     }
-
-    // Validate API key format (OpenAI keys start with 'sk-')
-    if (!openaiApiKey.startsWith('sk-')) {
-      console.error('❌ Invalid OpenAI API key format. API keys should start with "sk-"');
-      return {
-        success: true,
-        response: createFallbackResponse(message),
-        confidence_score: 0.3
-      };
-    }
-
-    console.log('✅ OpenAI API key loaded from environment variables');
 
     // Build prompts
     const systemPrompt = buildSystemPrompt(aiConfig, conversationHistory);
@@ -251,11 +316,7 @@ export async function generateAIResponse(
 
 Responde a este mensaje siguiendo las instrucciones del system prompt y manteniendo coherencia con el contexto de la conversación.`;
 
-    const model = 'gpt-4o-mini';
     console.log('🔗 Calling OpenAI API with context-aware prompts');
-    console.log(`🤖 Using model: ${model}`);
-    console.log(`📝 System prompt length: ${systemPrompt.length} characters`);
-    console.log(`💬 User prompt length: ${userPrompt.length} characters`);
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -265,12 +326,11 @@ Responde a este mensaje siguiendo las instrucciones del system prompt y mantenie
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model,
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 1000,
         temperature: 0.7,
         presence_penalty: 0.6,
         frequency_penalty: 0.3

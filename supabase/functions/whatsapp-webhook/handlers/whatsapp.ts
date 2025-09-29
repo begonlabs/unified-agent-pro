@@ -347,15 +347,17 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
 
         console.log('✅ AI response for WhatsApp saved successfully');
         
-        // Send AI message via WhatsApp Business API
+        // Send AI message via WhatsApp Cloud API
         try {
           const accessToken = channel.channel_config.access_token;
           const businessPhoneNumberId = phoneNumberId;
+          const apiType = channel.channel_config.api_type || 'cloud'; // Default to Cloud API
           
-          console.log('📤 Sending AI message via WhatsApp to:', senderPhoneNumber);
+          console.log('📤 Sending AI message via WhatsApp Cloud API to:', senderPhoneNumber);
           
+          // Use Cloud API endpoint (v18.0+)
           const whatsappApiResponse = await fetch(
-            `https://graph.facebook.com/v23.0/${businessPhoneNumberId}/messages`,
+            `https://graph.facebook.com/v18.0/${businessPhoneNumberId}/messages`,
             {
               method: 'POST',
               headers: {
