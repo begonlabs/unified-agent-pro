@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import logoWhite from '@/assets/logo_white.png';
+import { Bell } from 'lucide-react';
 import { NotificationSettingsProps } from '../types';
 
 export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
@@ -20,9 +20,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
-          </div>
+          <Bell className="h-6 w-6 text-[#3a0caa]" />
           <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">
             Notificaciones
           </span>

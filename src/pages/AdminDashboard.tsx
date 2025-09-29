@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import { ResponsiveAdminSidebar } from '@/components/admin/sidebar';
-import ClientManagement from '@/components/admin/ClientManagement';
-import GeneralStats from '@/components/admin/GeneralStats';
-import ClientStats from '@/components/admin/ClientStats';
-import AdminSettings from '@/components/admin/AdminSettings';
-import SupportMessages from '@/components/admin/SupportMessages';
+import { 
+  ResponsiveAdminSidebar,
+  ClientManagement,
+  GeneralStats,
+  ClientStats,
+  AdminSettings,
+  SupportMessages
+} from '@/components/admin';
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);

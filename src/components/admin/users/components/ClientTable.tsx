@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import ResponsiveTable from '@/components/ui/responsive-table';
-import logoWhite from '@/assets/logo_white.png';
 import { 
   Edit, 
   Trash2, 
@@ -11,7 +10,8 @@ import {
   Calendar,
   Mail,
   Phone,
-  Search
+  Search,
+  Building2
 } from 'lucide-react';
 import { ClientTableProps, Client } from '../types';
 import { ClientManagementService } from '../services/clientManagementService';
@@ -62,9 +62,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
-          </div>
+          <Building2 className="h-6 w-6 text-[#3a0caa]" />
           <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Gestión de Clientes</span>
         </CardTitle>
         <CardDescription>

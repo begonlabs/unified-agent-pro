@@ -1,8 +1,8 @@
 import React from 'react';
-import { MessageSquare, UserPlus, MessageCircle, TrendingUp } from 'lucide-react';
-import logoWhite from '@/assets/logo_white.png';
+import { MessageSquare, UserPlus, MessageCircle, TrendingUp, Activity } from 'lucide-react';
 import { PlatformActivitySectionProps } from '../types';
 import { StatCard } from './StatCard';
+import logoWhite from '@/assets/logo_white.png';
 
 export const PlatformActivitySection: React.FC<PlatformActivitySectionProps> = ({ stats }) => {
   return (

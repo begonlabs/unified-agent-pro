@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import logoWhite from '@/assets/logo_white.png';
+import { Wrench } from 'lucide-react';
 import { MaintenanceSettingsProps } from '../types';
 
 export const MaintenanceSettings: React.FC<MaintenanceSettingsProps> = ({
@@ -21,9 +21,7 @@ export const MaintenanceSettings: React.FC<MaintenanceSettingsProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
-          </div>
+          <Wrench className="h-6 w-6 text-[#3a0caa]" />
           <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">
             Mantenimiento
           </span>

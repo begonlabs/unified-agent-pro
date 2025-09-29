@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import logoWhite from '@/assets/logo_white.png';
-import { Eye } from 'lucide-react';
+import { Eye, BarChart3 } from 'lucide-react';
 import { ClientStatsTableProps } from '../types';
 import { ClientStatsService } from '../services/clientStatsService';
 
@@ -30,8 +29,8 @@ export const ClientStatsTable: React.FC<ClientStatsTableProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+          <div className="p-1.5 rounded-lg bg-gradient-to-r from-[#3a0caa] to-[#710db2]">
+            <BarChart3 className="h-4 w-4 text-white" />
           </div>
           <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Estadísticas por Cliente</span>
         </CardTitle>

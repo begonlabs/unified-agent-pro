@@ -1,6 +1,5 @@
 import React from 'react';
-import { Users } from 'lucide-react';
-import logoWhite from '@/assets/logo_white.png';
+import { Users, UserCheck } from 'lucide-react';
 import { ClientStatsSectionProps } from '../types';
 import { GeneralStatsService } from '../services/generalStatsService';
 import { StatCard } from './StatCard';
@@ -9,9 +8,7 @@ export const ClientStatsSection: React.FC<ClientStatsSectionProps> = ({ stats })
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <div className="relative">
-          <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
-        </div>
+        <UserCheck className="h-6 w-6 text-[#3a0caa]" />
         <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Resumen de Clientes</span>
       </h3>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

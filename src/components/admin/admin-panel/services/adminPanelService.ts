@@ -10,12 +10,12 @@ import {
 import { AdminTab, TabConfiguration } from '../types';
 
 // Import components dynamically to avoid circular dependencies
-const ClientManagement = React.lazy(() => import('../../ClientManagement'));
-const GeneralStats = React.lazy(() => import('../../GeneralStats'));
-const ClientStats = React.lazy(() => import('../../ClientStats'));
+const ClientManagement = React.lazy(() => import('../../users/ClientManagement'));
+const GeneralStats = React.lazy(() => import('../../general-stats/GeneralStats'));
+const ClientStats = React.lazy(() => import('../../client-stats/ClientStats'));
 const AdminSettings = React.lazy(() => import('../../settings/AdminSettings'));
-const SupportMessages = React.lazy(() => import('../../SupportMessages'));
-const SupportStats = React.lazy(() => import('../../SupportStats'));
+const SupportMessages = React.lazy(() => import('../../support/SupportMessages'));
+const SupportStats = React.lazy(() => import('../../support/SupportStats'));
 
 export class AdminPanelService {
   /**

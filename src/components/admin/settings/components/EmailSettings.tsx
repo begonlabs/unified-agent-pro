@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import logoWhite from '@/assets/logo_white.png';
+import { Mail } from 'lucide-react';
 import { EmailSettingsProps } from '../types';
 
 export const EmailSettings: React.FC<EmailSettingsProps> = ({
@@ -20,9 +20,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
-          </div>
+          <Mail className="h-6 w-6 text-[#3a0caa]" />
           <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">
             Configuración de Email
           </span>
