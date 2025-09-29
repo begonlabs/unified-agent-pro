@@ -12,7 +12,28 @@ export const useAIConfig = () => {
     response_time: 30,
     knowledge_base: '',
     faq: '',
-    is_active: true
+    is_active: true,
+    // Nuevas funcionalidades
+    advisor_enabled: false,
+    advisor_message: 'Por favor, espere un momento mientras conecto con un agente humano para asistirle mejor.',
+    always_active: true,
+    operating_hours: {
+      monday: { enabled: true, start: '09:00', end: '18:00' },
+      tuesday: { enabled: true, start: '09:00', end: '18:00' },
+      wednesday: { enabled: true, start: '09:00', end: '18:00' },
+      thursday: { enabled: true, start: '09:00', end: '18:00' },
+      friday: { enabled: true, start: '09:00', end: '18:00' },
+      saturday: { enabled: true, start: '09:00', end: '18:00' },
+      sunday: { enabled: true, start: '09:00', end: '18:00' }
+    },
+    training_progress: {
+      goals: false,
+      restrictions: false,
+      knowledge_base: false,
+      faq: false,
+      advisor: false,
+      schedule: false
+    }
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -102,7 +123,28 @@ export const useAIConfig = () => {
       response_time: 30,
       knowledge_base: '',
       faq: '',
-      is_active: true
+      is_active: true,
+      // Nuevas funcionalidades
+      advisor_enabled: false,
+      advisor_message: 'Por favor, espere un momento mientras conecto con un agente humano para asistirle mejor.',
+      always_active: true,
+      operating_hours: {
+        monday: { enabled: true, start: '09:00', end: '18:00' },
+        tuesday: { enabled: true, start: '09:00', end: '18:00' },
+        wednesday: { enabled: true, start: '09:00', end: '18:00' },
+        thursday: { enabled: true, start: '09:00', end: '18:00' },
+        friday: { enabled: true, start: '09:00', end: '18:00' },
+        saturday: { enabled: true, start: '09:00', end: '18:00' },
+        sunday: { enabled: true, start: '09:00', end: '18:00' }
+      },
+      training_progress: {
+        goals: false,
+        restrictions: false,
+        knowledge_base: false,
+        faq: false,
+        advisor: false,
+        schedule: false
+      }
     });
   };
 

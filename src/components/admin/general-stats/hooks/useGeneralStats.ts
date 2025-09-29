@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { GeneralStatsService } from '../services/generalStatsService';
 import { UseGeneralStatsReturn, GeneralStatsData } from '../types';
@@ -33,6 +33,11 @@ export const useGeneralStats = (): UseGeneralStatsReturn => {
       setLoading(false);
     }
   }, [toast]);
+
+  // Load data automatically when component mounts
+  useEffect(() => {
+    fetchGeneralStats();
+  }, [fetchGeneralStats]);
 
   return {
     stats,

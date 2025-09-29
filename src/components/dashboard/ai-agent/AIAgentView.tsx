@@ -10,6 +10,8 @@ import {
   RestrictionsTab,
   KnowledgeTab,
   FAQTab,
+  AdvisorTab,
+  ScheduleTab,
   SettingsTab,
   AITabValue,
   ExampleScenario
@@ -73,6 +75,26 @@ const AIAgentView: React.FC = () => {
           <FAQTab
             faq={config.faq}
             onFAQChange={(faq) => updateConfig({ faq })}
+          />
+        );
+      
+      case 'advisor':
+        return (
+          <AdvisorTab
+            advisorEnabled={config.advisor_enabled}
+            advisorMessage={config.advisor_message}
+            onAdvisorEnabledChange={(advisor_enabled) => updateConfig({ advisor_enabled })}
+            onAdvisorMessageChange={(advisor_message) => updateConfig({ advisor_message })}
+          />
+        );
+      
+      case 'schedule':
+        return (
+          <ScheduleTab
+            alwaysActive={config.always_active}
+            operatingHours={config.operating_hours}
+            onAlwaysActiveChange={(always_active) => updateConfig({ always_active })}
+            onOperatingHoursChange={(operating_hours) => updateConfig({ operating_hours })}
           />
         );
       

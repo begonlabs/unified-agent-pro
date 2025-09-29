@@ -17,6 +17,8 @@ export { GoalsTab } from './components/tabs/GoalsTab';
 export { RestrictionsTab } from './components/tabs/RestrictionsTab';
 export { KnowledgeTab } from './components/tabs/KnowledgeTab';
 export { FAQTab } from './components/tabs/FAQTab';
+export { AdvisorTab } from './components/tabs/AdvisorTab';
+export { ScheduleTab } from './components/tabs/ScheduleTab';
 export { SettingsTab } from './components/tabs/SettingsTab';
 
 // Componentes compartidos

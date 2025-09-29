@@ -1,7 +1,7 @@
 import React from 'react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Target, Shield, Brain, MessageSquare, Clock } from 'lucide-react';
+import { Target, Shield, Brain, MessageSquare, Clock, Users, Calendar } from 'lucide-react';
 import { AITabValue } from '../types';
 
 interface AIAgentTabsProps {
@@ -33,6 +33,18 @@ const tabs = [
     icon: MessageSquare,
     label: 'FAQs',
     tooltip: 'FAQs'
+  },
+  {
+    value: 'advisor' as AITabValue,
+    icon: Users,
+    label: 'Asesor',
+    tooltip: 'Asesor Humano'
+  },
+  {
+    value: 'schedule' as AITabValue,
+    icon: Calendar,
+    label: 'Horarios',
+    tooltip: 'Horarios'
   },
   {
     value: 'settings' as AITabValue,

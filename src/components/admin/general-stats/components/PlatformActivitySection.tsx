@@ -2,15 +2,12 @@ import React from 'react';
 import { MessageSquare, UserPlus, MessageCircle, TrendingUp, Activity } from 'lucide-react';
 import { PlatformActivitySectionProps } from '../types';
 import { StatCard } from './StatCard';
-import logoWhite from '@/assets/logo_white.png';
 
 export const PlatformActivitySection: React.FC<PlatformActivitySectionProps> = ({ stats }) => {
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <div className="relative">
-          <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
-        </div>
+        <Activity className="h-6 w-6 text-[#3a0caa]" />
         <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Actividad de la Plataforma</span>
       </h3>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

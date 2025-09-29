@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { AIConfig, AIConfigFormData } from '../types';
+import { AIConfig, AIConfigFormData, OperatingHours, TrainingProgress } from '../types';
 
 export class AIConfigService {
   /**
@@ -109,7 +109,28 @@ export class AIConfigService {
       response_time: (data.response_time as number) || 30,
       knowledge_base: (data.knowledge_base as string) || '',
       faq: (data.faq as string) || '',
-      is_active: (data.is_active as boolean) ?? true
+      is_active: (data.is_active as boolean) ?? true,
+      // Nuevas funcionalidades
+      advisor_enabled: (data.advisor_enabled as boolean) ?? false,
+      advisor_message: (data.advisor_message as string) || 'Por favor, espere un momento mientras conecto con un agente humano para asistirle mejor.',
+      always_active: (data.always_active as boolean) ?? true,
+      operating_hours: (data.operating_hours as OperatingHours) || {
+        monday: { enabled: true, start: '09:00', end: '18:00' },
+        tuesday: { enabled: true, start: '09:00', end: '18:00' },
+        wednesday: { enabled: true, start: '09:00', end: '18:00' },
+        thursday: { enabled: true, start: '09:00', end: '18:00' },
+        friday: { enabled: true, start: '09:00', end: '18:00' },
+        saturday: { enabled: true, start: '09:00', end: '18:00' },
+        sunday: { enabled: true, start: '09:00', end: '18:00' }
+      },
+      training_progress: (data.training_progress as TrainingProgress) || {
+        goals: false,
+        restrictions: false,
+        knowledge_base: false,
+        faq: false,
+        advisor: false,
+        schedule: false
+      }
     };
   }
 
@@ -120,7 +141,9 @@ export class AIConfigService {
     return {
       goals: !!config.goals.trim(),
       restrictions: !!config.restrictions.trim(),
-      knowledge_base: !!config.knowledge_base.trim()
+      knowledge_base: !!config.knowledge_base.trim(),
+      advisor: config.advisor_enabled && !!config.advisor_message.trim(),
+      schedule: config.always_active || (config.operating_hours && Object.keys(config.operating_hours).length > 0)
     };
   }
 }

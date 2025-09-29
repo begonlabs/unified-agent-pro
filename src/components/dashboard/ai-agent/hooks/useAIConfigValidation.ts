@@ -37,7 +37,9 @@ export const useAIConfigValidation = (config: AIConfigFormData) => {
     const status: AIConfigStatus = {
       goals: !!config.goals.trim(),
       restrictions: !!config.restrictions.trim(),
-      knowledge_base: !!config.knowledge_base.trim()
+      knowledge_base: !!config.knowledge_base.trim(),
+      advisor: config.advisor_enabled && !!config.advisor_message.trim(),
+      schedule: config.always_active || (config.operating_hours && Object.keys(config.operating_hours).length > 0)
     };
 
     const isComplete = status.goals && status.restrictions;

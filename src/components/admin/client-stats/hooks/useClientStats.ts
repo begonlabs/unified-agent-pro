@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ClientStatsService } from '../services/clientStatsService';
 import { UseClientStatsReturn, ClientWithStats } from '../types';
@@ -33,6 +33,11 @@ export const useClientStats = (): UseClientStatsReturn => {
       setLoading(false);
     }
   }, [toast]);
+
+  // Load data automatically when component mounts
+  useEffect(() => {
+    fetchClientStats();
+  }, [fetchClientStats]);
 
   return {
     clients,
