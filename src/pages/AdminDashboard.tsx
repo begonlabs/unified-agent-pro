@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import ResponsiveAdminSidebar from '@/components/admin/ResponsiveAdminSidebar';
+import { ResponsiveAdminSidebar } from '@/components/admin/sidebar';
 import ClientManagement from '@/components/admin/ClientManagement';
 import GeneralStats from '@/components/admin/GeneralStats';
 import ClientStats from '@/components/admin/ClientStats';

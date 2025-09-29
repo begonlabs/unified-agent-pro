@@ -24,6 +24,7 @@ export interface AdminSidebarNavigationProps {
 // Admin sidebar actions props
 export interface AdminSidebarActionsProps {
   onSignOut: () => void;
+  onBackToDashboard?: () => void;
 }
 
 // Hook return types

@@ -107,11 +107,11 @@ const AdminAuth = () => {
           window.location.href = '/admin';
         }, 500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Admin sign in error:', error);
       toast({
         title: "Error de acceso",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
     } finally {

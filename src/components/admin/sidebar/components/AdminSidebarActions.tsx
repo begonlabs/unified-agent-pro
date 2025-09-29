@@ -5,17 +5,26 @@ import { AdminSidebarActionsProps } from '../types';
 import { AdminSidebarService } from '../services/adminSidebarService';
 
 export const AdminSidebarActions: React.FC<AdminSidebarActionsProps> = ({
-  onSignOut
+  onSignOut,
+  onBackToDashboard
 }) => {
   const buttonClasses = AdminSidebarService.getButtonClasses();
   const fullButtonClasses = `${buttonClasses.base} ${buttonClasses.hover} ${buttonClasses.border}`;
+
+  const handleBackToDashboard = () => {
+    if (onBackToDashboard) {
+      onBackToDashboard();
+    } else {
+      window.location.href = '/dashboard';
+    }
+  };
 
   return (
     <div className="p-4 border-t border-gray-200 space-y-2">
       <Button
         variant="outline"
         className={`${fullButtonClasses} justify-start gap-3`}
-        onClick={() => window.location.href = '/dashboard'}
+        onClick={handleBackToDashboard}
       >
         <ArrowLeft className="h-5 w-5" />
         Volver al Dashboard

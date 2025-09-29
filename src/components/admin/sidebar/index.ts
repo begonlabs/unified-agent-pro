@@ -1,5 +1,6 @@
 // Admin Sidebar Module
 export { default as AdminSidebar } from './AdminSidebar';
+export { default as ResponsiveAdminSidebar } from './ResponsiveAdminSidebar';
 
 // Types
 export type {
