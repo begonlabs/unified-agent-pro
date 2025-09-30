@@ -31,7 +31,9 @@ export default defineConfig(({ mode }) => ({
           return 'assets/[name]-[hash][extname]';
         }
       }
-    }
+    },
+    // Asegurar que los archivos de public se copien correctamente
+    copyPublicDir: true
   },
   // Configuración para copiar archivos estáticos
   publicDir: 'public',

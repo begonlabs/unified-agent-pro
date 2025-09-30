@@ -58,8 +58,18 @@ COPY . .
 # Construir la aplicación
 RUN pnpm build
 
-# Verificar que el favicon se haya copiado
-RUN ls -la /app/dist/ | grep favicon || echo "Favicon not found in dist"
+# Verificar que el favicon se haya copiado y mostrar información
+RUN echo "=== Verificando archivos en dist ===" && \
+    ls -la /app/dist/ && \
+    echo "=== Verificando favicon específicamente ===" && \
+    if [ -f /app/dist/favicon.ico ]; then \
+      echo "✅ Favicon encontrado en dist/favicon.ico"; \
+      ls -la /app/dist/favicon.ico; \
+    else \
+      echo "❌ Favicon NO encontrado en dist"; \
+      echo "Archivos en public:"; \
+      ls -la /app/public/; \
+    fi
 
 # Etapa de producción con Nginx
 FROM nginx:alpine AS production
@@ -73,12 +83,22 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copiar archivos construidos desde la etapa builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Asegurar que el favicon esté en la raíz
-RUN if [ -f /usr/share/nginx/html/favicon.ico ]; then \
-      echo "Favicon found in dist"; \
+# Verificar y asegurar que el favicon esté en la raíz
+RUN echo "=== Verificando favicon en producción ===" && \
+    ls -la /usr/share/nginx/html/ | grep favicon || echo "No favicon found" && \
+    if [ -f /usr/share/nginx/html/favicon.ico ]; then \
+      echo "✅ Favicon encontrado en producción"; \
+      ls -la /usr/share/nginx/html/favicon.ico; \
     else \
-      echo "Favicon not found, creating placeholder"; \
-      echo "Favicon missing from build" > /usr/share/nginx/html/favicon.ico; \
+      echo "❌ Favicon NO encontrado en producción"; \
+      echo "Creando favicon desde public si existe..."; \
+      if [ -f /usr/share/nginx/html/assets/favicon.ico ]; then \
+        cp /usr/share/nginx/html/assets/favicon.ico /usr/share/nginx/html/favicon.ico; \
+        echo "✅ Favicon copiado desde assets"; \
+      else \
+        echo "⚠️ Creando favicon placeholder"; \
+        echo "Favicon missing from build" > /usr/share/nginx/html/favicon.ico; \
+      fi; \
     fi
 
 # Crear usuario no-root para seguridad
