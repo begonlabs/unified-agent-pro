@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone } from 'lucide-react';
+import { Phone, CheckCircle } from 'lucide-react';
 import { Channel, WhatsAppConfig } from '../types';
 
 interface WhatsAppChannelProps {
@@ -26,6 +26,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
     <div className="space-y-4">
       {!isConnected ? (
         <>
+          {/* Botón de conexión directa */}
           <Button 
             onClick={onConnect}
             disabled={isConnectingWhatsApp}
@@ -44,9 +45,12 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
             )}
           </Button>
 
-          <div className="bg-green-50 p-3 rounded-lg border">
-            <h4 className="font-medium text-green-900 text-xs sm:text-sm mb-1">Embedded Signup automático:</h4>
-            <ul className="text-xs text-green-800 space-y-1 list-disc list-inside">
+          {/* Información del proceso */}
+          <div className="bg-blue-50 p-3 rounded-lg border">
+            <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">
+              Conecta tu WhatsApp Business:
+            </h4>
+            <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
               <li>Autoriza tu cuenta de WhatsApp Business</li>
               <li>Selecciona el número de teléfono a conectar</li>
               <li>Configuración automática del webhook</li>
@@ -62,7 +66,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
               <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" />
                     <span className="font-medium text-green-900 text-sm sm:text-base">
                       {config?.verified_name || config?.business_name || 'WhatsApp Business'}
                     </span>

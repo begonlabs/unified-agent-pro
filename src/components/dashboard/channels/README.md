@@ -93,11 +93,13 @@ Define interfaces para:
 
 ## Características Principales
 
-### WhatsApp Business
+### WhatsApp Business (Versión Simple - OAuth Directo)
+- OAuth directo con Meta (sin SMS)
 - Embedded Signup automático
 - Configuración de webhooks
 - Manejo de tokens de acceso
 - Reconexión automática
+- Cloud API v18.0+
 
 ### Facebook Messenger
 - OAuth con páginas de Facebook
