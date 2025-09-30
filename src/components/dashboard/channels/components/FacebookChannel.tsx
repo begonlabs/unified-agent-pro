@@ -88,14 +88,6 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 text-orange-600 border-orange-300 hover:bg-orange-100 text-xs sm:text-sm"
-                    onClick={() => onTestWebhook(channel.id)}
-                  >
-                    Test Webhook
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
                     className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
                     onClick={() => onDisconnect(channel.id)}
                   >
