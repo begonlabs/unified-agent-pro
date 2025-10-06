@@ -37,6 +37,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
     verificationPolling,
     notificationsShown,
     setNotificationsShown,
+    verificationNotificationsShown,
+    setVerificationNotificationsShown,
     generateInstagramVerificationCode,
     instagramNeedsVerification,
     getInstagramVerificationStatus
@@ -89,20 +91,22 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         
         // Only show notification for connected Instagram that needs verification
         // and only if we haven't shown it before
-        if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !notificationsShown.has(notificationKey)) {
+        if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !verificationNotificationsShown.has(notificationKey)) {
           setTimeout(() => {
             toast({
               title: "Instagram detectado - Verificación requerida",
               description: `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
             });
             
-            // Mark this notification as shown
-            setNotificationsShown(prev => new Set(prev).add(notificationKey));
+            // Mark this notification as shown to prevent loops
+            setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
           }, 3000);
         }
       });
     }
-  }, [channels, currentUser, igVerifications, toast, getChannelStatus, instagramNeedsVerification, notificationsShown, setNotificationsShown]);
+    // Only run this effect when channels change or on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channels.length, currentUser?.id]);
 
   // Handlers para acciones de canales
   const handleDisconnect = (channelId: string) => {

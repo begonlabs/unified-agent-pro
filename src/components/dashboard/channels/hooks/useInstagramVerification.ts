@@ -8,6 +8,7 @@ export const useInstagramVerification = (user: User | null) => {
   const [isGeneratingCode, setIsGeneratingCode] = useState<Record<string, boolean>>({});
   const [verificationPolling, setVerificationPolling] = useState<Record<string, NodeJS.Timeout>>({});
   const [notificationsShown, setNotificationsShown] = useState<Set<string>>(new Set());
+  const [verificationNotificationsShown, setVerificationNotificationsShown] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Cleanup polling timers on unmount
@@ -84,10 +85,15 @@ export const useInstagramVerification = (user: User | null) => {
           });
         }
         
-        toast({
-          title: "Instagram verificado exitosamente",
-          description: "Tu cuenta ya puede recibir mensajes automáticamente",
-        });
+        // Only show notification if not shown before
+        const notificationKey = `verification-success-${channelId}`;
+        if (!verificationNotificationsShown.has(notificationKey)) {
+          toast({
+            title: "Instagram verificado exitosamente",
+            description: "Tu cuenta ya puede recibir mensajes automáticamente",
+          });
+          setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
+        }
         
         return true;
       }
@@ -199,6 +205,8 @@ export const useInstagramVerification = (user: User | null) => {
     verificationPolling,
     notificationsShown,
     setNotificationsShown,
+    verificationNotificationsShown,
+    setVerificationNotificationsShown,
     generateInstagramVerificationCode,
     instagramNeedsVerification,
     getInstagramVerificationStatus
