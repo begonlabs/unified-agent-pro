@@ -85,13 +85,14 @@ export const useInstagramVerification = (user: User | null) => {
           });
         }
         
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
         // Only show notification if not shown before
         const notificationKey = `verification-success-${channelId}`;
         if (!verificationNotificationsShown.has(notificationKey)) {
-          toast({
-            title: "Instagram verificado exitosamente",
-            description: "Tu cuenta ya puede recibir mensajes automáticamente",
-          });
+          // toast({
+          //   title: "Instagram verificado exitosamente",
+          //   description: "Tu cuenta ya puede recibir mensajes automáticamente",
+          // });
           setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
         }
         
@@ -139,11 +140,13 @@ export const useInstagramVerification = (user: User | null) => {
   // Generate Instagram verification code
   const generateInstagramVerificationCode = useCallback(async (channelId: string) => {
     if (!user) {
-      toast({
-        title: "Error",
-        description: "Debes estar autenticado",
-        variant: "destructive",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Error",
+      //   description: "Debes estar autenticado",
+      //   variant: "destructive",
+      // });
+      console.error('Error: Usuario no autenticado');
       return;
     }
 
@@ -160,23 +163,25 @@ export const useInstagramVerification = (user: User | null) => {
       // Start polling for completion
       startVerificationPolling(channelId);
 
-      toast({
-        title: "Código de verificación generado",
-        description: `Envía ${verification.verification_code} como mensaje en Instagram. El sistema detectará automáticamente cuando lo envíes.`,
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Código de verificación generado",
+      //   description: `Envía ${verification.verification_code} como mensaje en Instagram. El sistema detectará automáticamente cuando lo envíes.`,
+      // });
 
     } catch (error: unknown) {
       console.error('Error generating verification code:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo generar el código de verificación";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Error",
+      //   description: errorMessage,
+      //   variant: "destructive",
+      // });
     } finally {
       setIsGeneratingCode(prev => ({ ...prev, [channelId]: false }));
     }
-  }, [user, toast, startVerificationPolling]);
+  }, [user, startVerificationPolling]);
 
   // Check if Instagram channel needs verification
   const instagramNeedsVerification = useCallback((config: InstagramConfig): boolean => {

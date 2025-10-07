@@ -18,15 +18,17 @@ export const useChannels = (user: User | null) => {
       setChannels(data);
     } catch (error: unknown) {
       const errorInfo = ChannelsService.handleSupabaseError(error, "No se pudieron cargar los canales");
-      toast({
-        title: errorInfo.title,
-        description: errorInfo.description,
-        variant: "destructive",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: errorInfo.title,
+      //   description: errorInfo.description,
+      //   variant: "destructive",
+      // });
+      console.error('Error fetching channels:', errorInfo);
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {

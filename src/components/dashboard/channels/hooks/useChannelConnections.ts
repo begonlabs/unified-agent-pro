@@ -47,26 +47,28 @@ export const useChannelConnections = (user: User | null) => {
     try {
       const result = await ChannelsService.processWhatsAppAuth(code, state, user);
       
-      toast({
-        title: "WhatsApp conectado exitosamente!",
-        description: `Empresa: ${result.businessName} - Teléfono: ${result.phoneNumber}`,
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "WhatsApp conectado exitosamente!",
+      //   description: `Empresa: ${result.businessName} - Teléfono: ${result.phoneNumber}`,
+      // });
       
       return result;
     } catch (error: unknown) {
       console.error('Error processing WhatsApp authorization:', error);
       throw error;
     }
-  }, [user, toast]);
+  }, [user]);
 
   // Función para manejar la respuesta de WhatsApp OAuth
   const handleWhatsAppResponse = useCallback(async (response: FacebookLoginResponse, expectedState: string) => {
     try {
       if (response.status === 'connected') {
-        toast({
-          title: "Procesando conexión WhatsApp",
-          description: "Configurando automáticamente tu cuenta...",
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: "Procesando conexión WhatsApp",
+        //   description: "Configurando automáticamente tu cuenta...",
+        // });
 
         // Get authorization code
         let authCode = response.code || response.authResponse?.code;
@@ -91,25 +93,28 @@ export const useChannelConnections = (user: User | null) => {
     } catch (error: unknown) {
       console.error('Error in WhatsApp OAuth:', error);
       const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-      toast({
-        title: "Error conectando WhatsApp",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Error conectando WhatsApp",
+      //   description: errorMessage,
+      //   variant: "destructive",
+      // });
     } finally {
       setIsConnectingWhatsApp(false);
     }
-  }, [toast, processWhatsAppAuth]);
+  }, [processWhatsAppAuth]);
 
   // WhatsApp Login con Configuration ID
   const handleWhatsAppLogin = useCallback(async () => {
     try {
       if (!user) {
-        toast({
-          title: 'Error',
-          description: 'Debes estar autenticado para conectar WhatsApp',
-          variant: 'destructive',
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: 'Error',
+        //   description: 'Debes estar autenticado para conectar WhatsApp',
+        //   variant: 'destructive',
+        // });
+        console.error('Error: Usuario no autenticado');
         return;
       }
 
@@ -125,10 +130,11 @@ export const useChannelConnections = (user: User | null) => {
         nonce: Math.random().toString(36).substring(2)
       });
 
-      toast({
-        title: "Conectando WhatsApp Business",
-        description: "Abriendo ventana de autorización de Meta...",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Conectando WhatsApp Business",
+      //   description: "Abriendo ventana de autorización de Meta...",
+      // });
 
       // Use Facebook Embedded Signup with Configuration ID
       window.FB.login((response: FacebookLoginResponse) => {
@@ -146,23 +152,26 @@ export const useChannelConnections = (user: User | null) => {
     } catch (error: unknown) {
       console.error('Error in WhatsApp Embedded Signup:', error);
       setIsConnectingWhatsApp(false);
-      toast({
-        title: 'Error',
-        description: 'No se pudo iniciar la conexión con WhatsApp Business',
-        variant: 'destructive',
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: 'Error',
+      //   description: 'No se pudo iniciar la conexión con WhatsApp Business',
+      //   variant: 'destructive',
+      // });
     }
-  }, [user, toast, loadFacebookSDK, handleWhatsAppResponse]);
+  }, [user, loadFacebookSDK, handleWhatsAppResponse]);
 
   // Facebook Login
   const handleFacebookLogin = useCallback(async () => {
     try {
       if (!user) {
-        toast({
-          title: 'Error',
-          description: 'Debes estar autenticado para conectar Facebook',
-          variant: 'destructive',
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: 'Error',
+        //   description: 'Debes estar autenticado para conectar Facebook',
+        //   variant: 'destructive',
+        // });
+        console.error('Error: Usuario no autenticado');
         return;
       }
 
@@ -170,23 +179,26 @@ export const useChannelConnections = (user: User | null) => {
       window.location.href = oauthUrl;
     } catch (error: unknown) {
       console.error('Error building Facebook OAuth URL:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo iniciar la conexión con Facebook',
-        variant: 'destructive',
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: 'Error',
+      //   description: 'No se pudo iniciar la conexión con Facebook',
+      //   variant: 'destructive',
+      // });
     }
-  }, [user, toast]);
+  }, [user]);
 
   // Instagram Login
   const handleInstagramLogin = useCallback(async () => {
     try {
       if (!user) {
-        toast({
-          title: 'Error',
-          description: 'Debes estar autenticado para conectar Instagram',
-          variant: 'destructive',
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: 'Error',
+        //   description: 'Debes estar autenticado para conectar Instagram',
+        //   variant: 'destructive',
+        // });
+        console.error('Error: Usuario no autenticado');
         return;
       }
 
@@ -194,13 +206,14 @@ export const useChannelConnections = (user: User | null) => {
       window.location.href = instagramAuthUrl;
     } catch (error: unknown) {
       console.error('Error building Instagram OAuth URL:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo iniciar la conexión con Instagram',
-        variant: 'destructive',
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: 'Error',
+      //   description: 'No se pudo iniciar la conexión con Instagram',
+      //   variant: 'destructive',
+      // });
     }
-  }, [user, toast]);
+  }, [user]);
 
   return {
     isConnectingWhatsApp,

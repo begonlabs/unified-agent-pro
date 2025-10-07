@@ -55,27 +55,16 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         fetchChannels();
       }, 1000);
       
-      const pageName = urlParams.get('page_name');
-      const businessName = urlParams.get('business_name');
-      const phoneNumber = urlParams.get('phone_number');
-      const channel = urlParams.get('channel');
-      
-      if (channel === 'whatsapp' && businessName) {
-        toast({
-          title: "WhatsApp conectado exitosamente",
-          description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
-        });
-      } else if (pageName && channel) {
-        toast({
-          title: "Canal reconectado exitosamente",
-          description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} actualizado: ${pageName}`,
-        });
-      }
+      // Notificaciones desactivadas - se manejarán en el sistema central de notificaciones
+      // const pageName = urlParams.get('page_name');
+      // const businessName = urlParams.get('business_name');
+      // const phoneNumber = urlParams.get('phone_number');
+      // const channel = urlParams.get('channel');
       
       // Limpiar URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [fetchChannels, toast]);
+  }, [fetchChannels]);
 
   // Auto-detect Instagram channels that need verification on load
   useEffect(() => {
@@ -89,18 +78,17 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         const isConnected = getChannelStatus('instagram');
         const notificationKey = `instagram-verification-${channel.id}`;
         
+        // Notificaciones desactivadas - se manejarán en el sistema central de notificaciones
         // Only show notification for connected Instagram that needs verification
         // and only if we haven't shown it before
         if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !verificationNotificationsShown.has(notificationKey)) {
-          setTimeout(() => {
-            toast({
-              title: "Instagram detectado - Verificación requerida",
-              description: `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
-            });
-            
-            // Mark this notification as shown to prevent loops
-            setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
-          }, 3000);
+          // toast({
+          //   title: "Instagram detectado - Verificación requerida",
+          //   description: `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
+          // });
+          
+          // Mark this notification as shown to prevent loops
+          setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
         }
       });
     }
@@ -115,10 +103,11 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast({ 
-      title: "📋 Código copiado al portapapeles",
-      description: "Ahora pégalo en un mensaje de Instagram"
-    });
+    // Notificación desactivada - se manejará en el sistema central de notificaciones
+    // toast({ 
+    //   title: "📋 Código copiado al portapapeles",
+    //   description: "Ahora pégalo en un mensaje de Instagram"
+    // });
   };
 
   // Show loading state while auth is being checked

@@ -10,22 +10,26 @@ export const useChannelActions = (user: User | null) => {
   const handleDisconnectChannel = useCallback(async (channelId: string, channels: Channel[], setChannels: (channels: Channel[]) => void) => {
     try {
       if (!user?.id) {
-        toast({
-          title: "Error",
-          description: "Debes estar autenticado",
-          variant: "destructive",
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: "Error",
+        //   description: "Debes estar autenticado",
+        //   variant: "destructive",
+        // });
+        console.error('Error: Usuario no autenticado');
         return;
       }
 
       // Confirmar desconexión
       const channel = channels.find(c => c.id === channelId);
       if (!channel) {
-        toast({
-          title: "Error",
-          description: "Canal no encontrado",
-          variant: "destructive",
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: "Error",
+        //   description: "Canal no encontrado",
+        //   variant: "destructive",
+        // });
+        console.error('Error: Canal no encontrado');
         return;
       }
 
@@ -43,56 +47,63 @@ export const useChannelActions = (user: User | null) => {
       // Actualizar estado local
       setChannels(channels.filter(c => c.id !== channelId));
 
-      toast({
-        title: `${channelName} desconectado`,
-        description: "La conexión ha sido eliminada exitosamente",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: `${channelName} desconectado`,
+      //   description: "La conexión ha sido eliminada exitosamente",
+      // });
 
     } catch (error: unknown) {
       console.error('Error disconnecting channel:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo desconectar el canal";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Error",
+      //   description: errorMessage,
+      //   variant: "destructive",
+      // });
     }
-  }, [user, toast]);
+  }, [user]);
 
   // Función para probar webhook de Facebook
   const handleTestWebhook = useCallback(async (channelId: string) => {
     try {
       if (!user?.id) {
-        toast({
-          title: "Error",
-          description: "Debes estar autenticado",
-          variant: "destructive",
-        });
+        // Notificación desactivada - se manejará en el sistema central de notificaciones
+        // toast({
+        //   title: "Error",
+        //   description: "Debes estar autenticado",
+        //   variant: "destructive",
+        // });
+        console.error('Error: Usuario no autenticado');
         return;
       }
 
-      toast({
-        title: "Probando webhook...",
-        description: "Enviando mensaje de prueba para verificar el procesamiento",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Probando webhook...",
+      //   description: "Enviando mensaje de prueba para verificar el procesamiento",
+      // });
 
       await ChannelsService.testFacebookWebhook(channelId, user);
 
-      toast({
-        title: "Webhook funcionando",
-        description: "El webhook está activo y procesando mensajes correctamente",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Webhook funcionando",
+      //   description: "El webhook está activo y procesando mensajes correctamente",
+      // });
 
     } catch (error: unknown) {
       console.error('Error in Facebook integration test:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo completar el test";
-      toast({
-        title: "Error en test",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      // Notificación desactivada - se manejará en el sistema central de notificaciones
+      // toast({
+      //   title: "Error en test",
+      //   description: errorMessage,
+      //   variant: "destructive",
+      // });
     }
-  }, [user, toast]);
+  }, [user]);
 
   return {
     handleDisconnectChannel,
