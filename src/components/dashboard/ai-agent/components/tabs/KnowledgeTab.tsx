@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Brain, Upload, FileText } from 'lucide-react';
+import { SectionStatus } from '../shared/SectionStatus';
 
 interface KnowledgeTabProps {
   knowledgeBase: string;
@@ -17,8 +18,18 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
   onKnowledgeBaseChange,
   onCommonQuestionsChange
 }) => {
+  const isCompleted = !!knowledgeBase.trim();
+
   return (
-    <Card>
+    <div className="space-y-4">
+      <SectionStatus
+        title="Estado: Base de Conocimiento"
+        completed={isCompleted}
+        icon={Brain}
+        iconColor="text-purple-600"
+      />
+      
+      <Card>
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
@@ -67,6 +78,7 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
           />
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };

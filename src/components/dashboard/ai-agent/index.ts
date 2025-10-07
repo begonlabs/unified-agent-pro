@@ -25,3 +25,4 @@ export { SettingsTab } from './components/tabs/SettingsTab';
 export { ExampleScenarios } from './components/shared/ExampleScenarios';
 export { ConfigStatus } from './components/shared/ConfigStatus';
 export { ResponseTimeSlider } from './components/shared/ResponseTimeSlider';
+export { SectionStatus } from './components/shared/SectionStatus';

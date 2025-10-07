@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare } from 'lucide-react';
+import { SectionStatus } from '../shared/SectionStatus';
 
 interface FAQTabProps {
   faq: string;
@@ -13,8 +14,18 @@ export const FAQTab: React.FC<FAQTabProps> = ({
   faq,
   onFAQChange
 }) => {
+  const isCompleted = !!faq.trim();
+
   return (
-    <Card>
+    <div className="space-y-4">
+      <SectionStatus
+        title="Estado: FAQs"
+        completed={isCompleted}
+        icon={MessageSquare}
+        iconColor="text-green-600"
+      />
+      
+      <Card>
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
@@ -49,6 +60,7 @@ Respuesta: Sí, hacemos envíos a todo el país.`}
           </pre>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };

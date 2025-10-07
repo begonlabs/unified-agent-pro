@@ -11,7 +11,7 @@ export const TicketDistribution: React.FC<TicketDistributionProps> = ({ stats })
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+            <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6 rounded-lg" />
           </div>
           <span className="text-transparent bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text">Distribución de Tickets</span>
         </CardTitle>

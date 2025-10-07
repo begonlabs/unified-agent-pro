@@ -37,6 +37,7 @@ export const useAIConfig = () => {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const { toast } = useToast();
 
   // Escuchar eventos de refresh de datos
@@ -112,7 +113,66 @@ export const useAIConfig = () => {
   };
 
   const updateConfig = (updates: Partial<AIConfig>) => {
-    setConfig(prev => ({ ...prev, ...updates }));
+    setConfig(prev => {
+      const newConfig = { ...prev, ...updates };
+      
+      // Auto-save cuando se actualiza la configuración
+      // Usar debounce implícito con setTimeout
+      if (typeof window !== 'undefined') {
+        const globalWindow = window as Window & { __aiConfigSaveTimeout?: NodeJS.Timeout };
+        const timeoutId = globalWindow.__aiConfigSaveTimeout;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        globalWindow.__aiConfigSaveTimeout = setTimeout(() => {
+          autoSaveConfig(newConfig);
+        }, 1500); // Guardar después de 1.5 segundos de inactividad
+      }
+      
+      return newConfig;
+    });
+  };
+
+  const autoSaveConfig = async (configToSave: AIConfig) => {
+    setAutoSaving(true);
+    try {
+      // Validar configuración básica antes de guardar
+      const errors = AIConfigService.validateConfig(configToSave);
+      if (errors.length > 0) {
+        // No mostrar errores en auto-save, solo en save manual
+        setAutoSaving(false);
+        return;
+      }
+
+      await AIConfigService.saveAIConfig(configToSave);
+      
+      // NO hacer re-fetch completo para evitar interrumpir al usuario
+      // Solo actualizar el estado local con el training_progress calculado
+      setConfig(prev => ({
+        ...prev,
+        training_progress: {
+          goals: !!configToSave.goals.trim(),
+          restrictions: !!configToSave.restrictions.trim(),
+          knowledge_base: !!configToSave.knowledge_base.trim(),
+          faq: !!configToSave.faq.trim(),
+          advisor: configToSave.advisor_enabled && !!configToSave.advisor_message.trim(),
+          schedule: configToSave.always_active || (configToSave.operating_hours && Object.keys(configToSave.operating_hours).length > 0)
+        }
+      }));
+      
+      // Mostrar notificación sutil y no intrusiva
+      toast({
+        title: "✓ Guardado",
+        description: "Cambios guardados automáticamente",
+        duration: 1500,
+      });
+    } catch (error) {
+      // Silenciar errores de auto-save, el usuario puede guardar manualmente
+      console.error('Auto-save error:', error);
+    } finally {
+      setAutoSaving(false);
+    }
   };
 
   const resetConfig = () => {
@@ -156,6 +216,7 @@ export const useAIConfig = () => {
     config,
     loading,
     saving,
+    autoSaving,
     fetchAIConfig,
     saveAIConfig,
     updateConfig,

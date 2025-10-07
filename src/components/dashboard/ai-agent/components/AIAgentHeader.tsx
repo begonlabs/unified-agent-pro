@@ -1,13 +1,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bot } from 'lucide-react';
+import { Bot, Save } from 'lucide-react';
 import { AIConfig } from '../types';
 
 interface AIAgentHeaderProps {
   config: AIConfig;
   loading: boolean;
   saving: boolean;
+  autoSaving?: boolean;
   onSave: () => void;
 }
 
@@ -15,6 +16,7 @@ export const AIAgentHeader: React.FC<AIAgentHeaderProps> = ({
   config,
   loading,
   saving,
+  autoSaving = false,
   onSave
 }) => {
   return (
@@ -41,9 +43,16 @@ export const AIAgentHeader: React.FC<AIAgentHeaderProps> = ({
           {config.is_active ? "Activo" : "Inactivo"}
         </Badge>
         
+        {autoSaving && (
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <Save className="h-3 w-3 animate-pulse" />
+            <span>Guardando cambios...</span>
+          </div>
+        )}
+        
         <Button 
           onClick={onSave} 
-          disabled={loading || saving} 
+          disabled={loading || saving || autoSaving} 
           className="w-full sm:w-auto text-sm sm:text-base bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
         >
           {saving ? 'Guardando...' : 'Guardar Configuración'}

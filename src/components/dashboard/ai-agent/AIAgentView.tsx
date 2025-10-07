@@ -24,6 +24,7 @@ const AIAgentView: React.FC = () => {
     config,
     loading,
     saving,
+    autoSaving,
     saveAIConfig,
     updateConfig
   } = useAIConfig();
@@ -129,6 +130,7 @@ const AIAgentView: React.FC = () => {
         config={config}
         loading={loading}
         saving={saving}
+        autoSaving={autoSaving}
         onSave={saveAIConfig}
       />
 

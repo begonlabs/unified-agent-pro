@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Shield } from 'lucide-react';
+import { SectionStatus } from '../shared/SectionStatus';
 
 interface RestrictionsTabProps {
   restrictions: string;
@@ -13,8 +14,18 @@ export const RestrictionsTab: React.FC<RestrictionsTabProps> = ({
   restrictions,
   onRestrictionsChange
 }) => {
+  const isCompleted = !!restrictions.trim();
+
   return (
-    <Card>
+    <div className="space-y-4">
+      <SectionStatus
+        title="Estado: Restricciones"
+        completed={isCompleted}
+        icon={Shield}
+        iconColor="text-red-600"
+      />
+      
+      <Card>
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
@@ -49,6 +60,7 @@ export const RestrictionsTab: React.FC<RestrictionsTabProps> = ({
           </ul>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };

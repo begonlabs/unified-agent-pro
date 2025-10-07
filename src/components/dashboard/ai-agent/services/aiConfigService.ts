@@ -39,8 +39,19 @@ export class AIConfigService {
         throw new Error('Usuario no autenticado');
       }
 
+      // Calcular progreso de entrenamiento automáticamente
+      const training_progress: TrainingProgress = {
+        goals: !!config.goals.trim(),
+        restrictions: !!config.restrictions.trim(),
+        knowledge_base: !!config.knowledge_base.trim(),
+        faq: !!config.faq.trim(),
+        advisor: config.advisor_enabled && !!config.advisor_message.trim(),
+        schedule: config.always_active || (config.operating_hours && Object.keys(config.operating_hours).length > 0)
+      };
+
       const configData = {
         ...config,
+        training_progress,
         user_id: user.id,
         updated_at: new Date().toISOString()
       };

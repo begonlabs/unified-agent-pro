@@ -178,7 +178,7 @@ const ResetPassword = () => {
             <CardHeader className="text-center space-y-2 pb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="relative">
-                  <img src={logoWhite} alt="OndAI Logo" className="h-12 w-12" />
+                  <img src={logoWhite} alt="OndAI Logo" className="h-12 w-12 rounded-lg" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text text-transparent">

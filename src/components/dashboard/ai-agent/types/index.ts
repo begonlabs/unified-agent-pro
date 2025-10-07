@@ -44,6 +44,8 @@ export interface ExampleScenario {
   title: string;
   goals: string;
   restrictions: string;
+  icon: string; // Nombre del icono de Lucide React
+  iconColor: string; // Color del icono
 }
 
 export interface AIConfigFormData {

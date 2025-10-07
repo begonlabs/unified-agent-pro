@@ -51,7 +51,7 @@ export const ResponsiveTable = ({
         <CardContent className="flex items-center justify-center h-32">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6" />
+              <img src={logoWhite} alt="OndAI Logo" className="h-6 w-6 rounded-lg" />
             </div>
             <p className="text-muted-foreground">{emptyMessage}</p>
           </div>

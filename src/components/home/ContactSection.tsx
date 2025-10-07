@@ -23,7 +23,7 @@ const ContactSection = () => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center gap-4 mb-10">
           <div className="relative">
-            <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8" />
+            <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 rounded-lg" />
           </div>
           <h2 className="text-3xl font-extrabold text-white tracking-tight">Contacto</h2>
         </div>

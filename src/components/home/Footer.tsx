@@ -11,7 +11,7 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-4 mb-6 group">
               <div className="relative">
-                <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 group-hover:scale-110 transition-all duration-300" />
+                <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 rounded-lg group-hover:scale-110 transition-all duration-300" />
               </div>
               <div>
                 <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#3a0caa] group-hover:to-[#710db2] group-hover:bg-clip-text transition-all duration-300">

@@ -14,7 +14,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex items-center gap-4 group cursor-pointer">
             <div className="relative">
-              <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 group-hover:scale-110 transition-all duration-300" />
+              <img src={logoWhite} alt="OndAI Logo" className="h-8 w-8 rounded-lg group-hover:scale-110 transition-all duration-300" />
             </div>
             <div>
               <span className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#3a0caa] group-hover:to-[#710db2] group-hover:bg-clip-text transition-all duration-300">

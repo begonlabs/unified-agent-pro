@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Clock } from 'lucide-react';
 import { OperatingHours, DaySchedule } from '../../types';
+import { SectionStatus } from '../shared/SectionStatus';
 
 interface ScheduleTabProps {
   alwaysActive: boolean;
@@ -41,8 +42,18 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
     });
   };
 
+  const isCompleted = alwaysActive || (operatingHours && Object.keys(operatingHours).length > 0);
+
   return (
-    <Card>
+    <div className="space-y-4">
+      <SectionStatus
+        title="Estado: Horarios"
+        completed={isCompleted}
+        icon={Clock}
+        iconColor="text-orange-600"
+      />
+      
+      <Card>
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
@@ -135,6 +146,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };

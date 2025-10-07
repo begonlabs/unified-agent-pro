@@ -310,7 +310,7 @@ const Auth = () => {
             {/* Logo y Marca */}
             <div className="flex items-center justify-center lg:justify-start gap-4 mb-8">
               <div className="relative">
-                <img src={logoWhite} alt="OndAI Logo" className="h-16 w-16" />
+                <img src={logoWhite} alt="OndAI Logo" className="h-16 w-16 rounded-lg" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
