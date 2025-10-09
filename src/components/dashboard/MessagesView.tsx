@@ -30,6 +30,7 @@ import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
 import { useDebounce, useMessageSender } from '@/hooks/useDebounce';
+import { NotificationService } from '@/components/notifications';
 
 interface Client {
   id: string;
@@ -73,6 +74,7 @@ const MessagesView = () => {
   const [filterChannel, setFilterChannel] = useState<string>('all');
   const [isSending, setIsSending] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
+  const [previousMessageCount, setPreviousMessageCount] = useState<Record<string, number>>({});
   const { toast } = useToast();
   
   // Hook para prevenir mensajes duplicados
@@ -94,6 +96,65 @@ const MessagesView = () => {
     },
     'messages'
   );
+
+  // 🔔 Detectar mensajes nuevos y crear notificaciones
+  React.useEffect(() => {
+    if (!user?.id || !conversations.length) return;
+
+    conversations.forEach(conversation => {
+      const conversationId = conversation.id;
+      const lastMessageTime = conversation.last_message_at;
+      
+      if (!lastMessageTime) return;
+
+      const previousTime = previousMessageCount[conversationId] || 0;
+      const currentTime = new Date(lastMessageTime).getTime();
+
+      // Si hay un mensaje más reciente que el anterior
+      if (currentTime > previousTime && previousTime > 0) {
+        const clientName = conversation.crm_clients?.name || 'Cliente Anónimo';
+        const channelName = conversation.channel === 'whatsapp' ? 'WhatsApp' :
+                           conversation.channel === 'facebook' ? 'Facebook' :
+                           conversation.channel === 'instagram' ? 'Instagram' : 
+                           conversation.channel;
+
+        // Crear notificación solo si no estamos viendo esta conversación actualmente
+        if (selectedConversation !== conversationId) {
+          console.log('🔔 Creando notificación para nuevo mensaje:', {
+            client: clientName,
+            channel: channelName,
+            conversationId
+          });
+
+          NotificationService.createNotification(
+            user.id,
+            'message',
+            `Nuevo mensaje de ${clientName}`,
+            `Has recibido un nuevo mensaje en ${channelName}`,
+            {
+              priority: 'medium',
+              metadata: {
+                conversation_id: conversationId,
+                channel: conversation.channel,
+                client_name: clientName,
+                last_message_time: lastMessageTime
+              },
+              action_url: `/dashboard/messages?conversation=${conversationId}`,
+              action_label: 'Ver conversación'
+            }
+          ).catch(error => {
+            console.error('Error creating message notification:', error);
+          });
+        }
+      }
+
+      // Actualizar el timestamp
+      setPreviousMessageCount(prev => ({
+        ...prev,
+        [conversationId]: currentTime
+      }));
+    });
+  }, [conversations, user?.id, selectedConversation, previousMessageCount]);
 
   const {
     messages,
@@ -262,12 +323,29 @@ const MessagesView = () => {
       const conversation = conversations.find(c => c.id === conversationId);
       const clientName = conversation?.crm_clients?.name || 'este cliente';
 
-      toast({
-        title: aiEnabled ? "🤖 IA Activada" : "👤 IA Desactivada",
-        description: aiEnabled 
-          ? `La IA responderá automáticamente a los nuevos mensajes de ${clientName}` 
-          : `Solo tú responderás a los mensajes de ${clientName}`,
-      });
+      // Crear notificación para el cambio de estado de IA
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'ai_response',
+          aiEnabled ? 'IA Activada' : 'IA Desactivada',
+          aiEnabled 
+            ? `La IA responderá automáticamente a los nuevos mensajes de ${clientName}` 
+            : `Solo tú responderás a los mensajes de ${clientName}`,
+          {
+            priority: 'low',
+            metadata: {
+              conversation_id: conversationId,
+              client_name: clientName,
+              ai_enabled: aiEnabled
+            },
+            action_url: `/dashboard/messages?conversation=${conversationId}`,
+            action_label: 'Ver conversación'
+          }
+        ).catch(error => {
+          console.error('Error creating AI toggle notification:', error);
+        });
+      }
 
       // Refrescar conversaciones para mostrar el nuevo estado
       refreshConversations();
@@ -331,6 +409,23 @@ const MessagesView = () => {
     setMobileView('list'); // Volver a la lista en móvil
     setSelectedConversation(null); // Limpiar conversación seleccionada
   };
+
+  // Manejar navegación desde notificaciones
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const conversationParam = urlParams.get('conversation');
+    
+    if (conversationParam && conversations.length > 0) {
+      const conversation = conversations.find(c => c.id === conversationParam);
+      if (conversation) {
+        setSelectedConversation(conversationParam);
+        setMobileView('chat');
+        
+        // Limpiar URL después de navegar
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [conversations]);
 
   const conversationStats = {
     total: conversations.length,

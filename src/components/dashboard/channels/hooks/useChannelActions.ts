@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User, Channel } from '../types';
 import { ChannelsService } from '../services/channelsService';
+import { NotificationService } from '@/components/notifications';
 
 export const useChannelActions = (user: User | null) => {
   const { toast } = useToast();
@@ -47,21 +48,53 @@ export const useChannelActions = (user: User | null) => {
       // Actualizar estado local
       setChannels(channels.filter(c => c.id !== channelId));
 
-      // Notificación desactivada - se manejará en el sistema central de notificaciones
-      // toast({
-      //   title: `${channelName} desconectado`,
-      //   description: "La conexión ha sido eliminada exitosamente",
-      // });
+      // Crear notificación de desconexión exitosa
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'channel_disconnection',
+          `${channelName} desconectado`,
+          'La conexión ha sido eliminada exitosamente',
+          {
+            priority: 'medium',
+            metadata: {
+              channel_id: channelId,
+              channel_type: channel.channel_type,
+              channel_name: channelName
+            },
+            action_url: '/dashboard/channels',
+            action_label: 'Ver configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating disconnection notification:', error);
+        });
+      }
 
     } catch (error: unknown) {
       console.error('Error disconnecting channel:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo desconectar el canal";
-      // Notificación desactivada - se manejará en el sistema central de notificaciones
-      // toast({
-      //   title: "Error",
-      //   description: errorMessage,
-      //   variant: "destructive",
-      // });
+      
+      // Crear notificación de error
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'error',
+          'Error al desconectar canal',
+          errorMessage,
+          {
+            priority: 'high',
+            metadata: {
+              channel_id: channelId,
+              error_type: 'disconnection_failed',
+              error_message: errorMessage
+            },
+            action_url: '/dashboard/channels',
+            action_label: 'Reintentar'
+          }
+        ).catch(notificationError => {
+          console.error('Error creating error notification:', notificationError);
+        });
+      }
     }
   }, [user]);
 
@@ -87,21 +120,53 @@ export const useChannelActions = (user: User | null) => {
 
       await ChannelsService.testFacebookWebhook(channelId, user);
 
-      // Notificación desactivada - se manejará en el sistema central de notificaciones
-      // toast({
-      //   title: "Webhook funcionando",
-      //   description: "El webhook está activo y procesando mensajes correctamente",
-      // });
+      // Crear notificación de éxito
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'webhook_test',
+          'Webhook funcionando',
+          'El webhook está activo y procesando mensajes correctamente',
+          {
+            priority: 'low',
+            metadata: {
+              channel_id: channelId,
+              test_type: 'webhook_test',
+              status: 'success'
+            },
+            action_url: '/dashboard/channels',
+            action_label: 'Ver configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating webhook success notification:', error);
+        });
+      }
 
     } catch (error: unknown) {
       console.error('Error in Facebook integration test:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo completar el test";
-      // Notificación desactivada - se manejará en el sistema central de notificaciones
-      // toast({
-      //   title: "Error en test",
-      //   description: errorMessage,
-      //   variant: "destructive",
-      // });
+      
+      // Crear notificación de error
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'error',
+          'Error en test de webhook',
+          errorMessage,
+          {
+            priority: 'high',
+            metadata: {
+              channel_id: channelId,
+              error_type: 'webhook_test_failed',
+              error_message: errorMessage
+            },
+            action_url: '/dashboard/channels',
+            action_label: 'Reintentar'
+          }
+        ).catch(notificationError => {
+          console.error('Error creating webhook error notification:', notificationError);
+        });
+      }
     }
   }, [user]);
 

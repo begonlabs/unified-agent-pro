@@ -3,6 +3,10 @@ export type NotificationType =
   | 'message'           // Nuevo mensaje
   | 'ticket'            // Ticket de soporte
   | 'channel'           // Cambio en canal
+  | 'channel_connection' // Conexión de canal exitosa
+  | 'channel_disconnection' // Desconexión de canal
+  | 'instagram_verification' // Verificación de Instagram
+  | 'webhook_test'      // Test de webhook
   | 'ai_response'       // Respuesta de IA
   | 'verification'      // Verificación requerida
   | 'connection'        // Estado de conexión

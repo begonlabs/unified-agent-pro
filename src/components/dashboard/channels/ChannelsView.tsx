@@ -4,6 +4,7 @@ import { Settings, AlertCircle, Smartphone } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ChannelsViewProps, InstagramConfig } from './types';
+import { NotificationService } from '@/components/notifications';
 import { useChannels } from './hooks/useChannels';
 import { useChannelConnections } from './hooks/useChannelConnections';
 import { useInstagramVerification } from './hooks/useInstagramVerification';
@@ -50,21 +51,72 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const successParam = urlParams.get('success');
     
-    if (successParam === 'true') {
+    if (successParam === 'true' && currentUser?.id) {
       setTimeout(() => {
         fetchChannels();
       }, 1000);
       
-      // Notificaciones desactivadas - se manejarán en el sistema central de notificaciones
-      // const pageName = urlParams.get('page_name');
-      // const businessName = urlParams.get('business_name');
-      // const phoneNumber = urlParams.get('phone_number');
-      // const channel = urlParams.get('channel');
+      // Crear notificación de conexión exitosa
+      const pageName = urlParams.get('page_name');
+      const businessName = urlParams.get('business_name');
+      const phoneNumber = urlParams.get('phone_number');
+      const channel = urlParams.get('channel');
+      
+      let title = '';
+      let description = '';
+      let channelName = '';
+      
+      switch (channel) {
+        case 'whatsapp':
+          channelName = 'WhatsApp Business';
+          title = 'WhatsApp conectado exitosamente';
+          description = businessName && phoneNumber 
+            ? `Empresa: ${businessName} - Teléfono: ${phoneNumber}`
+            : 'Tu cuenta de WhatsApp Business ha sido conectada';
+          break;
+        case 'facebook':
+          channelName = 'Facebook Messenger';
+          title = 'Facebook conectado exitosamente';
+          description = pageName 
+            ? `Página: ${pageName}`
+            : 'Tu página de Facebook ha sido conectada';
+          break;
+        case 'instagram':
+          channelName = 'Instagram Direct';
+          title = 'Instagram conectado exitosamente';
+          description = 'Tu cuenta de Instagram ha sido conectada';
+          break;
+        default:
+          channelName = 'Canal';
+          title = 'Canal conectado exitosamente';
+          description = 'El canal ha sido conectado correctamente';
+      }
+      
+      NotificationService.createNotification(
+        currentUser.id,
+        'channel_connection',
+        title,
+        description,
+        {
+          priority: 'high',
+          metadata: {
+            channel_type: channel || 'unknown',
+            channel_name: channelName,
+            page_name: pageName,
+            business_name: businessName,
+            phone_number: phoneNumber
+          },
+          action_url: '/dashboard/channels',
+          action_label: 'Ver configuración'
+        }
+      ).catch(error => {
+        console.error('Error creating connection notification:', error);
+      });
       
       // Limpiar URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [fetchChannels]);
+  }, [fetchChannels, currentUser?.id]);
 
   // Auto-detect Instagram channels that need verification on load
   useEffect(() => {
@@ -78,14 +130,26 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         const isConnected = getChannelStatus('instagram');
         const notificationKey = `instagram-verification-${channel.id}`;
         
-        // Notificaciones desactivadas - se manejarán en el sistema central de notificaciones
-        // Only show notification for connected Instagram that needs verification
-        // and only if we haven't shown it before
+        // Crear notificación para Instagram que necesita verificación
         if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !verificationNotificationsShown.has(notificationKey)) {
-          // toast({
-          //   title: "Instagram detectado - Verificación requerida",
-          //   description: `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
-          // });
+          NotificationService.createNotification(
+            currentUser.id,
+            'instagram_verification',
+            'Instagram detectado - Verificación requerida',
+            `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
+            {
+              priority: 'medium',
+              metadata: {
+                channel_id: channel.id,
+                username: config?.username,
+                channel_type: 'instagram'
+              },
+              action_url: '/dashboard/channels',
+              action_label: 'Verificar ahora'
+            }
+          ).catch(error => {
+            console.error('Error creating Instagram verification notification:', error);
+          });
           
           // Mark this notification as shown to prevent loops
           setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
@@ -103,11 +167,28 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    // Notificación desactivada - se manejará en el sistema central de notificaciones
-    // toast({ 
-    //   title: "📋 Código copiado al portapapeles",
-    //   description: "Ahora pégalo en un mensaje de Instagram"
-    // });
+    
+    // Crear notificación de código copiado
+    if (currentUser?.id) {
+      NotificationService.createNotification(
+        currentUser.id,
+        'instagram_verification',
+        'Código copiado al portapapeles',
+        `Código ${code} copiado. Ahora pégalo en un mensaje de Instagram para completar la verificación.`,
+        {
+          priority: 'low',
+          metadata: {
+            verification_code: code,
+            channel_type: 'instagram',
+            action: 'code_copied'
+          },
+          action_url: '/dashboard/channels',
+          action_label: 'Ver configuración'
+        }
+      ).catch(error => {
+        console.error('Error creating copy code notification:', error);
+      });
+    }
   };
 
   // Show loading state while auth is being checked

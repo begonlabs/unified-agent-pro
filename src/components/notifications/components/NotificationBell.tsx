@@ -93,14 +93,33 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isMobile = f
     
     const rect = bellRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
     const panelWidth = isMobile ? Math.min(320, viewportWidth - 16) : 384; // 320px o w-96 (384px)
+    const panelHeight = isMobile ? Math.min(viewportHeight * 0.5, 400) : 500; // Altura estimada del panel
+    
+    // Calcular posición vertical
+    let top = rect.bottom + 8;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    
+    // Si no hay suficiente espacio abajo, abrir hacia arriba
+    if (spaceBelow < panelHeight && spaceAbove > spaceBelow) {
+      top = rect.top - panelHeight - 8;
+    }
+    
+    // Asegurar que no se salga de la pantalla verticalmente
+    if (top < 8) {
+      top = 8;
+    } else if (top + panelHeight > viewportHeight - 8) {
+      top = viewportHeight - panelHeight - 8;
+    }
     
     // Si estamos en mobile o si no hay espacio a la derecha
-    if (viewportWidth < 640 || rect.right + panelWidth > viewportWidth) {
-      // Posicionar desde la derecha de la pantalla
+    if (viewportWidth < 640) {
+      // Mobile: centrado horizontalmente con márgenes
       return {
         position: 'fixed' as const,
-        top: `${rect.bottom + 8}px`,
+        top: `${top}px`,
         right: '8px',
         left: '8px',
         maxWidth: '384px',
@@ -108,21 +127,45 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isMobile = f
       };
     }
     
-    // Desktop: posicionar relativo al botón
+    // Desktop: calcular posición horizontal
+    let left = rect.right - panelWidth;
+    
+    // Asegurar que no se salga de la pantalla horizontalmente
+    if (left < 8) {
+      left = 8;
+    } else if (left + panelWidth > viewportWidth - 8) {
+      left = viewportWidth - panelWidth - 8;
+    }
+    
     return {
       position: 'fixed' as const,
-      top: `${rect.bottom + 8}px`,
-      left: `${rect.right - panelWidth}px`,
+      top: `${top}px`,
+      left: `${left}px`,
       width: `${panelWidth}px`
     };
   };
 
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
 
-  // Actualizar posición cuando se abre
+  // Actualizar posición cuando se abre o cambia el tamaño de la ventana
   useEffect(() => {
     if (isOpen) {
       setPanelStyle(getPanelPosition());
+      
+      // Recalcular posición al hacer scroll o resize
+      const handleReposition = () => {
+        if (isOpen) {
+          setPanelStyle(getPanelPosition());
+        }
+      };
+      
+      window.addEventListener('resize', handleReposition);
+      window.addEventListener('scroll', handleReposition, true);
+      
+      return () => {
+        window.removeEventListener('resize', handleReposition);
+        window.removeEventListener('scroll', handleReposition, true);
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isMobile]);

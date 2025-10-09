@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User, InstagramVerification, InstagramConfig, Channel } from '../types';
 import { ChannelsService } from '../services/channelsService';
+import { NotificationService } from '@/components/notifications';
 
 export const useInstagramVerification = (user: User | null) => {
   const [igVerifications, setIgVerifications] = useState<Record<string, InstagramVerification>>({});
@@ -85,14 +86,28 @@ export const useInstagramVerification = (user: User | null) => {
           });
         }
         
-        // Notificación desactivada - se manejará en el sistema central de notificaciones
-        // Only show notification if not shown before
+        // Crear notificación de verificación exitosa
         const notificationKey = `verification-success-${channelId}`;
-        if (!verificationNotificationsShown.has(notificationKey)) {
-          // toast({
-          //   title: "Instagram verificado exitosamente",
-          //   description: "Tu cuenta ya puede recibir mensajes automáticamente",
-          // });
+        if (!verificationNotificationsShown.has(notificationKey) && user?.id) {
+          NotificationService.createNotification(
+            user.id,
+            'instagram_verification',
+            'Instagram verificado exitosamente',
+            'Tu cuenta ya puede recibir mensajes automáticamente',
+            {
+              priority: 'high',
+              metadata: {
+                channel_id: channelId,
+                verification_status: 'completed',
+                channel_type: 'instagram'
+              },
+              action_url: '/dashboard/channels',
+              action_label: 'Ver configuración'
+            }
+          ).catch(error => {
+            console.error('Error creating verification success notification:', error);
+          });
+          
           setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
         }
         
@@ -104,7 +119,7 @@ export const useInstagramVerification = (user: User | null) => {
       console.error('Error checking verification status:', error);
       return false;
     }
-  }, [user, verificationPolling, toast]);
+  }, [user, verificationPolling, verificationNotificationsShown]);
 
   // Start polling for verification completion
   const startVerificationPolling = useCallback((channelId: string) => {
@@ -163,21 +178,53 @@ export const useInstagramVerification = (user: User | null) => {
       // Start polling for completion
       startVerificationPolling(channelId);
 
-      // Notificación desactivada - se manejará en el sistema central de notificaciones
-      // toast({
-      //   title: "Código de verificación generado",
-      //   description: `Envía ${verification.verification_code} como mensaje en Instagram. El sistema detectará automáticamente cuando lo envíes.`,
-      // });
+      // Crear notificación de código generado
+      NotificationService.createNotification(
+        user.id,
+        'instagram_verification',
+        'Código de verificación generado',
+        `Envía ${verification.verification_code} como mensaje en Instagram. El sistema detectará automáticamente cuando lo envíes.`,
+        {
+          priority: 'medium',
+          metadata: {
+            channel_id: channelId,
+            verification_code: verification.verification_code,
+            expires_at: verification.expires_at,
+            channel_type: 'instagram'
+          },
+          action_url: '/dashboard/channels',
+          action_label: 'Ver código'
+        }
+      ).catch(error => {
+        console.error('Error creating code generation notification:', error);
+      });
 
     } catch (error: unknown) {
       console.error('Error generating verification code:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo generar el código de verificación";
-      // Notificación desactivada - se manejará en el sistema central de notificaciones
-      // toast({
-      //   title: "Error",
-      //   description: errorMessage,
-      //   variant: "destructive",
-      // });
+      
+      // Crear notificación de error
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'error',
+          'Error generando código de verificación',
+          errorMessage,
+          {
+            priority: 'high',
+            metadata: {
+              channel_id: channelId,
+              error_type: 'verification_code_generation_failed',
+              error_message: errorMessage,
+              channel_type: 'instagram'
+            },
+            action_url: '/dashboard/channels',
+            action_label: 'Reintentar'
+          }
+        ).catch(notificationError => {
+          console.error('Error creating verification error notification:', notificationError);
+        });
+      }
     } finally {
       setIsGeneratingCode(prev => ({ ...prev, [channelId]: false }));
     }

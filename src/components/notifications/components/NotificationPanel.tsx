@@ -10,6 +10,10 @@ const notificationTypeLabels: Record<NotificationType, string> = {
   message: 'Mensajes',
   ticket: 'Tickets',
   channel: 'Canales',
+  channel_connection: 'Conexiones',
+  channel_disconnection: 'Desconexiones',
+  instagram_verification: 'Instagram',
+  webhook_test: 'Webhooks',
   ai_response: 'IA',
   verification: 'Verificaciones',
   connection: 'Conexiones',
@@ -42,7 +46,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   }, {} as Record<NotificationType, number>);
 
   return (
-    <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden max-h-[calc(100vh-5rem)]">
+    <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden max-h-[85vh]">
       {/* Header */}
       <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-[#3a0caa]/5 to-[#710db2]/5">
         <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -105,7 +109,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
       </div>
 
       {/* Lista de notificaciones */}
-      <ScrollArea className="h-[50vh] sm:h-96 max-h-[calc(100vh-12rem)]">
+      <ScrollArea className="h-[60vh] sm:h-[500px] max-h-[calc(85vh-10rem)]">
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <Loader2 className="h-6 w-6 animate-spin text-[#3a0caa]" />

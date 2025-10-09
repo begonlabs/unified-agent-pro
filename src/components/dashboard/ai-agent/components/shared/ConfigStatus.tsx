@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Target, Shield, Brain, Users, Clock, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { AIConfigStatus } from '../../types';
+import { NotificationService } from '@/components/notifications';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ConfigStatusProps {
   status: AIConfigStatus;
@@ -13,6 +15,8 @@ export const ConfigStatus: React.FC<ConfigStatusProps> = ({
   completionPercentage
 }) => {
   const [animatedItems, setAnimatedItems] = useState<Record<string, boolean>>({});
+  const [previousCompletion, setPreviousCompletion] = useState(0);
+  const { user } = useAuth();
 
   // Detectar cambios y animar
   useEffect(() => {
@@ -36,6 +40,76 @@ export const ConfigStatus: React.FC<ConfigStatusProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  // Detectar hitos importantes de progreso
+  useEffect(() => {
+    if (user?.id && completionPercentage > previousCompletion) {
+      // Notificar hitos importantes
+      if (completionPercentage === 100 && previousCompletion < 100) {
+        NotificationService.createNotification(
+          user.id,
+          'system',
+          '🎉 ¡Entrenamiento Completo!',
+          'Tu agente IA está completamente configurado y listo para usar',
+          {
+            priority: 'high',
+            metadata: {
+              module: 'ai_agent',
+              action: 'training_complete',
+              completion_percentage: completionPercentage,
+              milestone: '100_percent'
+            },
+            action_url: '/dashboard/ai-agent',
+            action_label: 'Ver configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating training complete notification:', error);
+        });
+      } else if (completionPercentage >= 75 && previousCompletion < 75) {
+        NotificationService.createNotification(
+          user.id,
+          'system',
+          '🚀 Progreso Excelente',
+          'Tu agente IA está casi listo. Solo faltan algunos detalles',
+          {
+            priority: 'medium',
+            metadata: {
+              module: 'ai_agent',
+              action: 'training_progress',
+              completion_percentage: completionPercentage,
+              milestone: '75_percent'
+            },
+            action_url: '/dashboard/ai-agent',
+            action_label: 'Completar configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating progress notification:', error);
+        });
+      } else if (completionPercentage >= 50 && previousCompletion < 50) {
+        NotificationService.createNotification(
+          user.id,
+          'system',
+          '📈 Buen Progreso',
+          'Tu agente IA está tomando forma. Continúa configurando',
+          {
+            priority: 'low',
+            metadata: {
+              module: 'ai_agent',
+              action: 'training_progress',
+              completion_percentage: completionPercentage,
+              milestone: '50_percent'
+            },
+            action_url: '/dashboard/ai-agent',
+            action_label: 'Continuar configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating progress notification:', error);
+        });
+      }
+      
+      setPreviousCompletion(completionPercentage);
+    }
+  }, [completionPercentage, previousCompletion, user?.id]);
   
   const statusItems = [
     {

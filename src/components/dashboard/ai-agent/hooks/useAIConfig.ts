@@ -3,6 +3,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { AIConfigService } from '../services/aiConfigService';
 import { AIConfig, AIConfigFormData } from '../types';
+import { NotificationService } from '@/components/notifications';
+import { useAuth } from '@/hooks/useAuth';
 
 export const useAIConfig = () => {
   const [config, setConfig] = useState<AIConfig>({
@@ -39,6 +41,7 @@ export const useAIConfig = () => {
   const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Escuchar eventos de refresh de datos
   useRefreshListener(
@@ -60,6 +63,29 @@ export const useAIConfig = () => {
                                (error as Error)?.message?.includes('503');
       
       if (isConnectionError) {
+        // Crear notificación de error de conexión
+        if (user?.id) {
+          NotificationService.createNotification(
+            user.id,
+            'error',
+            'Error de Conexión IA',
+            'Problemas de conectividad al cargar la configuración del agente IA',
+            {
+              priority: 'high',
+              metadata: {
+                module: 'ai_agent',
+                action: 'connection_error',
+                error_type: 'upstream_error',
+                error_message: error instanceof Error ? error.message : 'Error desconocido'
+              },
+              action_url: '/dashboard/ai-agent',
+              action_label: 'Reintentar'
+            }
+          ).catch(notificationError => {
+            console.error('Error creating connection notification:', notificationError);
+          });
+        }
+        
         toast({
           title: "Error de conexión",
           description: "Problemas de conectividad. Reintentando automáticamente...",
@@ -70,6 +96,29 @@ export const useAIConfig = () => {
           fetchAIConfig();
         }, 3000);
       } else {
+        // Crear notificación de error general
+        if (user?.id) {
+          NotificationService.createNotification(
+            user.id,
+            'error',
+            'Error Cargando IA',
+            'No se pudo cargar la configuración del agente IA',
+            {
+              priority: 'high',
+              metadata: {
+                module: 'ai_agent',
+                action: 'load_error',
+                error_type: 'general_error',
+                error_message: error instanceof Error ? error.message : 'Error desconocido'
+              },
+              action_url: '/dashboard/ai-agent',
+              action_label: 'Reintentar'
+            }
+          ).catch(notificationError => {
+            console.error('Error creating load notification:', notificationError);
+          });
+        }
+        
         toast({
           title: "Error",
           description: "No se pudo cargar la configuración",
@@ -87,6 +136,28 @@ export const useAIConfig = () => {
       // Validar configuración
       const errors = AIConfigService.validateConfig(config);
       if (errors.length > 0) {
+        // Crear notificación de error de validación
+        if (user?.id) {
+          NotificationService.createNotification(
+            user.id,
+            'error',
+            'Configuración incompleta',
+            `Faltan campos requeridos: ${errors.join(', ')}`,
+            {
+              priority: 'high',
+              metadata: {
+                error_type: 'validation_failed',
+                missing_fields: errors,
+                module: 'ai_agent'
+              },
+              action_url: '/dashboard/ai-agent',
+              action_label: 'Completar configuración'
+            }
+          ).catch(error => {
+            console.error('Error creating validation notification:', error);
+          });
+        }
+        
         toast({
           title: "Configuración incompleta",
           description: errors.join(', '),
@@ -97,11 +168,60 @@ export const useAIConfig = () => {
 
       await AIConfigService.saveAIConfig(config);
       
+      // Crear notificación de éxito
+      if (user?.id) {
+        const completionPercentage = Math.round(
+          (Object.values(config.training_progress).filter(Boolean).length / Object.keys(config.training_progress).length) * 100
+        );
+        
+        NotificationService.createNotification(
+          user.id,
+          'system',
+          'Agente IA actualizado',
+          `Configuración guardada exitosamente. Progreso: ${completionPercentage}%`,
+          {
+            priority: 'medium',
+            metadata: {
+              completion_percentage: completionPercentage,
+              is_active: config.is_active,
+              module: 'ai_agent',
+              action: 'config_saved'
+            },
+            action_url: '/dashboard/ai-agent',
+            action_label: 'Ver configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating success notification:', error);
+        });
+      }
+      
       toast({
         title: "Configuración guardada",
         description: "Tu agente de IA ha sido actualizado exitosamente",
       });
     } catch (error: unknown) {
+      // Crear notificación de error crítico
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'error',
+          'Error crítico en IA',
+          'No se pudo guardar la configuración del agente IA',
+          {
+            priority: 'high',
+            metadata: {
+              error_type: 'save_failed',
+              module: 'ai_agent',
+              error_message: error instanceof Error ? error.message : 'Error desconocido'
+            },
+            action_url: '/dashboard/ai-agent',
+            action_label: 'Reintentar'
+          }
+        ).catch(notificationError => {
+          console.error('Error creating error notification:', notificationError);
+        });
+      }
+      
       toast({
         title: "Error",
         description: "No se pudo guardar la configuración",
@@ -115,6 +235,82 @@ export const useAIConfig = () => {
   const updateConfig = (updates: Partial<AIConfig>) => {
     setConfig(prev => {
       const newConfig = { ...prev, ...updates };
+      
+      // Detectar cambios importantes y crear notificaciones
+      if (user?.id) {
+        // Notificación de activación/desactivación del agente
+        if ('is_active' in updates && updates.is_active !== prev.is_active) {
+          NotificationService.createNotification(
+            user.id,
+            'system',
+            updates.is_active ? 'Agente IA Activado' : 'Agente IA Desactivado',
+            updates.is_active 
+              ? 'Tu agente IA ahora responderá automáticamente a los mensajes'
+              : 'Tu agente IA ha sido desactivado y no responderá automáticamente',
+            {
+              priority: 'high',
+              metadata: {
+                module: 'ai_agent',
+                action: 'agent_toggle',
+                is_active: updates.is_active,
+                previous_state: prev.is_active
+              },
+              action_url: '/dashboard/ai-agent',
+              action_label: 'Ver configuración'
+            }
+          ).catch(error => {
+            console.error('Error creating agent toggle notification:', error);
+          });
+        }
+        
+        // Notificación de cambio en horarios
+        if ('always_active' in updates && updates.always_active !== prev.always_active) {
+          NotificationService.createNotification(
+            user.id,
+            'system',
+            updates.always_active ? 'Horarios: Siempre Activo' : 'Horarios: Configuración Específica',
+            updates.always_active
+              ? 'El agente ahora funcionará las 24 horas'
+              : 'El agente ahora funcionará según horarios específicos',
+            {
+              priority: 'medium',
+              metadata: {
+                module: 'ai_agent',
+                action: 'schedule_change',
+                always_active: updates.always_active
+              },
+              action_url: '/dashboard/ai-agent',
+              action_label: 'Ver horarios'
+            }
+          ).catch(error => {
+            console.error('Error creating schedule notification:', error);
+          });
+        }
+        
+        // Notificación de activación del asesor humano
+        if ('advisor_enabled' in updates && updates.advisor_enabled !== prev.advisor_enabled) {
+          NotificationService.createNotification(
+            user.id,
+            'system',
+            updates.advisor_enabled ? 'Asesor Humano Activado' : 'Asesor Humano Desactivado',
+            updates.advisor_enabled
+              ? 'El agente ahora derivará consultas complejas a humanos'
+              : 'El agente ya no derivará consultas a humanos',
+            {
+              priority: 'medium',
+              metadata: {
+                module: 'ai_agent',
+                action: 'advisor_toggle',
+                advisor_enabled: updates.advisor_enabled
+              },
+              action_url: '/dashboard/ai-agent',
+              action_label: 'Ver configuración'
+            }
+          ).catch(error => {
+            console.error('Error creating advisor notification:', error);
+          });
+        }
+      }
       
       // Auto-save cuando se actualiza la configuración
       // Usar debounce implícito con setTimeout

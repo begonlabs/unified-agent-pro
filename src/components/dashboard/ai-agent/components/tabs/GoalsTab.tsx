@@ -6,6 +6,8 @@ import { Target } from 'lucide-react';
 import { ExampleScenarios } from '../shared/ExampleScenarios';
 import { SectionStatus } from '../shared/SectionStatus';
 import { ExampleScenario } from '../../types';
+import { NotificationService } from '@/components/notifications';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GoalsTabProps {
   goals: string;
@@ -127,6 +129,34 @@ export const GoalsTab: React.FC<GoalsTabProps> = ({
   onScenarioSelect
 }) => {
   const isCompleted = !!goals.trim();
+  const { user } = useAuth();
+
+  const handleScenarioSelect = (scenario: ExampleScenario) => {
+    onScenarioSelect(scenario);
+    
+    // Crear notificación de plantilla aplicada
+    if (user?.id) {
+      NotificationService.createNotification(
+        user.id,
+        'system',
+        'Plantilla Aplicada',
+        `Se aplicó la plantilla "${scenario.title}" a tu configuración de IA`,
+        {
+          priority: 'low',
+          metadata: {
+            module: 'ai_agent',
+            action: 'template_applied',
+            template_name: scenario.title,
+            template_industry: scenario.title
+          },
+          action_url: '/dashboard/ai-agent',
+          action_label: 'Ver configuración'
+        }
+      ).catch(error => {
+        console.error('Error creating template notification:', error);
+      });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -161,7 +191,7 @@ export const GoalsTab: React.FC<GoalsTabProps> = ({
         
         <ExampleScenarios 
           scenarios={exampleScenarios}
-          onScenarioSelect={onScenarioSelect}
+          onScenarioSelect={handleScenarioSelect}
         />
       </CardContent>
     </Card>
