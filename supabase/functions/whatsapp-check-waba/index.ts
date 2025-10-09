@@ -85,7 +85,7 @@ serve(async (req) => {
     // Try to find WABAs with the provided token
     console.log('🔍 Searching for WABAs with provided token...');
     
-    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v18.0';
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0';
     const appId = Deno.env.get('WHATSAPP_APP_ID') || Deno.env.get('META_APP_ID');
     
     // Try multiple approaches to find WABAs

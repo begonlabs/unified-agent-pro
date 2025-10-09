@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Channel } from '../types';
 import { ChannelsService } from '../services/channelsService';
 import { NotificationService } from '@/components/notifications';
+import { EmailService } from '@/services/emailService';
 
 export const useChannelActions = (user: User | null) => {
   const { toast } = useToast();
@@ -48,27 +49,49 @@ export const useChannelActions = (user: User | null) => {
       // Actualizar estado local
       setChannels(channels.filter(c => c.id !== channelId));
 
-      // Crear notificación de desconexión exitosa
-      if (user?.id) {
-        NotificationService.createNotification(
-          user.id,
-          'channel_disconnection',
-          `${channelName} desconectado`,
-          'La conexión ha sido eliminada exitosamente',
-          {
-            priority: 'medium',
-            metadata: {
-              channel_id: channelId,
-              channel_type: channel.channel_type,
-              channel_name: channelName
-            },
-            action_url: '/dashboard/channels',
-            action_label: 'Ver configuración'
-          }
-        ).catch(error => {
-          console.error('Error creating disconnection notification:', error);
-        });
-      }
+             // Crear notificación de desconexión exitosa
+             if (user?.id) {
+               NotificationService.createNotification(
+                 user.id,
+                 'channel_disconnection',
+                 `${channelName} desconectado`,
+                 'La conexión ha sido eliminada exitosamente',
+                 {
+                   priority: 'medium',
+                   metadata: {
+                     channel_id: channelId,
+                     channel_type: channel.channel_type,
+                     channel_name: channelName
+                   },
+                   action_url: '/dashboard/channels',
+                   action_label: 'Ver configuración'
+                 }
+               ).catch(error => {
+                 console.error('Error creating disconnection notification:', error);
+               });
+
+               // Enviar correo de desconexión
+               EmailService.shouldSendEmail(user.id, 'channels').then(shouldSend => {
+                 if (shouldSend && user.email) {
+                   const template = EmailService.getTemplates().channelConnected(
+                     user.email.split('@')[0],
+                     `${channelName} Desconectado`,
+                     channel.channel_type
+                   );
+                   EmailService.sendEmail({
+                     to: user.email,
+                     template: {
+                       ...template,
+                       subject: `❌ ${channelName} Desconectado - OndAI`,
+                       html: template.html.replace('¡Canal Conectado!', 'Canal Desconectado').replace('conectado exitosamente', 'desconectado exitosamente')
+                     },
+                     priority: 'medium'
+                   }).catch(error => {
+                     console.error('Error sending disconnection email:', error);
+                   });
+                 }
+               });
+             }
 
     } catch (error: unknown) {
       console.error('Error disconnecting channel:', error);

@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ChannelsViewProps, InstagramConfig } from './types';
 import { NotificationService } from '@/components/notifications';
+import { EmailService } from '@/services/emailService';
 import { useChannels } from './hooks/useChannels';
 import { useChannelConnections } from './hooks/useChannelConnections';
 import { useInstagramVerification } from './hooks/useInstagramVerification';
@@ -111,6 +112,24 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         }
       ).catch(error => {
         console.error('Error creating connection notification:', error);
+      });
+
+      // Enviar correo de conexión exitosa
+      EmailService.shouldSendEmail(currentUser.id, 'channels').then(shouldSend => {
+        if (shouldSend && currentUser.email) {
+          const template = EmailService.getTemplates().channelConnected(
+            currentUser.email.split('@')[0],
+            channelName,
+            channel || 'unknown'
+          );
+          EmailService.sendEmail({
+            to: currentUser.email,
+            template,
+            priority: 'high'
+          }).catch(error => {
+            console.error('Error sending connection email:', error);
+          });
+        }
       });
       
       // Limpiar URL parameters

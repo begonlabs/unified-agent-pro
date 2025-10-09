@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Target, Shield, Brain, Users, Clock, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { AIConfigStatus } from '../../types';
 import { NotificationService } from '@/components/notifications';
+import { EmailService } from '@/services/emailService';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ConfigStatusProps {
@@ -65,6 +66,23 @@ export const ConfigStatus: React.FC<ConfigStatusProps> = ({
         ).catch(error => {
           console.error('Error creating training complete notification:', error);
         });
+
+        // Enviar correo de entrenamiento completo
+        EmailService.shouldSendEmail(user.id, 'aiAgent').then(shouldSend => {
+          if (shouldSend && user.email) {
+            const template = EmailService.getTemplates().trainingComplete(
+              user.email.split('@')[0], 
+              completionPercentage
+            );
+            EmailService.sendEmail({
+              to: user.email,
+              template,
+              priority: 'high'
+            }).catch(error => {
+              console.error('Error sending training complete email:', error);
+            });
+          }
+        });
       } else if (completionPercentage >= 75 && previousCompletion < 75) {
         NotificationService.createNotification(
           user.id,
@@ -109,7 +127,7 @@ export const ConfigStatus: React.FC<ConfigStatusProps> = ({
       
       setPreviousCompletion(completionPercentage);
     }
-  }, [completionPercentage, previousCompletion, user?.id]);
+  }, [completionPercentage, previousCompletion, user?.id, user?.email]);
   
   const statusItems = [
     {

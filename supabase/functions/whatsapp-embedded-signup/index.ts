@@ -98,7 +98,7 @@ function validateConfiguration(): ConfigurationVariables {
   const config = {
     appId: Deno.env.get('WHATSAPP_APP_ID') || Deno.env.get('META_APP_ID'),
     appSecret: Deno.env.get('WHATSAPP_APP_SECRET') || Deno.env.get('META_APP_SECRET'),
-    graphVersion: Deno.env.get('META_GRAPH_VERSION') || 'v18.0',
+    graphVersion: Deno.env.get('META_GRAPH_VERSION') || 'v23.0',
     webhookUrl: Deno.env.get('WHATSAPP_WEBHOOK_URL') || 'https://supabase.ondai.ai/functions/v1/whatsapp-webhook',
     verifyToken: Deno.env.get('WHATSAPP_VERIFY_TOKEN'),
     supabaseUrl: Deno.env.get('SUPABASE_URL'),
@@ -231,13 +231,134 @@ async function exchangeCodeForToken(code: string, config: ConfigurationVariables
     throw new Error('No access token received from Facebook');
   }
 
-  logEvent('info', 'Token exchange successful');
+  // Log FULL token response to see if there's additional data from Embedded Signup
+  logEvent('info', 'Token exchange successful', { 
+    hasAccessToken: !!tokenData.access_token,
+    tokenType: tokenData.token_type,
+    expiresIn: tokenData.expires_in,
+    // Check for additional fields that Embedded Signup might return
+    hasBusinessId: !!tokenData.business_id,
+    hasWabaId: !!tokenData.waba_id,
+    additionalFields: Object.keys(tokenData).filter(k => 
+      !['access_token', 'token_type', 'expires_in'].includes(k)
+    )
+  });
+  
   return tokenData.access_token;
+}
+
+// Helper function to check token info for Business Integration System data
+// Returns array of WABA IDs found in granular scopes
+async function checkTokenBusinessIntegration(token: string, config: ConfigurationVariables): Promise<string[]> {
+  try {
+    // Get app access token for debug token call
+    const appTokenResponse = await fetchWithRetry(
+      `https://graph.facebook.com/${config.graphVersion}/oauth/access_token?client_id=${config.appId}&client_secret=${config.appSecret}&grant_type=client_credentials`
+    );
+    
+    if (appTokenResponse.ok) {
+      const appTokenData = await appTokenResponse.json();
+      const appToken = appTokenData.access_token;
+      
+      // Use debug_token endpoint to get detailed token information
+      const debugResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/debug_token?input_token=${token}&access_token=${appToken}`
+      );
+      
+      if (debugResponse.ok) {
+        const debugData = await debugResponse.json();
+        const granularScopes = debugData.data?.granular_scopes || [];
+        
+        logEvent('info', 'Token debug with app token', { 
+          debugInfo: debugData.data,
+          granularScopes: granularScopes,
+          profileId: debugData.data?.profile_id,
+          dataAccessExpiresAt: debugData.data?.data_access_expires_at
+        });
+        
+        // CRITICAL: Extract WABA IDs from granular scopes
+        // This is the key to finding WABAs created through Embedded Signup
+        const wabaIds = new Set<string>();
+        for (const scope of granularScopes) {
+          if (
+            (scope.scope === 'whatsapp_business_management' || 
+             scope.scope === 'whatsapp_business_messaging') &&
+            scope.target_ids
+          ) {
+            for (const targetId of scope.target_ids) {
+              wabaIds.add(targetId);
+            }
+          }
+        }
+        
+        if (wabaIds.size > 0) {
+          logEvent('info', 'WABA IDs found in granular scopes!', { 
+            wabaIds: Array.from(wabaIds)
+          });
+          return Array.from(wabaIds);
+        }
+      }
+    }
+  } catch (error) {
+    logEvent('warn', 'Could not debug token with app token', { error: error.message });
+  }
+  
+  return [];
 }
 
 // Helper function to perform a single WABA search attempt
 async function performWABASearch(token: string, config: ConfigurationVariables): Promise<WhatsAppBusinessAccount[]> {
   const allWabas: WhatsAppBusinessAccount[] = [];
+  
+  // First, check if token has business integration info and extract WABA IDs from granular scopes
+  const wabaIdsFromScopes = await checkTokenBusinessIntegration(token, config);
+  
+  // PRIORITY 1: If we found WABA IDs in granular scopes, query them directly
+  if (wabaIdsFromScopes.length > 0) {
+    logEvent('info', 'Using WABA IDs from granular scopes', { 
+      wabaCount: wabaIdsFromScopes.length,
+      wabaIds: wabaIdsFromScopes
+    });
+    
+    for (const wabaId of wabaIdsFromScopes) {
+      try {
+        const wabaResponse = await fetchWithRetry(
+          `https://graph.facebook.com/${config.graphVersion}/${wabaId}?fields=id,name,account_review_status,business_verification_status&access_token=${token}`,
+          { method: 'GET' }
+        );
+        
+        if (wabaResponse.ok) {
+          const wabaData = await wabaResponse.json();
+          allWabas.push(wabaData);
+          logEvent('info', 'WABA details fetched from granular scope ID', {
+            wabaId: wabaData.id,
+            wabaName: wabaData.name,
+            reviewStatus: wabaData.account_review_status
+          });
+        } else {
+          const errorText = await wabaResponse.text();
+          logEvent('warn', 'Failed to fetch WABA from granular scope ID', {
+            wabaId,
+            status: wabaResponse.status,
+            error: errorText
+          });
+        }
+      } catch (error) {
+        logEvent('warn', 'Error fetching WABA from granular scope', {
+          wabaId,
+          error: error.message
+        });
+      }
+    }
+    
+    // If we found WABAs from granular scopes, return them immediately
+    if (allWabas.length > 0) {
+      logEvent('info', 'WABAs successfully found from granular scopes', {
+        wabaCount: allWabas.length
+      });
+      return allWabas;
+    }
+  }
   
   // Debug del token para entender qué permisos tiene
   const debugResponse = await fetchWithRetry(
@@ -272,7 +393,7 @@ async function performWABASearch(token: string, config: ConfigurationVariables):
   }
 
   // Enfoque 1: Obtener información del usuario para conseguir los Business IDs
-  const userBusinesses: Array<{ id: string; name: string }> = [];
+  let userBusinesses: Array<{ id: string; name: string }> = [];
   try {
     const userResponse = await fetchWithRetry(
       `https://graph.facebook.com/${config.graphVersion}/me?fields=id,name&access_token=${token}`,
@@ -409,6 +530,8 @@ async function performWABASearch(token: string, config: ConfigurationVariables):
 
       // Para el flujo de Embedded Signup, las WABAs podrían estar disponibles directamente 
       // a través de la Graph API usando un endpoint específico para aplicaciones
+      
+      // Try 1: me/accounts with whatsapp_business_account type
       logEvent('info', 'Trying me/accounts endpoint for WABAs');
       const embeddedWabasResponse = await fetchWithRetry(
         `https://graph.facebook.com/${config.graphVersion}/me/accounts?type=whatsapp_business_account&access_token=${token}`,
@@ -419,7 +542,7 @@ async function performWABASearch(token: string, config: ConfigurationVariables):
         const embeddedWabasData = await embeddedWabasResponse.json();
         const embeddedWabas = embeddedWabasData.data || [];
         allWabas.push(...embeddedWabas);
-        logEvent('info', 'Embedded WABAs found', { 
+        logEvent('info', 'Embedded WABAs from me/accounts found', { 
           wabaCount: embeddedWabas.length,
           wabas: embeddedWabas.map(w => ({ id: w.id, name: w.name }))
         });
@@ -427,6 +550,78 @@ async function performWABASearch(token: string, config: ConfigurationVariables):
         const errorText = await embeddedWabasResponse.text();
         logEvent('warn', 'Embedded WABAs fetch failed', { 
           status: embeddedWabasResponse.status, 
+          error: errorText 
+        });
+      }
+      
+      // Try 2: me/business_users endpoint (specific to Business Integration System)
+      logEvent('info', 'Trying me/business_users endpoint');
+      const businessUsersResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/me/business_users?access_token=${token}`,
+        { method: 'GET' }
+      );
+      
+      if (businessUsersResponse.ok) {
+        const businessUsersData = await businessUsersResponse.json();
+        const businessUsers = businessUsersData.data || [];
+        logEvent('info', 'Business users found', { 
+          userCount: businessUsers.length,
+          users: businessUsers.map(u => ({ id: u.id, business: u.business }))
+        });
+        
+        // For each business user, try to get their businesses
+        for (const businessUser of businessUsers) {
+          if (businessUser.business && businessUser.business.id) {
+            try {
+              const bizWabaResponse = await fetchWithRetry(
+                `https://graph.facebook.com/${config.graphVersion}/${businessUser.business.id}/owned_whatsapp_business_accounts?access_token=${token}`,
+                { method: 'GET' }
+              );
+              if (bizWabaResponse.ok) {
+                const bizWabaData = await bizWabaResponse.json();
+                const bizWabas = bizWabaData.data || [];
+                allWabas.push(...bizWabas);
+                logEvent('info', 'WABAs from business user found', {
+                  businessId: businessUser.business.id,
+                  wabaCount: bizWabas.length
+                });
+              }
+            } catch (error) {
+              logEvent('warn', 'Failed to fetch WABAs from business user', { 
+                businessId: businessUser.business.id,
+                error: error.message 
+              });
+            }
+          }
+        }
+      } else {
+        const errorText = await businessUsersResponse.text();
+        logEvent('warn', 'Business users fetch failed', { 
+          status: businessUsersResponse.status, 
+          error: errorText 
+        });
+      }
+      
+      // Try 3: Direct WABA query with all fields
+      logEvent('info', 'Trying me with WABA fields');
+      const meWithWabaResponse = await fetchWithRetry(
+        `https://graph.facebook.com/${config.graphVersion}/me?fields=id,name,whatsapp_business_accounts{id,name}&access_token=${token}`,
+        { method: 'GET' }
+      );
+      
+      if (meWithWabaResponse.ok) {
+        const meWithWabaData = await meWithWabaResponse.json();
+        if (meWithWabaData.whatsapp_business_accounts && meWithWabaData.whatsapp_business_accounts.data) {
+          const meWabas = meWithWabaData.whatsapp_business_accounts.data;
+          allWabas.push(...meWabas);
+          logEvent('info', 'WABAs from me endpoint found', { 
+            wabaCount: meWabas.length
+          });
+        }
+      } else {
+        const errorText = await meWithWabaResponse.text();
+        logEvent('warn', 'me with WABA fields fetch failed', { 
+          status: meWithWabaResponse.status, 
           error: errorText 
         });
       }

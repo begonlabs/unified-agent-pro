@@ -254,8 +254,13 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
   try {
     console.log('🎯 Processing Instagram event:', {
       has_message: !!event.message,
+      message_text: event.message?.text,
+      message_mid: event.message?.mid,
+      is_echo: event.message?.is_echo,
       sender_id: event.sender?.id,
-      recipient_id: event.recipient?.id
+      recipient_id: event.recipient?.id,
+      timestamp: event.timestamp,
+      full_event: JSON.stringify(event, null, 2)
     });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -286,6 +291,26 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     console.log(`📝 [Instagram] Message received from ${senderId} for page ${pageId}: "${text}"`);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 🔥 CRITICAL: Check if this message was already processed (prevent duplicates)
+    if (messageId) {
+      const { data: existingMessage } = await supabase
+        .from('messages')
+        .select('id, created_at')
+        .eq('platform_message_id', messageId)
+        .limit(1)
+        .single();
+      
+      if (existingMessage) {
+        console.log('⏭️ Skipping Instagram message - already processed:', {
+          platform_message_id: messageId,
+          existing_message_id: existingMessage.id,
+          created_at: existingMessage.created_at,
+          duplicate_prevention: 'Meta webhook duplicate detected'
+        });
+        return; // Exit early - message already processed
+      }
+    }
 
     // 🔧 Check if this message contains a verification code (PRIORITY CHECK)
     const verificationCode = extractVerificationCode(text);
@@ -375,11 +400,14 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       logic: isEcho ? 'echo: using senderId as business_account_id' : 'normal: using pageId as business_account_id'
     });
     
-    // 🔥 NEW: Try to find by Business Account ID first, then fallback to User ID for backwards compatibility
+    // 🔥 ENHANCED: Try multiple search strategies for Instagram channels
     let channel: CommunicationChannel | null = null;
     let channelError: unknown = null;
     
-    // First attempt: Search by Instagram Business Account ID (new field)
+    console.log('🔍 Starting comprehensive Instagram channel search...');
+    
+    // Strategy 1: Search by Instagram Business Account ID (new field)
+    console.log('📋 Strategy 1: Searching by Business Account ID:', webhookBusinessId);
     const { data: businessChannel, error: businessError } = await supabase
       .from('communication_channels')
       .select('*')
@@ -389,10 +417,12 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     
     if (businessChannel && !businessError) {
       channel = businessChannel;
-      console.log('✅ Found Instagram channel by Business Account ID');
+      console.log('✅ Found Instagram channel by Business Account ID:', businessChannel.id);
     } else {
-      // Fallback: Search by Instagram User ID (old field, for backwards compatibility)  
-      console.log('🔄 Trying fallback search by User ID...');
+      console.log('❌ Strategy 1 failed:', businessError?.message || 'No business channel found');
+      
+      // Strategy 2: Search by Instagram User ID (old field, for backwards compatibility)  
+      console.log('📋 Strategy 2: Searching by User ID:', webhookBusinessId);
       const { data: userChannel, error: userError } = await supabase
         .from('communication_channels')
         .select('*')
@@ -402,10 +432,52 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       
       if (userChannel && !userError) {
         channel = userChannel;
-        console.log('✅ Found Instagram channel by User ID (fallback)');
+        console.log('✅ Found Instagram channel by User ID (fallback):', userChannel.id);
       } else {
-        channelError = userError || businessError;
-        console.log('❌ No Instagram channel found with either Business Account ID or User ID');
+        console.log('❌ Strategy 2 failed:', userError?.message || 'No user channel found');
+        
+        // Strategy 3: Search ALL Instagram channels to debug
+        console.log('📋 Strategy 3: Debugging - Getting ALL Instagram channels...');
+        const { data: allChannels, error: allError } = await supabase
+          .from('communication_channels')
+          .select('id, user_id, channel_config, is_connected')
+          .eq('channel_type', 'instagram');
+        
+        if (allChannels && !allError) {
+          console.log('🔍 All Instagram channels found:', allChannels.length);
+          allChannels.forEach((ch, index) => {
+            const config = ch.channel_config as InstagramChannelConfig;
+            console.log(`  Channel ${index + 1}:`, {
+              id: ch.id,
+              user_id: ch.user_id,
+              is_connected: ch.is_connected,
+              instagram_user_id: config?.instagram_user_id,
+              instagram_business_account_id: config?.instagram_business_account_id,
+              username: config?.username,
+              account_type: config?.account_type,
+              messaging_available: config?.messaging_available
+            });
+          });
+          
+          // Strategy 4: Try to find by any matching ID in the config
+          console.log('📋 Strategy 4: Searching by ANY matching ID in config...');
+          const matchingChannel = allChannels.find(ch => {
+            const config = ch.channel_config as InstagramChannelConfig;
+            return config?.instagram_user_id === webhookBusinessId || 
+                   config?.instagram_business_account_id === webhookBusinessId;
+          });
+          
+          if (matchingChannel) {
+            channel = matchingChannel;
+            console.log('✅ Found Instagram channel by config matching:', matchingChannel.id);
+          } else {
+            channelError = new Error('No Instagram channel found with any matching ID');
+            console.log('❌ Strategy 4 failed: No matching channel found');
+          }
+        } else {
+          channelError = allError || new Error('Failed to fetch Instagram channels');
+          console.log('❌ Strategy 3 failed:', allError?.message);
+        }
       }
     }
 
@@ -580,7 +652,35 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       try {
         console.log('🤖 Generando respuesta automática de IA para Instagram:', conversation.id);
         
-  
+        // 🔥 CRITICAL: Check if we already have an AI response right after this specific client message
+        const { data: clientMessage } = await supabase
+          .from('messages')
+          .select('id, created_at')
+          .eq('platform_message_id', messageId)
+          .eq('conversation_id', conversation.id)
+          .single();
+        
+        if (clientMessage) {
+          // Check if there's already an IA message created immediately after this client message
+          const { data: existingAIResponse } = await supabase
+            .from('messages')
+            .select('id, created_at')
+            .eq('conversation_id', conversation.id)
+            .eq('sender_type', 'ia')
+            .gte('created_at', clientMessage.created_at)
+            .lte('created_at', new Date(new Date(clientMessage.created_at).getTime() + 30000).toISOString())
+            .limit(1)
+            .single();
+          
+          if (existingAIResponse) {
+            console.log('⏭️ Skipping AI response - already responded to this specific Instagram message:', {
+              client_message_id: clientMessage.id,
+              existing_ai_response_id: existingAIResponse.id
+            });
+            return;
+          }
+        }
+
         const { data: aiConfig } = await supabase
           .from('ai_configurations')
           .select('*')

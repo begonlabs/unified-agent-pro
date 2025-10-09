@@ -176,11 +176,17 @@ serve(async (req) => {
       console.log('⚠️ Could not fetch user profile, using defaults')
     }
 
-    // 🔥 NEW: Get Instagram Business Account ID for messaging (if business account)
+    // 🔥 NEW: Get Instagram Business Account ID for messaging (Business & Creator accounts)
     let businessAccountId = null;
-    if (userProfile.account_type === 'BUSINESS') {
-      console.log('🏢 Fetching Instagram Business Account ID for messaging...');
+    const supportsMessaging = ['BUSINESS', 'MEDIA_CREATOR'].includes(userProfile.account_type);
+    
+    if (supportsMessaging) {
+      console.log(`🏢 Account type ${userProfile.account_type} supports messaging - fetching Business Account ID...`);
       try {
+        // For MEDIA_CREATOR and BUSINESS accounts, the Business Account ID is typically the user ID itself
+        businessAccountId = userProfile.id;
+        console.log('✅ Using user ID as Business Account ID:', businessAccountId);
+        
         // Try to get business account info using Instagram Graph API (not Facebook Graph API)
         const businessResponse = await fetch(
           `https://graph.instagram.com/me?fields=id,username,account_type&access_token=${finalToken}`
@@ -188,39 +194,53 @@ serve(async (req) => {
         
         if (businessResponse.ok) {
           const businessData = await businessResponse.json();
-          console.log('📋 Business account response:', businessData);
+          console.log('📋 Business/Creator account response:', businessData);
           
-          // For Instagram Business accounts, try to get the messaging-enabled business account ID
-          // This might be the same as the user ID or different, depending on the account setup
-          businessAccountId = businessData.id;
-          
-          // Alternative approach: Check if we can access business endpoints
-          const businessPagesResponse = await fetch(
-            `https://graph.facebook.com/v23.0/me/accounts?access_token=${finalToken}`
-          );
-          
-          if (businessPagesResponse.ok) {
-            const businessPagesData = await businessPagesResponse.json();
-            console.log('📄 Business pages data:', businessPagesData);
-            
-            // Look for Instagram business accounts in the pages
-            const instagramPages = businessPagesData.data?.filter(page => 
-              page.instagram_business_account?.id
-            );
-            
-            if (instagramPages && instagramPages.length > 0) {
-              businessAccountId = instagramPages[0].instagram_business_account.id;
-              console.log('✅ Found Instagram Business Account ID via pages:', businessAccountId);
-            }
+          // Verify the ID
+          if (businessData.id && businessData.id !== businessAccountId) {
+            console.log(`⚠️ Different ID found: ${businessData.id}, using it instead`);
+            businessAccountId = businessData.id;
           }
           
-          console.log('✅ Instagram Business Account ID:', businessAccountId || 'Not found');
+          // Alternative approach: Check if we can access business endpoints via Facebook Pages
+          try {
+            const businessPagesResponse = await fetch(
+              `https://graph.facebook.com/v23.0/me/accounts?access_token=${finalToken}`
+            );
+            
+            if (businessPagesResponse.ok) {
+              const businessPagesData = await businessPagesResponse.json();
+              console.log('📄 Business pages data:', businessPagesData);
+              
+              // Look for Instagram business accounts in the pages
+              const instagramPages = businessPagesData.data?.filter(page => 
+                page.instagram_business_account?.id
+              );
+              
+              if (instagramPages && instagramPages.length > 0) {
+                const pageBusinessId = instagramPages[0].instagram_business_account.id;
+                console.log('✅ Found Instagram Business Account ID via Facebook pages:', pageBusinessId);
+                // Use the page business ID if found
+                businessAccountId = pageBusinessId;
+              }
+            } else {
+              console.log('ℹ️ Could not fetch Facebook pages (this is normal for Creator accounts without connected pages)');
+            }
+          } catch (pagesError) {
+            console.log('ℹ️ Facebook pages check skipped (normal for standalone Creator accounts)');
+          }
+          
+          console.log('✅ Final Instagram Business Account ID:', businessAccountId);
         } else {
           const errorText = await businessResponse.text();
           console.log('⚠️ Could not fetch business account info:', errorText);
+          // Keep using userProfile.id as fallback
+          console.log('ℹ️ Using user profile ID as fallback:', businessAccountId);
         }
       } catch (businessError) {
         console.log('⚠️ Error fetching business account info:', businessError);
+        // Keep using userProfile.id as fallback
+        console.log('ℹ️ Using user profile ID as fallback:', businessAccountId);
       }
     } else {
       console.log('ℹ️ Personal account - business messaging not available');
@@ -317,6 +337,90 @@ serve(async (req) => {
     if (dbError) {
       console.error('❌ Database operation error:', dbError)
       // Continue anyway, as the Instagram connection worked
+    }
+
+    // 🔥 CRITICAL: Subscribe Instagram Business Account to webhook
+    // This is required for Meta to send webhook events to our endpoint
+    if (businessAccountId && finalToken) {
+      console.log('📡 Subscribing Instagram Business Account to webhook:', businessAccountId);
+      
+      try {
+        // Subscribe the Instagram Business Account to webhook events
+        const subscribeResponse = await fetch(
+          `https://graph.instagram.com/${graphVersion}/${businessAccountId}/subscribed_apps?access_token=${finalToken}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              subscribed_fields: ['messages', 'messaging_postbacks', 'message_reactions']
+            })
+          }
+        );
+
+        if (subscribeResponse.ok) {
+          const subscribeResult = await subscribeResponse.json();
+          console.log('✅ Instagram account successfully subscribed to webhook:', subscribeResult);
+          
+          // Update channel config to mark webhook as subscribed
+          const channelId = existingChannel?.id;
+          if (channelId) {
+            // Get current config first
+            const { data: currentChannel } = await supabase
+              .from('communication_channels')
+              .select('channel_config')
+              .eq('id', channelId)
+              .single();
+            
+            if (currentChannel) {
+              const updatedConfig = {
+                ...currentChannel.channel_config,
+                webhook_subscribed: true,
+                webhook_subscribed_at: new Date().toISOString()
+              };
+              
+              await supabase
+                .from('communication_channels')
+                .update({ channel_config: updatedConfig })
+                .eq('id', channelId);
+            }
+          }
+        } else {
+          const errorText = await subscribeResponse.text();
+          console.error('❌ Failed to subscribe Instagram account to webhook:', errorText);
+          console.error('⚠️ This means Meta will NOT send webhook events for this account!');
+          
+          // Try alternative subscription method (using App ID instead)
+          console.log('🔄 Trying alternative subscription method with App ID...');
+          const altSubscribeResponse = await fetch(
+            `https://graph.instagram.com/${graphVersion}/${businessAccountId}/subscribed_apps`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                access_token: finalToken,
+                subscribed_fields: 'messages,messaging_postbacks,message_reactions'
+              })
+            }
+          );
+          
+          if (altSubscribeResponse.ok) {
+            const altResult = await altSubscribeResponse.json();
+            console.log('✅ Alternative subscription method succeeded:', altResult);
+          } else {
+            const altError = await altSubscribeResponse.text();
+            console.error('❌ Alternative subscription also failed:', altError);
+          }
+        }
+      } catch (subscribeError) {
+        console.error('❌ Error subscribing Instagram account to webhook:', subscribeError);
+        console.error('⚠️ Account connected but webhooks may not work!');
+      }
+    } else {
+      console.log('⚠️ Skipping webhook subscription - no business account ID or token');
     }
 
     // Redirect to frontend dashboard with success

@@ -4,6 +4,7 @@ import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { AIConfigService } from '../services/aiConfigService';
 import { AIConfig, AIConfigFormData } from '../types';
 import { NotificationService } from '@/components/notifications';
+import { EmailService } from '@/services/emailService';
 import { useAuth } from '@/hooks/useAuth';
 
 export const useAIConfig = () => {
@@ -220,6 +221,24 @@ export const useAIConfig = () => {
         ).catch(notificationError => {
           console.error('Error creating error notification:', notificationError);
         });
+
+        // Enviar correo de error crítico
+        EmailService.shouldSendEmail(user.id, 'system').then(shouldSend => {
+          if (shouldSend && user.email) {
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            const template = EmailService.getTemplates().criticalError(
+              user.email.split('@')[0], 
+              `Error al guardar configuración: ${errorMessage}`
+            );
+            EmailService.sendEmail({
+              to: user.email,
+              template,
+              priority: 'high'
+            }).catch(emailError => {
+              console.error('Error sending critical error email:', emailError);
+            });
+          }
+        });
       }
       
       toast({
@@ -261,6 +280,22 @@ export const useAIConfig = () => {
           ).catch(error => {
             console.error('Error creating agent toggle notification:', error);
           });
+
+          // Enviar correo de activación/desactivación
+          if (updates.is_active) {
+            EmailService.shouldSendEmail(user.id, 'aiAgent').then(shouldSend => {
+              if (shouldSend && user.email) {
+                const template = EmailService.getTemplates().aiAgentActivated(user.email.split('@')[0]);
+                EmailService.sendEmail({
+                  to: user.email,
+                  template,
+                  priority: 'high'
+                }).catch(error => {
+                  console.error('Error sending activation email:', error);
+                });
+              }
+            });
+          }
         }
         
         // Notificación de cambio en horarios

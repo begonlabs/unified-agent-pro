@@ -76,7 +76,7 @@ async function sendAIResponseToFacebook(
   message: string, 
   pageId: string, 
   recipientId: string
-): Promise<boolean> {
+): Promise<{ success: boolean; facebook_message_id?: string }> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -92,7 +92,7 @@ async function sendAIResponseToFacebook(
 
     if (!channel?.channel_config?.page_access_token) {
       console.error('❌ No se encontró token de acceso para la página:', pageId);
-      return false;
+      return { success: false };
     }
 
     const pageAccessToken = channel.channel_config.page_access_token;
@@ -116,16 +116,19 @@ async function sendAIResponseToFacebook(
     if (!response.ok) {
       const errorData = await response.text();
       console.error('❌ Error enviando mensaje de IA a Facebook:', response.status, errorData);
-      return false;
+      return { success: false };
     }
 
     const result = await response.json();
     console.log('✅ Mensaje de IA enviado a Facebook:', result.message_id);
-    return true;
+    return { 
+      success: true, 
+      facebook_message_id: result.message_id 
+    };
 
   } catch (error) {
     console.error('❌ Error en sendAIResponseToFacebook:', error);
-    return false;
+    return { success: false };
   }
 }
 
@@ -158,11 +161,11 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     } else if (event.delivery?.mids?.length > 0) {
       messageText = `Message delivered: ${event.delivery.mids.length} message(s)`;
       eventType = 'delivery';
-      shouldProcess = false; // Don't save delivery events to DB
+      shouldProcess = false;
     } else if (event.read?.watermark) {
       messageText = `Message read at ${new Date(event.read.watermark * 1000).toISOString()}`;
       eventType = 'read';
-      shouldProcess = false; // Don't save read events to DB
+      shouldProcess = false;
     }
 
     const senderId = event.sender?.id;
@@ -217,6 +220,26 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // 🔥 CRITICAL: Check if this message was already processed (prevent duplicates)
+    if (messageId) {
+      const { data: existingMessage } = await supabase
+        .from('messages')
+        .select('id, created_at')
+        .eq('platform_message_id', messageId)
+        .limit(1)
+        .single();
+      
+      if (existingMessage) {
+        console.log('⏭️ Skipping Messenger message - already processed:', {
+          platform_message_id: messageId,
+          existing_message_id: existingMessage.id,
+          created_at: existingMessage.created_at,
+          duplicate_prevention: 'Facebook webhook duplicate detected'
+        });
+        return; // Exit early - message already processed
+      }
+    }
+
     // Determine if this is an echo message early
     const isEcho = event.message?.is_echo || false;
 
@@ -250,7 +273,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         .select('id, created_at')
         .eq('content', messageText)
         .eq('sender_type', 'ia')
-        .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
+        .gte('created_at', new Date(Date.now() - 60000).toISOString())
         .limit(1)
         .single();
       
@@ -265,7 +288,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         .select('id, created_at, sender_type')
         .eq('content', messageText)
         .eq('sender_type', 'agent')
-        .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
+        .gte('created_at', new Date(Date.now() - 60000).toISOString())
         .limit(1)
         .single();
       
@@ -285,16 +308,31 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       logic: isEcho ? 'echo: using senderId as pageId' : 'normal: using recipientId as pageId'
     });
     
-    const { data: channel, error: channelError } = await supabase
+    // Handle multiple channels with same page_id (take most recent)
+    const { data: allChannels, error: channelSearchError } = await supabase
       .from('communication_channels')
       .select('*')
       .eq('channel_config->>page_id', pageId)
       .eq('channel_type', 'facebook')
-      .single();
+      .eq('is_connected', true)
+      .order('created_at', { ascending: false });
 
-    if (channelError || !channel) {
-      console.error('❌ No channel found for page:', pageId, channelError?.message);
+    if (channelSearchError || !allChannels || allChannels.length === 0) {
+      console.error('❌ No channel found for page:', pageId, channelSearchError?.message);
       return;
+    }
+    
+    // Take the most recent channel if multiple exist
+    const channel = allChannels[0];
+    
+    if (allChannels.length > 1) {
+      console.log('⚠️ Multiple channels found for same page, using most recent:', {
+        page_id: pageId,
+        total_channels: allChannels.length,
+        selected_channel_id: channel.id,
+        selected_user_id: channel.user_id,
+        all_user_ids: allChannels.map(ch => ch.user_id)
+      });
     }
 
     console.log('✅ Found channel:', { id: channel.id, user_id: channel.user_id });
@@ -385,7 +423,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           channel_thread_id: threadId,
           status: 'open',
           last_message_at: new Date().toISOString(),
-          ai_enabled: true // Default enable AI
+          ai_enabled: true
         })
         .select()
         .single();
@@ -460,6 +498,71 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       try {
         console.log('🤖 Generando respuesta automática de IA para conversación:', conversation.id);
         
+        // 🔥 FIX 1: Verificar si ya existe una respuesta IA reciente (últimos 5 segundos)
+        const { data: veryRecentAI, count: recentAICount } = await supabase
+          .from('messages')
+          .select('id, created_at', { count: 'exact' })
+          .eq('conversation_id', conversation.id)
+          .eq('sender_type', 'ia')
+          .gte('created_at', new Date(Date.now() - 5000).toISOString())
+          .limit(1);
+        
+        if (recentAICount && recentAICount > 0) {
+          console.log('⏭️ Skipping AI response - IA responded in last 5 seconds');
+          return;
+        }
+        
+        // 🔥 FIX 2: Verificar si este mensaje específico ya tiene respuesta
+        if (messageId) {
+          // Buscar el mensaje del cliente que acabamos de guardar
+          const { data: thisClientMessage } = await supabase
+            .from('messages')
+            .select('id, created_at')
+            .eq('platform_message_id', messageId)
+            .eq('conversation_id', conversation.id)
+            .single();
+          
+          if (thisClientMessage) {
+            // Buscar si ya hay una respuesta IA después de este mensaje
+            const { data: existingResponse } = await supabase
+              .from('messages')
+              .select('id')
+              .eq('conversation_id', conversation.id)
+              .eq('sender_type', 'ia')
+              .gte('created_at', thisClientMessage.created_at)
+              .lte('created_at', new Date(new Date(thisClientMessage.created_at).getTime() + 30000).toISOString())
+              .limit(1)
+              .single();
+            
+            if (existingResponse) {
+              console.log('⏭️ Skipping AI response - this message already has an AI response');
+              return;
+            }
+          }
+        }
+        
+        //  3: Verificar patrón de mensajes (client-ia-client-ia)
+        const { data: lastTwoMessages } = await supabase
+          .from('messages')
+          .select('sender_type, created_at')
+          .eq('conversation_id', conversation.id)
+          .order('created_at', { ascending: false })
+          .limit(2);
+        
+        if (lastTwoMessages && lastTwoMessages.length === 2) {
+          // Si los últimos 2 mensajes son [client, ia] significa que ya respondimos
+          if (lastTwoMessages[0].sender_type === 'client' && 
+              lastTwoMessages[1].sender_type === 'ia') {
+            const timeDiff = new Date(lastTwoMessages[0].created_at).getTime() - 
+                           new Date(lastTwoMessages[1].created_at).getTime();
+            // Si el mensaje client es menos de 3 segundos después de la IA, es probable un duplicado
+            if (timeDiff < 3000) {
+              console.log('⏭️ Skipping AI response - pattern suggests duplicate webhook');
+              return;
+            }
+          }
+        }
+        
         // Obtener configuración de IA del usuario
         const { data: aiConfig } = await supabase
           .from('ai_configurations')
@@ -478,19 +581,19 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           return;
         }
 
-        // 🔥 CORRECCIÓN: Obtener historial completo con formato correcto
+        // Obtener historial completo con formato correcto
         const { data: recentMessages } = await supabase
           .from('messages')
           .select('id, content, sender_type, sender_name, created_at')
           .eq('conversation_id', conversation.id)
-          .order('created_at', { ascending: false }) // Del más reciente al más antiguo (como querías)
+          .order('created_at', { ascending: false })
           .limit(10);
 
-        // 🔥 CORRECCIÓN: Revertir orden y convertir a formato Message
+        // Revertir orden y convertir a formato Message
         const conversationHistory = recentMessages?.reverse().map(msg => ({
           id: msg.id || crypto.randomUUID(),
           content: msg.content,
-          sender_type: msg.sender_type === 'ia' ? 'ia' : 'user', // Normalizar tipos
+          sender_type: msg.sender_type === 'ia' ? 'ia' : 'user',
           sender_name: msg.sender_name || 'Usuario',
           created_at: msg.created_at,
           metadata: {}
@@ -508,34 +611,50 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         if (aiResponse.success && aiResponse.response) {
           console.log('🤖 Respuesta de IA generada exitosamente');
 
-          // Guardar respuesta de IA en la base de datos
-          const { error: aiMessageError } = await supabase
-            .from('messages')
-            .insert({
-              conversation_id: conversation.id,
-              content: aiResponse.response,
-              sender_type: 'ia',
-              sender_name: 'IA Assistant',
-              is_automated: true,
-              platform_message_id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              metadata: {
-                confidence_score: aiResponse.confidence_score,
-                ai_model: 'gpt-4o-mini',
-                response_time: aiConfig.response_time || 0,
-                platform: 'facebook'
-              }
-            });
+          //  fix 4: Enviar primero y guardar el message_id real de Facebook
+          const sendResult = await sendAIResponseToFacebook(aiResponse.response, recipientId, senderId);
 
-          if (aiMessageError) {
-            console.error('❌ Error guardando mensaje de IA:', aiMessageError);
-            return;
+          if (sendResult.success) {
+            // fix 5: Verificar una última vez antes de guardar (por si otro proceso ya guardó)
+            const { data: doubleCheck } = await supabase
+              .from('messages')
+              .select('id')
+              .eq('conversation_id', conversation.id)
+              .eq('sender_type', 'ia')
+              .eq('content', aiResponse.response)
+              .gte('created_at', new Date(Date.now() - 10000).toISOString())
+              .limit(1)
+              .single();
+            
+            if (doubleCheck) {
+              console.log('⏭️ Skipping save - message already saved by another process');
+              return;
+            }
+
+            const { error: aiMessageError } = await supabase
+              .from('messages')
+              .insert({
+                conversation_id: conversation.id,
+                content: aiResponse.response,
+                sender_type: 'ia',
+                sender_name: 'IA Assistant',
+                is_automated: true,
+                platform_message_id: sendResult.facebook_message_id || `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                metadata: {
+                  confidence_score: aiResponse.confidence_score,
+                  ai_model: 'gpt-4o-mini',
+                  response_time: aiConfig.response_time || 0,
+                  platform: 'facebook',
+                  facebook_message_id: sendResult.facebook_message_id
+                }
+              });
+
+            if (aiMessageError) {
+              console.error('❌ Error guardando mensaje de IA:', aiMessageError);
+            } else {
+              console.log('✅ Respuesta de IA enviada y guardada exitosamente');
+            }
           }
-
-          // Enviar respuesta de IA a Facebook Messenger
-          await sendAIResponseToFacebook(aiResponse.response, recipientId, senderId);
-
-          console.log('✅ Respuesta de IA enviada y guardada exitosamente');
-
         } else {
           console.error('❌ Error generando respuesta de IA:', aiResponse.error);
         }
