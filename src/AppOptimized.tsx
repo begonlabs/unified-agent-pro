@@ -1,10 +1,9 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from '@/components/ui/toaster';
 import { AppStateProvider } from '@/contexts/AppStateContext';
-import { RoutePreloader } from '@/hooks/useRoutePreloader';
+import { RoutePreloader } from '@/components/RoutePreloader';
 
 // Lazy loading para páginas principales
 const Index = React.lazy(() => import('@/pages/Index'));
@@ -85,7 +84,7 @@ const queryClient = new QueryClient({
     queries: {
       // Configuración optimizada para mejor rendimiento
       staleTime: 5 * 60 * 1000, // 5 minutos
-      cacheTime: 10 * 60 * 1000, // 10 minutos
+      gcTime: 10 * 60 * 1000, // 10 minutos (renombrado de cacheTime)
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
       retry: (failureCount, error) => {
@@ -183,9 +182,6 @@ const App: React.FC = () => {
               
               {/* Toaster global */}
               <Toaster />
-              
-              {/* React Query Devtools solo en desarrollo */}
-              {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
             </RoutePreloader>
           </BrowserRouter>
         </AppStateProvider>

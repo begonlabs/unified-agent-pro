@@ -79,8 +79,8 @@ const CRITICAL_ROUTES: RouteConfig[] = [
 /**
  * Cache de componentes preloaded
  */
-const preloadedComponents = new Map<string, React.ComponentType<any>>();
-const preloadPromises = new Map<string, Promise<any>>();
+const preloadedComponents = new Map<string, React.ComponentType<unknown>>();
+const preloadPromises = new Map<string, Promise<void>>();
 
 /**
  * Función para preload de componentes
@@ -96,7 +96,7 @@ async function preloadComponent(routePath: string): Promise<void> {
 
   const promise = (async () => {
     try {
-      let component: React.ComponentType<any>;
+      let component: React.ComponentType<unknown>;
       
       switch (routePath) {
         case '/dashboard':
@@ -349,17 +349,6 @@ export const useIdlePreload = () => {
       });
     };
   }, [preloadRoutes]);
-};
-
-/**
- * Componente para preloading automático
- */
-export const RoutePreloader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  useRoutePreloader();
-  useInteractionBasedPreload();
-  useIdlePreload();
-
-  return <>{children}</>;
 };
 
 /**
