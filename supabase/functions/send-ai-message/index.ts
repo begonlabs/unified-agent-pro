@@ -79,36 +79,36 @@ interface AIConfig {
 
 // Simplified function to wait and get context with new message check
 async function waitAndGetContextWithNewMessageCheck(
-  supabase: { rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }, 
-  conversationId: string, 
+  supabase: { rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> },
+  conversationId: string,
   delaySeconds: number = 15,
   limit: number = 150
 ): Promise<{ context: Message[], hasNewMessages: boolean }> {
   console.log(`⏳ Esperando ${delaySeconds} segundos para verificar más mensajes...`);
-  
+
   const currentTime = new Date().toISOString();
-  
+
   await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
-  
+
   const { data: contextData, error } = await supabase
     .rpc('get_conversation_context', {
       p_conversation_id: conversationId,
       p_limit: limit,
       p_after_timestamp: currentTime
     });
-  
+
   if (error) {
     console.error('Error obteniendo contexto con verificación:', error);
     return { context: [], hasNewMessages: false };
   }
-  
+
   if (!contextData || !Array.isArray(contextData) || contextData.length === 0) {
     return { context: [], hasNewMessages: false };
   }
-  
+
   // verify if there are new messages
   const hasNewMessages = (contextData[0] as Record<string, unknown>)?.has_new_messages || false;
-  
+
   // convert to expected format and sort chronologically (oldest first)
   const context: Message[] = (contextData as Record<string, unknown>[])
     .map(row => ({
@@ -120,7 +120,7 @@ async function waitAndGetContextWithNewMessageCheck(
       metadata: row.metadata as Record<string, unknown>
     }))
     .reverse();
-  
+
   return { context, hasNewMessages };
 }
 
@@ -136,13 +136,13 @@ serve(async (req) => {
     }
 
     const body: SendAIMessageRequest = await req.json()
-    const { 
-      conversation_id, 
-      message, 
-      user_id, 
-      ai_model = 'gpt-3.5-turbo', 
-      ai_prompt, 
-      confidence_score 
+    const {
+      conversation_id,
+      message,
+      user_id,
+      ai_model = 'gpt-3.5-turbo',
+      ai_prompt,
+      confidence_score
     } = body
 
     if (!conversation_id || !message || !user_id) {
@@ -155,7 +155,7 @@ serve(async (req) => {
     // initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
+
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase environment variables')
       return new Response(
@@ -204,14 +204,14 @@ serve(async (req) => {
     // check if AI should respond
     if (!shouldAIRespond(message, aiConfig)) {
       console.log('🚫 No se debe responder a este mensaje');
-      
+
       // Check if it's because of schedule
       const isScheduleIssue = aiConfig && !aiConfig.always_active && aiConfig.operating_hours;
-      
+
       if (isScheduleIssue) {
         // Send out-of-hours message
         const outOfHoursMessage = 'Disculpe, nuestro agente virtual está fuera de horario. Por favor, intente nuevamente durante nuestro horario de atención o contacte directamente con nuestro equipo.';
-        
+
         // Send message to Facebook/Instagram API
         const channelType = conversation.channel === 'instagram' ? 'instagram' : 'facebook';
         const { data: channels } = await supabase
@@ -223,11 +223,11 @@ serve(async (req) => {
           .single();
 
         if (channels) {
-          const accessToken = channelType === 'instagram' 
-            ? channels.channel_config.access_token 
+          const accessToken = channelType === 'instagram'
+            ? channels.channel_config.access_token
             : channels.channel_config.page_access_token;
-          
-          const apiUrl = channelType === 'instagram' 
+
+          const apiUrl = channelType === 'instagram'
             ? `https://graph.instagram.com/v23.0/me/messages`
             : `https://graph.facebook.com/v23.0/me/messages`;
 
@@ -242,10 +242,10 @@ serve(async (req) => {
           });
         }
       }
-      
+
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'AI determinado no responder a este mensaje',
           should_respond: false,
           reason: isScheduleIssue ? 'out_of_hours' : 'other'
@@ -256,7 +256,7 @@ serve(async (req) => {
 
     // **FUNCIONALIDAD MEJORADA: Esperar y obtener contexto en una sola operación**
     const randomDelay = Math.floor(Math.random() * (20 - 7 + 1)) + 7; // Entre 7 y 20 segundos
-    
+
     console.log('📚 Esperando y obteniendo contexto de mensajes...');
     const { context: messageContext, hasNewMessages } = await waitAndGetContextWithNewMessageCheck(
       supabase,
@@ -264,13 +264,13 @@ serve(async (req) => {
       randomDelay,
       150
     );
-    
+
     if (hasNewMessages) {
       console.log('🔄 Detectados más mensajes del usuario, esperando...');
       // Si hay más mensajes, terminar sin responder (el nuevo mensaje disparará otra ejecución)
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'Esperando por más mensajes del usuario',
           waited: true,
           delay_applied: randomDelay
@@ -278,13 +278,13 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
+
     console.log(`📖 Contexto obtenido: ${messageContext.length} mensajes`);
 
     console.log('🧠 Generando respuesta con IA usando contexto de conversación...');
-    
+
     const aiResponse = await generateAIResponse(message, aiConfig, messageContext);
-    
+
     if (!aiResponse.success) {
       console.error('Error generando respuesta de IA:', aiResponse.error);
       return new Response(
@@ -299,6 +299,8 @@ serve(async (req) => {
     let channelType = 'facebook'; // Default to facebook
     if (conversation.channel === 'instagram') {
       channelType = 'instagram';
+    } else if (conversation.channel === 'whatsapp') {
+      channelType = 'whatsapp_green_api';
     }
 
     const { data: channels, error: channelError } = await supabase
@@ -317,44 +319,82 @@ serve(async (req) => {
     }
 
     const channel = channels
-    
-    // Use correct access token based on channel type
-    const accessToken = channelType === 'instagram' 
-      ? channel.channel_config.access_token 
-      : channel.channel_config.page_access_token;
-    
     const recipientId = conversation.channel_thread_id
 
     console.log('📤 Sending AI message via', channelType, 'to:', recipientId)
-    console.log('🔑 Access token present:', !!accessToken);
 
-    // send message to Facebook/Instagram API
-    const apiUrl = channelType === 'instagram' 
-      ? `https://graph.instagram.com/v23.0/me/messages`
-      : `https://graph.facebook.com/v23.0/me/messages`;
+    let messengerResult;
 
-    const messengerResponse = await fetch(`${apiUrl}?access_token=${accessToken}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        message: { text: aiGeneratedMessage },
-        messaging_type: 'RESPONSE'
+    // Handle Green API separately
+    if (channelType === 'whatsapp_green_api') {
+      const idInstance = channel.channel_config.idInstance;
+      const apiToken = channel.channel_config.apiTokenInstance;
+      const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`;
+
+      console.log('🔑 Green API:', { idInstance: !!idInstance, apiToken: !!apiToken });
+
+      const greenApiResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatId: recipientId,
+          message: aiGeneratedMessage
+        })
+      });
+
+      if (!greenApiResponse.ok) {
+        const errorData = await greenApiResponse.text()
+        console.error('Green API error:', errorData)
+        return new Response(
+          JSON.stringify({ error: `Failed to send message via Green API` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      messengerResult = await greenApiResponse.json();
+      // Normalize response to match Meta API format
+      messengerResult = {
+        message_id: messengerResult.idMessage || `green_${Date.now()}`
+      };
+
+    } else {
+      // Handle Facebook/Instagram via Meta API
+      const accessToken = channelType === 'instagram'
+        ? channel.channel_config.access_token
+        : channel.channel_config.page_access_token;
+
+      console.log('🔑 Access token present:', !!accessToken);
+
+      const apiUrl = channelType === 'instagram'
+        ? `https://graph.instagram.com/v23.0/me/messages`
+        : `https://graph.facebook.com/v23.0/me/messages`;
+
+      const messengerResponse = await fetch(`${apiUrl}?access_token=${accessToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipient: { id: recipientId },
+          message: { text: aiGeneratedMessage },
+          messaging_type: 'RESPONSE'
+        })
       })
-    })
 
-    if (!messengerResponse.ok) {
-      const errorData = await messengerResponse.text()
-      console.error('Platform API error:', errorData)
-      return new Response(
-        JSON.stringify({ error: `Failed to send message to ${channelType}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (!messengerResponse.ok) {
+        const errorData = await messengerResponse.text()
+        console.error('Platform API error:', errorData)
+        return new Response(
+          JSON.stringify({ error: `Failed to send message to ${channelType}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      messengerResult = await messengerResponse.json()
     }
 
-    const messengerResult = await messengerResponse.json()
 
     const enhancedMetadata = {
       platform: channelType,
@@ -403,8 +443,8 @@ serve(async (req) => {
     })
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message_id: messengerResult.message_id,
         saved_message_id: savedMessageId,
         conversation_id: conversation_id,
@@ -422,13 +462,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in send-ai-message function:', error)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: `Internal server error: ${error.message}`,
         debug: { request_url: req.url }
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
