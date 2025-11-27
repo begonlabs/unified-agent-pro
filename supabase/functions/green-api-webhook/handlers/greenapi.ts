@@ -122,6 +122,16 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
             messageText = event.messageData.extendedTextMessageData.text;
         }
 
+        // 🚫 Block ghost messages with {{SWE001}}
+        if (messageText && (messageText === '{{SWE001}}' || messageText.includes('{{SWE001}}'))) {
+            console.error('🚫 BLOCKED GHOST MESSAGE:', {
+                text: messageText,
+                sender: event.senderData?.sender,
+                fullEvent: JSON.stringify(event)
+            });
+            return;
+        }
+
         const idInstance = event.instanceData?.idInstance?.toString();
         const senderId = event.senderData?.sender;
         const chatId = event.senderData?.chatId;
