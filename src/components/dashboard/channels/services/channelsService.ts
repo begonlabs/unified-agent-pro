@@ -33,7 +33,13 @@ export class ChannelsService {
    * Verifica el estado de conexión de un canal específico
    */
   static getChannelStatus(channelType: string, channels: Channel[]): boolean {
-    const channel = channels.find(c => c.channel_type === channelType);
+    // Para WhatsApp, buscar tanto 'whatsapp' como 'whatsapp_green_api'
+    let channel: Channel | undefined;
+    if (channelType === 'whatsapp') {
+      channel = channels.find(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api');
+    } else {
+      channel = channels.find(c => c.channel_type === channelType);
+    }
 
     if (!channel || !channel.channel_config) {
       return false;
@@ -41,6 +47,11 @@ export class ChannelsService {
 
     switch (channelType) {
       case 'whatsapp': {
+        // Si es Green API, solo verificar is_connected
+        if (channel.channel_type === 'whatsapp_green_api') {
+          return Boolean(channel.is_connected);
+        }
+        // Para WhatsApp Business API (Meta)
         const config = channel.channel_config as WhatsAppConfig;
         const hasPhoneNumberId = Boolean(config?.phone_number_id);
         const hasBusinessAccountId = Boolean(config?.business_account_id);

@@ -4,10 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Phone, Facebook, Instagram, CheckCircle, X, AlertTriangle } from 'lucide-react';
 import { ChannelStatusProps, InstagramConfig } from '../types';
 
-export const ChannelStatus: React.FC<ChannelStatusProps> = ({ 
-  channels, 
-  getChannelStatus, 
-  instagramNeedsVerification 
+export const ChannelStatus: React.FC<ChannelStatusProps> = ({
+  channels,
+  getChannelStatus,
+  instagramNeedsVerification
 }) => {
   return (
     <Card>
@@ -56,14 +56,18 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
                 {channels.map(channel => {
                   const config = channel.channel_config as InstagramConfig | any;
-                  const isConnected = getChannelStatus(channel.channel_type);
-                  
+                  // Map whatsapp_green_api to whatsapp for status check
+                  const displayChannelType = channel.channel_type === 'whatsapp_green_api' ? 'whatsapp' : channel.channel_type;
+                  const isConnected = getChannelStatus(displayChannelType);
+
+                  // Hide Green API implementation detail - show as WhatsApp
+                  const displayName = channel.channel_type === 'whatsapp_green_api' ? 'WHATSAPP' : channel.channel_type.toUpperCase();
+
                   return (
-                    <div key={channel.id} className={`p-2 rounded border ${
-                      isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    }`}>
+                    <div key={channel.id} className={`p-2 rounded border ${isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}>
                       <div className="font-medium">
-                        {channel.channel_type.toUpperCase()}
+                        {displayName}
                         {isConnected ? <CheckCircle className="inline h-4 w-4 text-green-500 ml-1" /> : <X className="inline h-4 w-4 text-red-500 ml-1" />}
                       </div>
                       {channel.channel_type === 'instagram' && (
@@ -81,9 +85,9 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
                           {config?.page_name}
                         </div>
                       )}
-                      {channel.channel_type === 'whatsapp' && (
+                      {(channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api') && (
                         <div className="text-gray-600">
-                          {config?.business_name || config?.display_phone_number}
+                          {config?.business_name || config?.display_phone_number || config?.idInstance || 'WhatsApp Business'}
                         </div>
                       )}
                     </div>
