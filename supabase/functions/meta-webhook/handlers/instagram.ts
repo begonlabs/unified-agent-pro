@@ -130,19 +130,19 @@ async function processInstagramVerification(
     // Check if verification has expired
     const now = new Date();
     const expiresAt = new Date(verification.expires_at);
-    
+
     if (now > expiresAt) {
       console.log('⏰ Verification code has expired:', verificationCode);
-      
+
       // Mark as expired
       await supabase
         .from('instagram_verifications')
-        .update({ 
+        .update({
           status: 'expired',
           updated_at: now.toISOString()
         })
         .eq('id', verification.id);
-      
+
       return false;
     }
 
@@ -245,6 +245,59 @@ async function processInstagramVerification(
 }
 
 /**
+ * Get Instagram user profile (username and profile picture)
+ * @param userId - Instagram user IGSID (not business account ID)
+ * @param accessToken - Instagram access token
+ * @returns Promise with name and avatar_url
+ */
+async function getInstagramUserProfile(
+  userId: string,
+  accessToken: string
+): Promise<{ name: string; avatar_url?: string }> {
+  try {
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
+    // Get username and profile_picture_url from Instagram Graph API
+    const url = `https://graph.instagram.com/${graphVersion}/${userId}?fields=username,profile_picture_url&access_token=${accessToken}`;
+
+    console.log('🔍 Fetching Instagram profile:', { userId, graphVersion });
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching Instagram profile:', {
+        status: response.status,
+        error: errorText,
+        userId
+      });
+      // Fallback
+      return {
+        name: `Instagram User ${userId.slice(-4)}`,
+        avatar_url: undefined
+      };
+    }
+
+    const data = await response.json();
+    console.log('✅ Instagram profile data received:', JSON.stringify(data));
+
+    const username = data.username || `Instagram User ${userId.slice(-4)}`;
+    const avatarUrl = data.profile_picture_url;
+
+    return {
+      name: `@${username}`,
+      avatar_url: avatarUrl
+    };
+  } catch (error) {
+    console.error('❌ Error in getInstagramUserProfile:', error);
+    // Fallback on error
+    return {
+      name: `Instagram User ${userId.slice(-4)}`,
+      avatar_url: undefined
+    };
+  }
+}
+
+/**
  * Processes an Instagram event, saves the message to the database,
  * and associates it with the corresponding channel.
  * @param event - Event received from the Instagram webhook
@@ -300,7 +353,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         .eq('platform_message_id', messageId)
         .limit(1)
         .single();
-      
+
       if (existingMessage) {
         console.log('⏭️ Skipping Instagram message - already processed:', {
           platform_message_id: messageId,
@@ -316,10 +369,10 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     const verificationCode = extractVerificationCode(text);
     if (verificationCode) {
       console.log('🎯 Instagram verification code detected:', verificationCode);
-      
+
       // Process verification - senderId is the business account ID in this case
       const verificationProcessed = await processInstagramVerification(verificationCode, senderId, supabase);
-      
+
       if (verificationProcessed) {
         console.log('✅ Instagram verification completed, continuing with normal message processing');
         // Continue processing as normal message after verification
@@ -340,7 +393,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         text,
         messageId
       });
-      
+
       // First check if this exact platform_message_id was already processed
       if (messageId) {
         const { data: existingMessage } = await supabase
@@ -349,13 +402,13 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           .eq('platform_message_id', messageId)
           .limit(1)
           .single();
-        
+
         if (existingMessage) {
           console.log('⏭️ Skipping Instagram echo message - platform_message_id already exists:', messageId);
           return;
         }
       }
-      
+
       // Check if there's a recent IA message with the same content (last 60 seconds)
       const { data: recentIAMessage } = await supabase
         .from('messages')
@@ -365,12 +418,12 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
         .limit(1)
         .single();
-      
+
       if (recentIAMessage) {
         console.log('⏭️ Skipping Instagram echo message - corresponds to recent IA response:', recentIAMessage.id);
         return;
       }
-      
+
       // Check if there's a recent agent message with same content (from frontend)
       const { data: recentAgentMessage } = await supabase
         .from('messages')
@@ -380,32 +433,32 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last 60 seconds
         .limit(1)
         .single();
-      
+
       if (recentAgentMessage) {
         console.log('⏭️ Skipping Instagram echo message - corresponds to recent agent message from frontend:', recentAgentMessage.id);
         return;
       }
     }
-    
+
     // For Instagram, we need to find the channel by Business Account ID (for messaging)
     // The Business Account ID is what receives messages in webhooks
     // For echo messages: sender = business account, recipient = user → business_account_id = sender  
     // For normal messages: sender = user, recipient = business account → business_account_id = recipient
     const webhookBusinessId = isEcho ? senderId : pageId;
-    
+
     console.log('🔍 Looking for Instagram channel with business account ID:', webhookBusinessId, {
       isEcho,
       senderId,
       pageId,
       logic: isEcho ? 'echo: using senderId as business_account_id' : 'normal: using pageId as business_account_id'
     });
-    
+
     // 🔥 ENHANCED: Try multiple search strategies for Instagram channels
     let channel: CommunicationChannel | null = null;
     let channelError: unknown = null;
-    
+
     console.log('🔍 Starting comprehensive Instagram channel search...');
-    
+
     // Strategy 1: Search by Instagram Business Account ID (new field)
     console.log('📋 Strategy 1: Searching by Business Account ID:', webhookBusinessId);
     const { data: businessChannel, error: businessError } = await supabase
@@ -414,13 +467,13 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       .eq('channel_config->>instagram_business_account_id', webhookBusinessId)
       .eq('channel_type', 'instagram')
       .maybeSingle();
-    
+
     if (businessChannel && !businessError) {
       channel = businessChannel;
       console.log('✅ Found Instagram channel by Business Account ID:', businessChannel.id);
     } else {
       console.log('❌ Strategy 1 failed:', businessError?.message || 'No business channel found');
-      
+
       // Strategy 2: Search by Instagram User ID (old field, for backwards compatibility)  
       console.log('📋 Strategy 2: Searching by User ID:', webhookBusinessId);
       const { data: userChannel, error: userError } = await supabase
@@ -429,20 +482,20 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         .eq('channel_config->>instagram_user_id', webhookBusinessId)
         .eq('channel_type', 'instagram')
         .maybeSingle();
-      
+
       if (userChannel && !userError) {
         channel = userChannel;
         console.log('✅ Found Instagram channel by User ID (fallback):', userChannel.id);
       } else {
         console.log('❌ Strategy 2 failed:', userError?.message || 'No user channel found');
-        
+
         // Strategy 3: Search ALL Instagram channels to debug
         console.log('📋 Strategy 3: Debugging - Getting ALL Instagram channels...');
         const { data: allChannels, error: allError } = await supabase
           .from('communication_channels')
           .select('id, user_id, channel_config, is_connected')
           .eq('channel_type', 'instagram');
-        
+
         if (allChannels && !allError) {
           console.log('🔍 All Instagram channels found:', allChannels.length);
           allChannels.forEach((ch, index) => {
@@ -458,15 +511,15 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
               messaging_available: config?.messaging_available
             });
           });
-          
+
           // Strategy 4: Try to find by any matching ID in the config
           console.log('📋 Strategy 4: Searching by ANY matching ID in config...');
           const matchingChannel = allChannels.find(ch => {
             const config = ch.channel_config as InstagramChannelConfig;
-            return config?.instagram_user_id === webhookBusinessId || 
-                   config?.instagram_business_account_id === webhookBusinessId;
+            return config?.instagram_user_id === webhookBusinessId ||
+              config?.instagram_business_account_id === webhookBusinessId;
           });
-          
+
           if (matchingChannel) {
             channel = matchingChannel;
             console.log('✅ Found Instagram channel by config matching:', matchingChannel.id);
@@ -487,7 +540,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     }
 
     console.log('✅ Found Instagram channel:', { id: channel.id, user_id: channel.user_id });
-    
+
     console.log('🔍 Echo detection:', {
       isEcho,
       hasIsEcho: Object.prototype.hasOwnProperty.call(message, 'is_echo'),
@@ -498,19 +551,19 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
 
     // Find or create client (handle echo messages)
     let client: CRMClient;
-    
+
     // For Instagram messages:
     // - Normal message: sender = user, recipient = page → client = sender
     // - Echo message: sender = page, recipient = user → client = recipient (pageId)
     // BUT: pageId is recipient in normal messages, so for echo we need recipient which is pageId
     const realUserId = isEcho ? pageId : senderId;
-    
+
     console.log('👤 Client identification:', {
       isEcho,
       realUserId,
       logic: isEcho ? 'echo: using pageId as user' : 'normal: using sender as user'
     });
-    
+
     const { data: existingClient, error: clientSearchError } = await supabase
       .from('crm_clients')
       .select('*')
@@ -518,19 +571,58 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       .eq('phone', realUserId)
       .single();
 
+    // Fetch profile info if needed (new client or missing info)
+    let profileInfo = { name: `Instagram User ${realUserId.slice(-4)}`, avatar_url: undefined };
+
+    // Only fetch from Instagram if we have the token
+    if (channel.channel_config.access_token) {
+      profileInfo = await getInstagramUserProfile(realUserId, channel.channel_config.access_token);
+    }
+
     if (existingClient && !clientSearchError) {
       client = existingClient;
       console.log('✅ Found existing client:', client.id);
+
+      // Update client info if name is generic or avatar is missing
+      const needsUpdate = (
+        (!client.name || client.name.startsWith('Instagram User')) ||
+        !client.avatar_url
+      );
+
+      if (needsUpdate && profileInfo) {
+        console.log('📝 Updating Instagram client with fresh profile data:', {
+          client_id: client.id,
+          old_name: client.name,
+          new_name: profileInfo.name,
+          has_avatar: !!profileInfo.avatar_url
+        });
+
+        const { error: updateError } = await supabase
+          .from('crm_clients')
+          .update({
+            name: profileInfo.name,
+            avatar_url: profileInfo.avatar_url || client.avatar_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', client.id);
+
+        if (!updateError) {
+          client.name = profileInfo.name;
+          client.avatar_url = profileInfo.avatar_url || client.avatar_url;
+          console.log('✅ Instagram client updated with profile data');
+        } else {
+          console.error('❌ Failed to update Instagram client:', updateError);
+        }
+      }
     } else {
-      // Create new client
-      const clientName = `Instagram User ${realUserId.slice(-4)}`;
-        
+      // Create new client with profile info
       const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')
         .insert({
           user_id: channel.user_id,
-          name: clientName,
+          name: profileInfo.name,
           phone: realUserId,
+          avatar_url: profileInfo.avatar_url,
           status: 'active',
           source: 'instagram'
         })
@@ -543,20 +635,24 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       }
 
       client = newClient;
-      console.log('✅ Created new client:', client.id);
+      console.log('✅ Created new Instagram client with profile data:', {
+        id: client.id,
+        name: client.name,
+        has_avatar: !!client.avatar_url
+      });
     }
 
     // Find or create conversation (use consistent thread ID)
     let conversation: Conversation;
     // Thread ID should always be the real user ID for consistency
     const threadId = realUserId;
-    
+
     console.log('💬 Conversation identification:', {
       threadId,
       realUserId,
       clientId: client.id
     });
-    
+
     const { data: existingConv, error: convSearchError } = await supabase
       .from('conversations')
       .select('*')
@@ -597,7 +693,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     // Determine sender type based on echo status
     const senderType = isEcho ? 'agent' : 'client'; // Echo = outgoing (agent), Not echo = incoming (client)
     const senderName = isEcho ? 'Agente' : client.name;
-    
+
     console.log('📋 Message classification:', {
       isEcho,
       senderType,
@@ -634,7 +730,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     // Update conversation last_message_at
     await supabase
       .from('conversations')
-      .update({ 
+      .update({
         last_message_at: new Date().toISOString(),
         status: 'open'
       })
@@ -651,7 +747,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     if (!isEcho && text && conversation.ai_enabled) {
       try {
         console.log('🤖 Generando respuesta automática de IA para Instagram:', conversation.id);
-        
+
         // 🔥 CRITICAL: Check if we already have an AI response right after this specific client message
         const { data: clientMessage } = await supabase
           .from('messages')
@@ -659,7 +755,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           .eq('platform_message_id', messageId)
           .eq('conversation_id', conversation.id)
           .single();
-        
+
         if (clientMessage) {
           // Check if there's already an IA message created immediately after this client message
           const { data: existingAIResponse } = await supabase
@@ -671,7 +767,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
             .lte('created_at', new Date(new Date(clientMessage.created_at).getTime() + 30000).toISOString())
             .limit(1)
             .single();
-          
+
           if (existingAIResponse) {
             console.log('⏭️ Skipping AI response - already responded to this specific Instagram message:', {
               client_message_id: clientMessage.id,
@@ -749,15 +845,15 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           }
 
           console.log('✅ Respuesta de IA para Instagram guardada exitosamente');
-          
+
           // Enviar mensaje automático de IA por Instagram Messaging API
           try {
             const accessToken = channel.channel_config.access_token;
             const igUserId = realUserId; // El ID del usuario de Instagram
-            
+
             console.log('📤 Enviando mensaje de IA por Instagram a:', igUserId);
             console.log('🔑 Using Instagram access token:', accessToken ? 'Present' : 'Missing');
-            
+
             const instagramApiResponse = await fetch(
               `https://graph.instagram.com/v23.0/me/messages?access_token=${accessToken}`,
               {
@@ -779,7 +875,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
             } else {
               const result = await instagramApiResponse.json();
               console.log('✅ Mensaje de IA enviado a Instagram:', result.message_id);
-              
+
               // Actualizar el platform_message_id con el ID real de Instagram
               await supabase
                 .from('messages')
