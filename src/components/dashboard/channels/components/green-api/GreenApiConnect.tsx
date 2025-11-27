@@ -166,7 +166,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
 
             toast({
                 title: "¡Conectado!",
-                description: "WhatsApp conectado exitosamente via Green API",
+                description: "WhatsApp conectado exitosamente",
             });
 
             onSuccess();
@@ -251,7 +251,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
                             ¡Conectado exitosamente!
                         </h3>
                         <p className="text-sm text-green-800 text-center">
-                            Tu WhatsApp está ahora conectado vía Green API
+                            Tu WhatsApp está ahora conectado
                         </p>
                     </div>
                 </Card>
