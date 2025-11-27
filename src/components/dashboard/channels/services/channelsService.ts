@@ -1,12 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect, handleSupabaseError } from '@/lib/supabaseUtils';
-import { 
-  Channel, 
-  WhatsAppConfig, 
-  FacebookConfig, 
-  InstagramConfig, 
+import {
+  Channel,
+  WhatsAppConfig,
+  FacebookConfig,
+  InstagramConfig,
   InstagramVerification,
-  User 
+  User
 } from '../types';
 
 export class ChannelsService {
@@ -34,7 +34,7 @@ export class ChannelsService {
    */
   static getChannelStatus(channelType: string, channels: Channel[]): boolean {
     const channel = channels.find(c => c.channel_type === channelType);
-    
+
     if (!channel || !channel.channel_config) {
       return false;
     }
@@ -48,7 +48,7 @@ export class ChannelsService {
         const isConnected = Boolean(channel.is_connected);
         return hasPhoneNumberId && hasBusinessAccountId && hasAccessToken && isConnected;
       }
-      
+
       case 'facebook': {
         const config = channel.channel_config as FacebookConfig;
         const hasPageId = Boolean(config?.page_id);
@@ -57,7 +57,7 @@ export class ChannelsService {
         const isConnected = Boolean(channel.is_connected);
         return hasPageId && hasPageToken && hasUserToken && isConnected;
       }
-      
+
       case 'instagram': {
         const config = channel.channel_config as InstagramConfig;
         const hasUsername = Boolean(config?.username);
@@ -66,11 +66,11 @@ export class ChannelsService {
         const hasAccountType = Boolean(config?.account_type);
         const isConnected = Boolean(channel.is_connected);
         const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
-        
-        return hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && 
-                      isConnected && isTokenValid;
+
+        return hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType &&
+          isConnected && isTokenValid;
       }
-      
+
       default:
         return channel?.is_connected || false;
     }
@@ -81,7 +81,7 @@ export class ChannelsService {
    */
   static instagramNeedsVerification(config: InstagramConfig): boolean {
     return config.instagram_user_id === config.instagram_business_account_id ||
-           !config.instagram_business_account_id;
+      !config.instagram_business_account_id;
   }
 
   /**
@@ -94,8 +94,8 @@ export class ChannelsService {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
       },
-      body: JSON.stringify({ 
-        channel_id: channelId 
+      body: JSON.stringify({
+        channel_id: channelId
       })
     });
 
@@ -127,10 +127,10 @@ export class ChannelsService {
     if (channel) {
       const config = channel.channel_config as unknown as InstagramConfig;
       const needsVerification = this.instagramNeedsVerification(config);
-      
+
       return !needsVerification && Boolean(config.verified_at);
     }
-    
+
     return false;
   }
 
@@ -163,6 +163,36 @@ export class ChannelsService {
    * Desconecta un canal
    */
   static async disconnectChannel(channelId: string, user: User): Promise<void> {
+    // 1. Fetch channel details to check if we need to perform external logout
+    const { data: channel } = await supabase
+      .from('communication_channels')
+      .select('*')
+      .eq('id', channelId)
+      .eq('user_id', user.id)
+      .single();
+
+    // 2. If it's Green API, call logout endpoint
+    if (channel && channel.channel_type === 'whatsapp_green_api') {
+      const config = channel.channel_config as any;
+      const { idInstance, apiTokenInstance, apiUrl } = config;
+
+      if (idInstance && apiTokenInstance) {
+        try {
+          const baseUrl = apiUrl || 'https://7107.api.green-api.com';
+          const url = `${baseUrl}/waInstance${idInstance}/logout/${apiTokenInstance}`;
+          console.log('Logging out from Green API:', url);
+
+          const response = await fetch(url, { method: 'POST' });
+          const result = await response.json();
+          console.log('Green API Logout result:', result);
+        } catch (e) {
+          console.error('Error logging out from Green API:', e);
+          // We continue with deletion even if logout fails
+        }
+      }
+    }
+
+    // 3. Delete from Supabase
     const { error } = await supabase
       .from('communication_channels')
       .delete()
@@ -198,9 +228,9 @@ export class ChannelsService {
     }
 
     const webhookUrl = `${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/meta-webhook`;
-    
+
     const testMessage = `Test desde OndAI - ${new Date().toLocaleTimeString()}`;
-    
+
     const webhookTestMessage = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
@@ -246,7 +276,7 @@ export class ChannelsService {
     ].join(',');
 
     const state = encodeURIComponent(JSON.stringify({ user_id: user.id }));
-    
+
     return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
   }
 
@@ -258,16 +288,16 @@ export class ChannelsService {
     const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
 
     const redirectUri = `${EDGE_BASE_URL}/functions/v1/instagram-oauth`;
-    
+
     const scope = [
       'instagram_business_basic',
-      'instagram_business_manage_messages', 
+      'instagram_business_manage_messages',
       'instagram_business_manage_comments',
       'instagram_business_content_publish',
       'instagram_business_manage_insights'
     ].join(',');
 
-    const state = encodeURIComponent(JSON.stringify({ 
+    const state = encodeURIComponent(JSON.stringify({
       user_id: user.id
     }));
 

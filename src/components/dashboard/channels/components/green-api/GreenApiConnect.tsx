@@ -18,8 +18,8 @@ interface QRCodeData {
 }
 
 export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSuccess }) => {
-    const [idInstance, setIdInstance] = useState('');
-    const [apiToken, setApiToken] = useState('');
+    const [idInstance, setIdInstance] = useState('7107392654');
+    const [apiToken, setApiToken] = useState('b1027b1fd5ba4266bb291adbb9e72c63309b3ed04bd640b692');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
@@ -184,55 +184,34 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
         <div className="space-y-4">
             {status === 'disconnected' && (
                 <>
-                    <div className="space-y-2">
-                        <Label htmlFor="idInstance">ID de Instancia</Label>
-                        <Input
-                            id="idInstance"
-                            type="text"
-                            placeholder="7107392654"
-                            value={idInstance}
-                            onChange={(e) => setIdInstance(e.target.value)}
-                        />
-                    </div>
+                    <div className="text-center space-y-4">
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <p className="text-blue-800 text-sm">
+                                Para conectar tu WhatsApp, simplemente genera el código QR y escanéalo con tu aplicación móvil.
+                            </p>
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="apiToken">Token API</Label>
-                        <Input
-                            id="apiToken"
-                            type="password"
-                            placeholder="Tu token de Green API"
-                            value={apiToken}
-                            onChange={(e) => setApiToken(e.target.value)}
-                        />
-                    </div>
+                        <Button
+                            onClick={getQRCode}
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] h-12 text-lg"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                    Generando QR...
+                                </>
+                            ) : (
+                                <>
+                                    <QrCode className="h-5 w-5 mr-2" />
+                                    Generar Código QR
+                                </>
+                            )}
+                        </Button>
 
-                    <Button
-                        onClick={getQRCode}
-                        disabled={loading || !idInstance || !apiToken}
-                        className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2]"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Cargando...
-                            </>
-                        ) : (
-                            <>
-                                <QrCode className="h-4 w-4 mr-2" />
-                                Obtener Código QR
-                            </>
-                        )}
-                    </Button>
-
-                    <div className="bg-blue-50 p-3 rounded-lg border text-xs">
-                        <p className="text-blue-900 font-medium mb-1">Cómo conectar:</p>
-                        <ol className="text-blue-800 space-y-1 list-decimal list-inside">
-                            <li>Ingresa tus credenciales de Green API</li>
-                            <li>Haz clic en "Obtener Código QR"</li>
-                            <li>Abre WhatsApp en tu celular</li>
-                            <li>Ve a Ajustes → Dispositivos vinculados</li>
-                            <li>Escanea el código QR</li>
-                        </ol>
+                        <div className="text-xs text-muted-foreground">
+                            <p>Instancia: {idInstance}</p>
+                        </div>
                     </div>
                 </>
             )}
