@@ -2,19 +2,19 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Mail, 
-  Phone, 
-  Calendar, 
-  Edit, 
-  Facebook, 
-  Instagram, 
-  MessageCircle, 
-  User, 
-  MapPin, 
-  Globe 
+import {
+  Mail,
+  Phone,
+  Calendar,
+  Edit,
+  Facebook,
+  Instagram,
+  MessageCircle,
+  User,
+  MapPin,
+  Globe
 } from 'lucide-react';
 import { ClientCardProps } from '../types';
 import { CRMService } from '../services/crmService';
@@ -43,6 +43,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-start sm:items-center gap-3 sm:gap-4">
             <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+              <AvatarImage src={client.avatar_url} alt={client.name} />
               <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm sm:text-base">
                 {client.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -52,7 +53,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
                 <h3 className="font-semibold text-base sm:text-lg truncate">{client.name}</h3>
                 <div className="flex items-center gap-1 sm:gap-2">
                   {getSourceIcon(client.source)}
-                  <Badge 
+                  <Badge
                     className={`${CRMService.getStatusColor(client.status)} text-xs`}
                     variant="secondary"
                   >
@@ -107,8 +108,8 @@ export const ClientCard: React.FC<ClientCardProps> = ({
               <Edit className="h-3 w-3 mr-1" />
               Editar
             </Button>
-            <Select 
-              value={client.status} 
+            <Select
+              value={client.status}
               onValueChange={(value) => onStatusChange(client.id, value)}
             >
               <SelectTrigger className="w-full sm:w-28 lg:w-32 h-8">

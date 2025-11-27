@@ -16,6 +16,7 @@ export interface Client {
   last_interaction?: string;
   created_at: string;
   source?: string;
+  avatar_url?: string;
 }
 
 export interface ClientFormData {
