@@ -382,7 +382,7 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                     .from('ai_configurations')
                     .select('*')
                     .eq('user_id', conversation.user_id)
-                    .single();
+                    .maybeSingle();
 
                 if (!aiConfig) {
                     console.log('⚠️ No AI config found for user:', conversation.user_id);

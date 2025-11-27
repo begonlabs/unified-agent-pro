@@ -16,9 +16,9 @@ export class AIConfigService {
         .from('ai_configurations')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
@@ -61,7 +61,7 @@ export class AIConfigService {
         .from('ai_configurations')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       let result;
       if (existingConfig) {

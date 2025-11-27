@@ -782,7 +782,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           .from('ai_configurations')
           .select('*')
           .eq('user_id', conversation.user_id)
-          .single();
+          .maybeSingle();
 
         if (!aiConfig) {
           console.log('⚠️ No se encontró configuración de IA para el usuario:', conversation.user_id);
