@@ -19,6 +19,7 @@ interface Conversation {
     email?: string;
     phone?: string;
     status: string;
+    avatar_url?: string;
   };
 }
 
@@ -62,7 +63,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
     try {
       console.log('🔍 Fetching conversations for user:', userId);
-      
+
       const { data, error: fetchError } = await supabase
         .from('conversations')
         .select(`
@@ -72,7 +73,8 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
             name,
             email,
             phone,
-            status
+            status,
+            avatar_url
           )
         `)
         .eq('user_id', userId)
@@ -89,7 +91,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       console.error('Error fetching conversations:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error loading conversations';
       setError(errorMessage);
-      
+
       toast({
         title: "Error de conexión",
         description: "No se pudieron cargar las conversaciones",
@@ -108,7 +110,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       switch (payload.eventType) {
         case 'INSERT': {
           const newConversation = payload.new as unknown as Conversation;
-          
+
           // Verificar que la conversación pertenece al usuario actual
           if (newConversation.user_id !== userId) {
             return prevConversations;
@@ -126,14 +128,14 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
         case 'UPDATE': {
           const updatedConversation = payload.new as unknown as Conversation;
-          
+
           if (updatedConversation.user_id !== userId) {
             return prevConversations;
           }
 
           console.log('🔄 Updating conversation:', updatedConversation.id);
-          return prevConversations.map(conv => 
-            conv.id === updatedConversation.id 
+          return prevConversations.map(conv =>
+            conv.id === updatedConversation.id
               ? { ...conv, ...updatedConversation }
               : conv
           ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
@@ -192,7 +194,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
       // Crear canal con nombre único basado en timestamp para evitar colisiones
       const channelName = `conversations:user:${userId}:${Date.now()}`;
-      
+
       const channel = supabase
         .channel(channelName)
         .on(
@@ -210,7 +212,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         )
         .subscribe((status) => {
           console.log('📡 Conversations subscription status:', status);
-          
+
           if (status === 'SUBSCRIBED') {
             setConnectionStatus({
               isConnected: true,
@@ -218,7 +220,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
               lastConnected: new Date(),
               reconnectAttempts: 0
             });
-            
+
             // Conexión establecida - no mostrar notificación innecesaria
           } else if (status === 'CLOSED') {
             setConnectionStatus(prev => ({
@@ -226,12 +228,12 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
               isConnected: false,
               isConnecting: false
             }));
-            
+
             // Limpiar referencia del canal
             if (channelRef.current === channel) {
               channelRef.current = null;
             }
-            
+
             // Intentar reconectar automáticamente con delay
             setTimeout(() => {
               cleanupSubscription();
@@ -246,7 +248,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
               isConnected: false,
               isConnecting: false
             }));
-            
+
             // Limpiar referencia del canal
             if (channelRef.current === channel) {
               channelRef.current = null;
@@ -256,7 +258,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
       channelRef.current = channel;
       // Realtime subscription established
-      
+
     } catch (error) {
       console.error('Error setting up realtime:', error);
       setConnectionStatus(prev => ({
@@ -264,7 +266,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         isConnecting: false,
         isConnected: false
       }));
-      
+
       // Limpiar en caso de error
       channelRef.current = null;
     }

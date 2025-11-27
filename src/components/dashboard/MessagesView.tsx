@@ -9,13 +9,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Search, 
-  Phone, 
-  MessageCircle, 
-  Instagram, 
-  Facebook, 
-  Send, 
+import {
+  Search,
+  Phone,
+  MessageCircle,
+  Instagram,
+  Facebook,
+  Send,
   User,
   Bot,
   Filter,
@@ -41,6 +41,7 @@ interface Client {
   tags?: string[];
   last_interaction?: string;
   created_at: string;
+  avatar_url?: string;
 }
 
 interface Conversation {
@@ -76,16 +77,16 @@ const MessagesView = () => {
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
   const [previousMessageCount, setPreviousMessageCount] = useState<Record<string, number>>({});
   const { toast } = useToast();
-  
+
   // Hook para prevenir mensajes duplicados
   const { isDuplicateMessage } = useMessageSender();
 
   // Usar los nuevos hooks de realtime
-  const { 
-    conversations, 
-    loading: conversationsLoading, 
+  const {
+    conversations,
+    loading: conversationsLoading,
     connectionStatus,
-    refreshConversations 
+    refreshConversations
   } = useRealtimeConversations(user?.id || null);
 
   // 🔄 Escuchar eventos de refresh de datos
@@ -104,7 +105,7 @@ const MessagesView = () => {
     conversations.forEach(conversation => {
       const conversationId = conversation.id;
       const lastMessageTime = conversation.last_message_at;
-      
+
       if (!lastMessageTime) return;
 
       const previousTime = previousMessageCount[conversationId] || 0;
@@ -114,9 +115,9 @@ const MessagesView = () => {
       if (currentTime > previousTime && previousTime > 0) {
         const clientName = conversation.crm_clients?.name || 'Cliente Anónimo';
         const channelName = conversation.channel === 'whatsapp' ? 'WhatsApp' :
-                           conversation.channel === 'facebook' ? 'Facebook' :
-                           conversation.channel === 'instagram' ? 'Instagram' : 
-                           conversation.channel;
+          conversation.channel === 'facebook' ? 'Facebook' :
+            conversation.channel === 'instagram' ? 'Instagram' :
+              conversation.channel;
 
         // Crear notificación solo si no estamos viendo esta conversación actualmente
         if (selectedConversation !== conversationId) {
@@ -178,7 +179,7 @@ const MessagesView = () => {
     }
 
     const messageContent = newMessage.trim();
-    
+
     // Verificar duplicados
     if (isDuplicateMessage(messageContent, selectedConversation)) {
       console.log('🚫 Mensaje duplicado detectado, cancelando envío');
@@ -191,7 +192,7 @@ const MessagesView = () => {
       conversationId: selectedConversation,
       userId: user.id
     });
-    
+
     // Limpiar input inmediatamente para mejor UX
     setNewMessage('');
     let tempId: string | null = null;
@@ -219,7 +220,7 @@ const MessagesView = () => {
       });
 
       console.log('Mensaje optimista creado:', tempId);
-      
+
       // Si es Facebook Messenger o Instagram, enviar a través de la API externa
       if (conversationCheck.channel === 'facebook' || conversationCheck.channel === 'instagram') {
         try {
@@ -276,21 +277,21 @@ const MessagesView = () => {
           updateMessageStatus(tempId, savedMessage);
         }
       }
-      
+
       // Update conversation last_message_at
       await supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', selectedConversation);
-      
+
       console.log('Mensaje enviado exitosamente');
-      
+
     } catch (error: unknown) {
       console.error('Error sending message:', error);
-      
+
       // Restaurar el mensaje en el input si hubo error
       setNewMessage(messageContent);
-      
+
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje",
@@ -329,8 +330,8 @@ const MessagesView = () => {
           user.id,
           'ai_response',
           aiEnabled ? 'IA Activada' : 'IA Desactivada',
-          aiEnabled 
-            ? `La IA responderá automáticamente a los nuevos mensajes de ${clientName}` 
+          aiEnabled
+            ? `La IA responderá automáticamente a los nuevos mensajes de ${clientName}`
             : `Solo tú responderás a los mensajes de ${clientName}`,
           {
             priority: 'low',
@@ -390,10 +391,10 @@ const MessagesView = () => {
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.crm_clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         conv.channel.toLowerCase().includes(searchTerm.toLowerCase());
+      conv.channel.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || conv.status === filterStatus;
     const matchesChannel = filterChannel === 'all' || conv.channel === filterChannel;
-    
+
     return matchesSearch && matchesStatus && matchesChannel;
   });
 
@@ -414,13 +415,13 @@ const MessagesView = () => {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const conversationParam = urlParams.get('conversation');
-    
+
     if (conversationParam && conversations.length > 0) {
       const conversation = conversations.find(c => c.id === conversationParam);
       if (conversation) {
         setSelectedConversation(conversationParam);
         setMobileView('chat');
-        
+
         // Limpiar URL después de navegar
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -448,7 +449,7 @@ const MessagesView = () => {
                   <span className="sm:hidden">Chats</span>
                   <span className="hidden sm:inline">Conversaciones</span>
                 </h2>
-                <ConversationConnectionStatus 
+                <ConversationConnectionStatus
                   status={connectionStatus}
                   onReconnect={refreshConversations}
                 />
@@ -477,7 +478,7 @@ const MessagesView = () => {
                   <SelectItem value="closed">Cerrados</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Select value={filterChannel} onValueChange={setFilterChannel}>
                 <SelectTrigger className="w-full sm:flex-1 text-sm sm:text-base">
                   <SelectValue placeholder="Canal" />
@@ -502,21 +503,28 @@ const MessagesView = () => {
                 </div>
               ) : (
                 filteredConversations.map((conversation) => (
-                  <div 
+                  <div
                     key={conversation.id}
-                    className={`cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${
-                      selectedConversation === conversation.id 
-                        ? 'bg-blue-50' 
-                        : 'bg-white'
-                    }`}
+                    className={`cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${selectedConversation === conversation.id
+                      ? 'bg-blue-50'
+                      : 'bg-white'
+                      }`}
                     onClick={() => handleConversationSelect(conversation.id)}
                   >
                     <div className="p-3 sm:p-4">
                       <div className="flex items-start gap-3">
                         <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
-                            {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
-                          </AvatarFallback>
+                          {conversation.crm_clients?.avatar_url ? (
+                            <img
+                              src={conversation.crm_clients.avatar_url}
+                              alt={conversation.crm_clients.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
+                              {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
+                            </AvatarFallback>
+                          )}
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           {/* Nombre del cliente - línea completa */}
@@ -524,25 +532,25 @@ const MessagesView = () => {
                             <h3 className="font-semibold text-sm sm:text-base text-gray-900 leading-tight">
                               {conversation.crm_clients?.name || 'Cliente Anónimo'}
                             </h3>
-                            </div>
-                          
+                          </div>
+
                           {/* Información de contacto */}
                           <div className="mb-2">
                             <p className="text-xs sm:text-sm text-gray-600 truncate">
                               {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
                             </p>
                           </div>
-                          
+
                           {/* Badges y estado en una línea */}
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-1 flex-wrap">
-                            <Badge 
-                              variant={conversation.status === 'open' ? 'default' : 'secondary'} 
-                              className="text-xs"
-                            >
-                              {conversation.status === 'open' ? 'Leído' : conversation.status}
-                            </Badge>
-                          </div>
+                              <Badge
+                                variant={conversation.status === 'open' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {conversation.status === 'open' ? 'Leído' : conversation.status}
+                              </Badge>
+                            </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {getChannelIcon(conversation.channel)}
                               {conversation.ai_enabled && (
@@ -550,7 +558,7 @@ const MessagesView = () => {
                               )}
                             </div>
                           </div>
-                          
+
                           {/* Fecha */}
                           <p className="text-xs text-gray-500">
                             {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -582,9 +590,17 @@ const MessagesView = () => {
                   </svg>
                 </Button>
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
-                    {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
-                  </AvatarFallback>
+                  {selectedConv?.crm_clients?.avatar_url ? (
+                    <img
+                      src={selectedConv.crm_clients.avatar_url}
+                      alt={selectedConv.crm_clients.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
+                      {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <h3 className="font-semibold text-base">
@@ -639,9 +655,8 @@ const MessagesView = () => {
                   messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex animate-fade-in ${
-                        message.sender_type === 'client' ? 'justify-start' : 'justify-end'
-                      }`}
+                      className={`flex animate-fade-in ${message.sender_type === 'client' ? 'justify-start' : 'justify-end'
+                        }`}
                     >
                       <div className="flex items-end gap-2 max-w-[85%]">
                         {message.sender_type === 'client' && (
@@ -652,20 +667,19 @@ const MessagesView = () => {
                           </Avatar>
                         )}
                         <div
-                          className={`px-4 py-2 rounded-2xl shadow-sm ${
-                            message.sender_type === 'client'
-                              ? 'bg-white text-gray-900 rounded-tl-md'
-                              : message.is_automated
+                          className={`px-4 py-2 rounded-2xl shadow-sm ${message.sender_type === 'client'
+                            ? 'bg-white text-gray-900 rounded-tl-md'
+                            : message.is_automated
                               ? 'bg-gradient-to-r from-green-500 to-green-600 text-white rounded-tr-md'
                               : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
-                          }`}
+                            }`}
                         >
                           <p className="text-sm leading-relaxed">{message.content}</p>
                           <div className="flex items-center justify-end gap-2 mt-1">
                             <p className="text-xs opacity-70">
-                              {new Date(message.created_at).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
+                              {new Date(message.created_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit'
                               })}
                             </p>
                             {message.is_automated && (
@@ -708,15 +722,14 @@ const MessagesView = () => {
                     rows={1}
                   />
                 </div>
-                <Button 
-                  onClick={sendMessage} 
+                <Button
+                  onClick={sendMessage}
                   disabled={!newMessage.trim() || isSending}
                   size="lg"
-                  className={`h-[44px] w-[44px] rounded-full transition-all duration-200 ${
-                    isSending 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
-                  }`}
+                  className={`h-[44px] w-[44px] rounded-full transition-all duration-200 ${isSending
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                    }`}
                 >
                   {isSending ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
@@ -738,9 +751,17 @@ const MessagesView = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
-                      <AvatarFallback className="bg-white/20 text-white text-sm sm:text-base">
-                        {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
-                      </AvatarFallback>
+                      {selectedConv?.crm_clients?.avatar_url ? (
+                        <img
+                          src={selectedConv.crm_clients.avatar_url}
+                          alt={selectedConv.crm_clients.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <AvatarFallback className="bg-white/20 text-white text-sm sm:text-base">
+                          {selectedConv?.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div>
                       <h3 className="font-semibold text-base sm:text-lg">
@@ -790,12 +811,12 @@ const MessagesView = () => {
                       />
                     </div>
                     <div className="flex gap-2">
-                    <Badge 
+                      <Badge
                         className="bg-white/20 text-white border-white/20 text-xs"
-                      variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}
-                    >
-                      {selectedConv?.status === 'open' ? 'Leído' : selectedConv?.status}
-                    </Badge>
+                        variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}
+                      >
+                        {selectedConv?.status === 'open' ? 'Leído' : selectedConv?.status}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -813,9 +834,8 @@ const MessagesView = () => {
                     messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex animate-fade-in ${
-                          message.sender_type === 'client' ? 'justify-start' : 'justify-end'
-                        }`}
+                        className={`flex animate-fade-in ${message.sender_type === 'client' ? 'justify-start' : 'justify-end'
+                          }`}
                       >
                         <div className="flex items-start gap-2 max-w-xs sm:max-w-sm lg:max-w-md">
                           {message.sender_type === 'client' && (
@@ -826,20 +846,19 @@ const MessagesView = () => {
                             </Avatar>
                           )}
                           <div
-                            className={`px-3 sm:px-4 py-2 sm:py-3 rounded-2xl shadow-sm ${
-                              message.sender_type === 'client'
-                                ? 'bg-white text-gray-900 rounded-tl-md'
-                                : message.is_automated
+                            className={`px-3 sm:px-4 py-2 sm:py-3 rounded-2xl shadow-sm ${message.sender_type === 'client'
+                              ? 'bg-white text-gray-900 rounded-tl-md'
+                              : message.is_automated
                                 ? 'bg-gradient-to-r from-green-500 to-green-600 text-white rounded-tr-md'
                                 : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
-                            }`}
+                              }`}
                           >
                             <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
                             <div className="flex items-center justify-between gap-2 mt-1 sm:mt-2">
                               <p className="text-xs opacity-70">
-                                {new Date(message.created_at).toLocaleTimeString([], { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
                                 })}
                               </p>
                               {message.is_automated && (
@@ -883,15 +902,14 @@ const MessagesView = () => {
                         rows={2}
                       />
                     </div>
-                    <Button 
-                      onClick={sendMessage} 
+                    <Button
+                      onClick={sendMessage}
                       disabled={!newMessage.trim() || isSending}
                       size="lg"
-                      className={`h-[50px] sm:h-[60px] px-3 sm:px-6 transition-all duration-200 ${
-                        isSending 
-                          ? 'bg-gray-400 cursor-not-allowed' 
-                          : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
-                      }`}
+                      className={`h-[50px] sm:h-[60px] px-3 sm:px-6 transition-all duration-200 ${isSending
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                        }`}
                     >
                       {isSending ? (
                         <div className="flex items-center gap-1 sm:gap-2">

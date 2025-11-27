@@ -73,6 +73,40 @@ async function sendAIResponseViaGreenApi(
     }
 }
 
+/**
+ * Get Contact Avatar from Green API
+ */
+async function getAvatarUrl(
+    chatId: string,
+    idInstance: string,
+    apiToken: string
+): Promise<string | null> {
+    try {
+        const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/getContactInfo/${apiToken}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chatId: chatId
+            })
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const result = await response.json();
+        return result.avatar || null;
+
+    } catch (error) {
+        console.error('❌ Error fetching avatar:', error);
+        return null;
+    }
+}
+
 export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
     try {
         console.log('🎯 Processing Green API event');
@@ -184,6 +218,33 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
 
             client = newClient;
             console.log('✅ Created new client:', client.id);
+        }
+
+        // 🔄 Update Avatar if missing
+        if (!client.avatar_url) {
+            console.log('🖼️ Fetching avatar for client:', client.id);
+            try {
+                const avatarUrl = await getAvatarUrl(
+                    senderId,
+                    idInstance,
+                    channel.channel_config.apiTokenInstance
+                );
+
+                if (avatarUrl) {
+                    console.log('✅ Found avatar URL:', avatarUrl);
+                    await supabase
+                        .from('crm_clients')
+                        .update({ avatar_url: avatarUrl })
+                        .eq('id', client.id);
+
+                    // Update local client object
+                    client.avatar_url = avatarUrl;
+                } else {
+                    console.log('❌ No avatar found for user');
+                }
+            } catch (error) {
+                console.error('❌ Error updating avatar:', error);
+            }
         }
 
         // Find or create conversation
