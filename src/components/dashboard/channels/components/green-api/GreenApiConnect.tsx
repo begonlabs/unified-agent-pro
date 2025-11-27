@@ -185,32 +185,31 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
             {status === 'disconnected' && (
                 <>
                     <div className="text-center space-y-4">
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                            <p className="text-blue-800 text-sm">
-                                Para conectar tu WhatsApp, simplemente genera el código QR y escanéalo con tu aplicación móvil.
-                            </p>
-                        </div>
-
                         <Button
                             onClick={getQRCode}
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] h-12 text-lg"
+                            className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
                         >
                             {loading ? (
                                 <>
-                                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     Generando QR...
                                 </>
                             ) : (
                                 <>
-                                    <QrCode className="h-5 w-5 mr-2" />
+                                    <QrCode className="h-4 w-4 mr-2" />
                                     Generar Código QR
                                 </>
                             )}
                         </Button>
 
-                        <div className="text-xs text-muted-foreground">
-                            <p>Instancia: {idInstance}</p>
+                        <div className="bg-blue-50 p-3 rounded-lg border">
+                            <p className="text-blue-800 text-xs sm:text-sm">
+                                Para conectar tu WhatsApp, simplemente genera el código QR y escanéalo con tu aplicación móvil.
+                            </p>
+                            <div className="mt-2 text-xs text-muted-foreground">
+                                <p>Instancia: {idInstance}</p>
+                            </div>
                         </div>
                     </div>
                 </>
