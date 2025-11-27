@@ -35,12 +35,39 @@ export const useChannelActions = (user: User | null) => {
         return;
       }
 
-      const channelName = channel.channel_type === 'whatsapp' ? 'WhatsApp' :
-                         channel.channel_type === 'facebook' ? 'Facebook' :
-                         channel.channel_type === 'instagram' ? 'Instagram' : 'Canal';
+      const channelName = channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api' ? 'WhatsApp' :
+        channel.channel_type === 'facebook' ? 'Facebook' :
+          channel.channel_type === 'instagram' ? 'Instagram' : 'Canal';
 
       if (!confirm(`¿Estás seguro de que quieres desconectar ${channelName}? Esta acción eliminará la conexión permanentemente.`)) {
         return;
+      }
+
+      // Si es Green API, hacer logout primero
+      if (channel.channel_type === 'whatsapp_green_api') {
+        try {
+          const config = channel.channel_config as any;
+          const idInstance = config?.idInstance;
+          const apiToken = config?.apiTokenInstance;
+
+          if (idInstance && apiToken) {
+            console.log('🔓 Logging out from Green API instance:', idInstance);
+            const logoutUrl = `https://7107.api.green-api.com/waInstance${idInstance}/logout/${apiToken}`;
+
+            const response = await fetch(logoutUrl, {
+              method: 'GET'
+            });
+
+            if (response.ok) {
+              console.log('✅ Green API logout successful');
+            } else {
+              console.warn('⚠️ Green API logout failed, but continuing with disconnect');
+            }
+          }
+        } catch (error) {
+          console.error('Error during Green API logout:', error);
+          // Continue with disconnect even if logout fails
+        }
       }
 
       // Eliminar canal de la base de datos
@@ -49,54 +76,54 @@ export const useChannelActions = (user: User | null) => {
       // Actualizar estado local
       setChannels(channels.filter(c => c.id !== channelId));
 
-             // Crear notificación de desconexión exitosa
-             if (user?.id) {
-               NotificationService.createNotification(
-                 user.id,
-                 'channel_disconnection',
-                 `${channelName} desconectado`,
-                 'La conexión ha sido eliminada exitosamente',
-                 {
-                   priority: 'medium',
-                   metadata: {
-                     channel_id: channelId,
-                     channel_type: channel.channel_type,
-                     channel_name: channelName
-                   },
-                   action_url: '/dashboard/channels',
-                   action_label: 'Ver configuración'
-                 }
-               ).catch(error => {
-                 console.error('Error creating disconnection notification:', error);
-               });
+      // Crear notificación de desconexión exitosa
+      if (user?.id) {
+        NotificationService.createNotification(
+          user.id,
+          'channel_disconnection',
+          `${channelName} desconectado`,
+          'La conexión ha sido eliminada exitosamente',
+          {
+            priority: 'medium',
+            metadata: {
+              channel_id: channelId,
+              channel_type: channel.channel_type,
+              channel_name: channelName
+            },
+            action_url: '/dashboard/channels',
+            action_label: 'Ver configuración'
+          }
+        ).catch(error => {
+          console.error('Error creating disconnection notification:', error);
+        });
 
-               // Enviar correo de desconexión
-               EmailService.shouldSendEmail(user.id, 'channels').then(shouldSend => {
-                 if (shouldSend && user.email) {
-                   const template = EmailService.getTemplates().channelConnected(
-                     user.email.split('@')[0],
-                     `${channelName} Desconectado`,
-                     channel.channel_type
-                   );
-                   EmailService.sendEmail({
-                     to: user.email,
-                     template: {
-                       ...template,
-                       subject: `❌ ${channelName} Desconectado - OndAI`,
-                       html: template.html.replace('¡Canal Conectado!', 'Canal Desconectado').replace('conectado exitosamente', 'desconectado exitosamente')
-                     },
-                     priority: 'medium'
-                   }).catch(error => {
-                     console.error('Error sending disconnection email:', error);
-                   });
-                 }
-               });
-             }
+        // Enviar correo de desconexión
+        EmailService.shouldSendEmail(user.id, 'channels').then(shouldSend => {
+          if (shouldSend && user.email) {
+            const template = EmailService.getTemplates().channelConnected(
+              user.email.split('@')[0],
+              `${channelName} Desconectado`,
+              channel.channel_type
+            );
+            EmailService.sendEmail({
+              to: user.email,
+              template: {
+                ...template,
+                subject: `❌ ${channelName} Desconectado - OndAI`,
+                html: template.html.replace('¡Canal Conectado!', 'Canal Desconectado').replace('conectado exitosamente', 'desconectado exitosamente')
+              },
+              priority: 'medium'
+            }).catch(error => {
+              console.error('Error sending disconnection email:', error);
+            });
+          }
+        });
+      }
 
     } catch (error: unknown) {
       console.error('Error disconnecting channel:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo desconectar el canal";
-      
+
       // Crear notificación de error
       if (user?.id) {
         NotificationService.createNotification(
@@ -168,7 +195,7 @@ export const useChannelActions = (user: User | null) => {
     } catch (error: unknown) {
       console.error('Error in Facebook integration test:', error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo completar el test";
-      
+
       // Crear notificación de error
       if (user?.id) {
         NotificationService.createNotification(
