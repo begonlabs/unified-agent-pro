@@ -354,8 +354,9 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     ): Promise<{ name: string; avatar_url?: string }> {
       try {
         const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
+        // Use 'picture' field with type=large to get a good quality image
         const response = await fetch(
-          `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,profile_pic&access_token=${pageAccessToken}`
+          `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,picture.type(large)&access_token=${pageAccessToken}`
         );
 
         if (!response.ok) {
@@ -365,9 +366,12 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
         const data = await response.json();
         const name = `${data.first_name} ${data.last_name}`.trim();
+        // Facebook returns picture in data.picture.data.url
+        const avatarUrl = data.picture?.data?.url;
+
         return {
           name: name || `Facebook User ${userId.slice(-4)}`,
-          avatar_url: data.profile_pic
+          avatar_url: avatarUrl
         };
       } catch (error) {
         console.error('❌ Error in getFacebookUserProfile:', error);
