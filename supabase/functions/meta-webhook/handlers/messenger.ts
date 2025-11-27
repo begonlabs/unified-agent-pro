@@ -644,6 +644,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           .from('ai_configurations')
           .select('*')
           .eq('user_id', conversation.user_id)
+          .limit(1)
           .maybeSingle();
 
         if (!aiConfig) {

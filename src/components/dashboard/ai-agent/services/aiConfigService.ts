@@ -16,6 +16,7 @@ export class AIConfigService {
         .from('ai_configurations')
         .select('*')
         .eq('user_id', user.id)
+        .limit(1)
         .maybeSingle();
 
       if (error) {
@@ -61,6 +62,7 @@ export class AIConfigService {
         .from('ai_configurations')
         .select('id')
         .eq('user_id', user.id)
+        .limit(1)
         .maybeSingle();
 
       let result;
