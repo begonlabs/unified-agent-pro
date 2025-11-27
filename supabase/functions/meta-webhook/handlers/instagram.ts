@@ -255,7 +255,7 @@ async function getInstagramUserProfile(
   accessToken: string
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
-    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v19.0';
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
     // Use 'profile_pic' field to get the profile picture URL
     // Note: This URL expires after a few days, so we should ideally cache the image or refresh it
     const url = `https://graph.instagram.com/${graphVersion}/${userId}?fields=username,profile_pic&access_token=${accessToken}`;
@@ -575,9 +575,21 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
     // Fetch profile info if needed (new client or missing info)
     let profileInfo = { name: `Instagram User ${realUserId.slice(-4)}`, avatar_url: undefined };
 
+    // Diagnostic logging for profile fetching
+    console.log('🔍 Instagram profile fetch attempt:', {
+      hasToken: !!channel.channel_config.access_token,
+      tokenPreview: channel.channel_config.access_token ? `${channel.channel_config.access_token.substring(0, 10)}...` : 'MISSING',
+      realUserId,
+      channelId: channel.id
+    });
+
     // Only fetch from Instagram if we have the token
     if (channel.channel_config.access_token) {
+      console.log('📞 Calling getInstagramUserProfile...');
       profileInfo = await getInstagramUserProfile(realUserId, channel.channel_config.access_token);
+      console.log('✅ Instagram profile fetch result:', profileInfo);
+    } else {
+      console.warn('⚠️ Skipping Instagram profile fetch: access_token is missing from channel_config');
     }
 
     if (existingClient && !clientSearchError) {

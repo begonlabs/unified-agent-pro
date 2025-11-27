@@ -353,7 +353,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       pageAccessToken: string
     ): Promise<{ name: string; avatar_url?: string }> {
       try {
-        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v19.0';
+        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
         // Use 'picture' field with type=large to get a good quality image
         const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,picture.type(large)&access_token=${pageAccessToken}`;
 
@@ -419,10 +419,22 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     // Fetch profile info if needed (new client or missing info)
     let profileInfo = { name: `Facebook User ${realUserId.slice(-4)}`, avatar_url: undefined };
 
+    // Diagnostic logging for profile fetching
+    console.log('🔍 Profile fetch attempt:', {
+      hasToken: !!channel.channel_config.page_access_token,
+      tokenPreview: channel.channel_config.page_access_token ? `${channel.channel_config.page_access_token.substring(0, 10)}...` : 'MISSING',
+      realUserId,
+      channelId: channel.id
+    });
+
     // Only fetch from Facebook if we have the token and it's not an echo (or if we want to update echo recipient too)
     // Usually we fetch for the person interacting with the page
     if (channel.channel_config.page_access_token) {
+      console.log('📞 Calling getFacebookUserProfile...');
       profileInfo = await getFacebookUserProfile(realUserId, channel.channel_config.page_access_token);
+      console.log('✅ Profile fetch result:', profileInfo);
+    } else {
+      console.warn('⚠️ Skipping profile fetch: page_access_token is missing from channel_config');
     }
 
     if (existingClient && !clientSearchError) {
