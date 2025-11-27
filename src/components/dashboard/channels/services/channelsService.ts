@@ -273,11 +273,14 @@ export class ChannelsService {
       'pages_show_list',
       'pages_manage_metadata',
       'pages_messaging',
+      'pages_read_engagement', // Required to see pages
+      'pages_read_user_content', // Added for reading content
+      'public_profile'
     ].join(',');
 
     const state = encodeURIComponent(JSON.stringify({ user_id: user.id }));
 
-    return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+    return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&auth_type=rerequest`;
   }
 
   /**
