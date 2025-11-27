@@ -265,7 +265,7 @@ export class ChannelsService {
    */
   static buildFacebookOAuthUrl(user: User): string {
     const META_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
-    const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v23.0';
+    const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v24.0';
     const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
 
     const redirectUri = `${EDGE_BASE_URL}/functions/v1/meta-oauth`;

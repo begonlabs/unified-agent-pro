@@ -24,14 +24,14 @@ serve(async (req) => {
 
     if (!code) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'Missing authorization code',
           debug: { request_url: req.url }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -40,26 +40,26 @@ serve(async (req) => {
     const appId = Deno.env.get('META_APP_ID')
     const appSecret = Deno.env.get('META_APP_SECRET')
     const redirectUri = Deno.env.get('META_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/meta-oauth'
-    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0'
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0'
     const verifyToken = Deno.env.get('META_VERIFY_TOKEN')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!appId || !appSecret || !supabaseUrl || !supabaseServiceKey) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'Missing required environment variables',
-          debug: { 
+          debug: {
             app_id_present: !!appId,
             app_secret_present: !!appSecret,
             supabase_url_present: !!supabaseUrl,
             service_key_present: !!supabaseServiceKey
           }
         }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -76,8 +76,8 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: `Error: HTTP ${tokenResponse.status}: ${errorText}`,
           debug: {
             request_url: req.url,
@@ -86,9 +86,9 @@ serve(async (req) => {
             app_id_present: !!appId
           }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -98,34 +98,34 @@ serve(async (req) => {
 
     if (!accessToken) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'No access token received',
           debug: { token_response: tokenData }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    // Get user's pages
+    // Get user's pages with specific fields
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${accessToken}&fields=id,name,access_token,tasks,category`
     )
 
     if (!pagesResponse.ok) {
       const errorText = await pagesResponse.text()
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: `Error fetching pages: HTTP ${pagesResponse.status}: ${errorText}`,
           debug: { access_token_present: !!accessToken }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -135,14 +135,14 @@ serve(async (req) => {
 
     if (pages.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'No Facebook pages found for this user',
           debug: { user_id: 'extracted_from_token' }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -200,14 +200,14 @@ serve(async (req) => {
 
     if (!userId) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'User ID not found in state parameter',
           debug: { state, parsed_state: state ? JSON.parse(decodeURIComponent(state)) : null }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -273,7 +273,7 @@ serve(async (req) => {
 
     // Redirect to frontend dashboard with success
     const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook&view=channels`;
-    
+
     return new Response(
       `<!DOCTYPE html>
 <html>
@@ -327,23 +327,23 @@ serve(async (req) => {
     </script>
 </body>
 </html>`,
-      { 
-      status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' }
       }
     )
 
   } catch (error) {
     console.error('Error in meta-oauth function:', error)
     return new Response(
-      JSON.stringify({ 
-        ok: false, 
+      JSON.stringify({
+        ok: false,
         error: `Internal server error: ${error.message}`,
         debug: { request_url: req.url }
       }),
-      { 
-      status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
