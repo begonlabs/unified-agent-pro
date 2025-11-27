@@ -272,7 +272,8 @@ serve(async (req) => {
     }
 
     // Redirect to frontend dashboard with success
-    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook&view=channels`;
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://app.ondai.ai';
+    const frontendCallbackUrl = `${frontendUrl}/dashboard?success=true&page_id=${pageId}&page_name=${encodeURIComponent(pageName)}&channel=facebook&view=channels`;
 
     return new Response(
       `<!DOCTYPE html>
