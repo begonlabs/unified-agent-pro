@@ -20,17 +20,17 @@ import { Phone, Facebook, Instagram } from 'lucide-react';
 const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   const { toast } = useToast();
   const { user: authUser } = useAuth();
-  
+
   // Usar el usuario de auth si no se pasa como prop
   const currentUser = user || authUser;
-  
+
   // Hooks principales
   const { channels, setChannels, loading, fetchChannels, getChannelStatus } = useChannels(currentUser);
-  const { 
-    isConnectingWhatsApp, 
-    handleWhatsAppLogin, 
-    handleFacebookLogin, 
-    handleInstagramLogin 
+  const {
+    isConnectingWhatsApp,
+    handleWhatsAppLogin,
+    handleFacebookLogin,
+    handleInstagramLogin
   } = useChannelConnections(currentUser);
   const {
     igVerifications,
@@ -51,34 +51,34 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const successParam = urlParams.get('success');
-    
+
     if (successParam === 'true' && currentUser?.id) {
       setTimeout(() => {
         fetchChannels();
       }, 1000);
-      
+
       // Crear notificación de conexión exitosa
       const pageName = urlParams.get('page_name');
       const businessName = urlParams.get('business_name');
       const phoneNumber = urlParams.get('phone_number');
       const channel = urlParams.get('channel');
-      
+
       let title = '';
       let description = '';
       let channelName = '';
-      
+
       switch (channel) {
         case 'whatsapp':
           channelName = 'WhatsApp Business';
           title = 'WhatsApp conectado exitosamente';
-          description = businessName && phoneNumber 
+          description = businessName && phoneNumber
             ? `Empresa: ${businessName} - Teléfono: ${phoneNumber}`
             : 'Tu cuenta de WhatsApp Business ha sido conectada';
           break;
         case 'facebook':
           channelName = 'Facebook Messenger';
           title = 'Facebook conectado exitosamente';
-          description = pageName 
+          description = pageName
             ? `Página: ${pageName}`
             : 'Tu página de Facebook ha sido conectada';
           break;
@@ -92,7 +92,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           title = 'Canal conectado exitosamente';
           description = 'El canal ha sido conectado correctamente';
       }
-      
+
       NotificationService.createNotification(
         currentUser.id,
         'channel_connection',
@@ -131,7 +131,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           });
         }
       });
-      
+
       // Limpiar URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -141,14 +141,14 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   useEffect(() => {
     if (channels.length > 0 && currentUser) {
       const instagramChannels = channels.filter(c => c.channel_type === 'instagram');
-      
+
       instagramChannels.forEach(channel => {
         const config = channel.channel_config as InstagramConfig;
         const needsVerification = instagramNeedsVerification(config);
         const hasExistingVerification = igVerifications[channel.id];
         const isConnected = getChannelStatus('instagram');
         const notificationKey = `instagram-verification-${channel.id}`;
-        
+
         // Crear notificación para Instagram que necesita verificación
         if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !verificationNotificationsShown.has(notificationKey)) {
           NotificationService.createNotification(
@@ -169,7 +169,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           ).catch(error => {
             console.error('Error creating Instagram verification notification:', error);
           });
-          
+
           // Mark this notification as shown to prevent loops
           setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
         }
@@ -186,7 +186,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    
+
     // Crear notificación de código copiado
     if (currentUser?.id) {
       NotificationService.createNotification(
@@ -258,7 +258,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
               Conecta tus redes sociales de manera sencilla
               {channels.length > 0 && (
                 <span className="block sm:inline sm:ml-2 mt-1 sm:mt-0">
-                  • {channels.length} canal{channels.length !== 1 ? 'es' : ''} 
+                  • {channels.length} canal{channels.length !== 1 ? 'es' : ''}
                   {channels.some(c => c.channel_type === 'instagram' && c.is_connected) && (
                     <span className="ml-1 text-pink-600 font-medium flex items-center">
                       <Smartphone className="h-3 w-3 mr-1" /> Instagram detectado
@@ -283,7 +283,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           icon={Phone}
           color="bg-green-600"
           connected={getChannelStatus('whatsapp')}
-          description="Conecta tu número de WhatsApp Business"
+          description="Conecta tu WhatsApp Business"
         >
           <WhatsAppChannel
             channels={channels}
