@@ -248,12 +248,44 @@ const MessagesView = () => {
             console.log(`Mensaje enviado exitosamente a ${conversationCheck.channel}:`, result);
           }
 
+
         } catch (apiError) {
           console.error(`Error en ${conversationCheck.channel} API:`, apiError);
           throw apiError;
         }
+      } else if (conversationCheck.channel === 'whatsapp') {
+        // WhatsApp - enviar a través de send-message Edge Function
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/send-message`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              conversation_id: selectedConversation,
+              message: messageContent,
+              user_id: user.id,
+              sender_type: 'agent',
+              sender_name: 'Agente'
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error en función send-message:', errorData);
+            throw new Error(`Error enviando mensaje: ${errorData.error || 'Error desconocido'}`);
+          } else {
+            const result = await response.json();
+            console.log('Mensaje enviado exitosamente a WhatsApp:', result);
+          }
+
+        } catch (apiError) {
+          console.error('Error en WhatsApp API:', apiError);
+          throw apiError;
+        }
       } else {
-        // Para otros canales que no sean Facebook o Instagram (ej: WhatsApp), crear mensaje local
+        // Para otros canales (genéricos), crear mensaje local
         const { data: savedMessage, error: dbError } = await supabase
           .from('messages')
           .insert({
@@ -277,6 +309,7 @@ const MessagesView = () => {
           updateMessageStatus(tempId, savedMessage);
         }
       }
+
 
       // Update conversation last_message_at
       await supabase
