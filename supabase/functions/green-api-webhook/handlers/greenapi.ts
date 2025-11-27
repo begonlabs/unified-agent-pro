@@ -399,8 +399,14 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
 
                 console.log('📜 Loaded conversation history:', conversationHistory.length);
 
-                // Generate AI response
-                const aiResponse = await generateAIResponse(messageText, aiConfig, conversationHistory);
+                // Generate AI response with client name for personalization
+                const aiResponse = await generateAIResponse(
+                    messageText,
+                    aiConfig,
+                    conversationHistory,
+                    channel.user_id,
+                    client.name  // Pass client name for personalized responses
+                );
 
                 if (aiResponse.success && aiResponse.response) {
                     console.log('🤖 AI response generated successfully');

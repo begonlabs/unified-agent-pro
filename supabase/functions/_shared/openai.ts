@@ -60,7 +60,7 @@ function checkCustomFAQ(message: string, faq: string): string | null {
     const faqLines = faq.split('\n').filter(line => line.trim());
     let currentQuestion = '';
     let currentAnswer = '';
-    
+
     for (const line of faqLines) {
       if (line.toLowerCase().startsWith('pregunta:')) {
         // Save previous Q&A if we have one
@@ -80,7 +80,7 @@ function checkCustomFAQ(message: string, faq: string): string | null {
         currentAnswer += '\n' + line;
       }
     }
-    
+
     // Check last Q&A
     if (currentQuestion && currentAnswer) {
       const questionText = currentQuestion.toLowerCase().replace('pregunta:', '').trim();
@@ -88,7 +88,7 @@ function checkCustomFAQ(message: string, faq: string): string | null {
         return currentAnswer.replace(/^respuesta:/i, '').trim();
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error parsing custom FAQ:', error);
@@ -120,15 +120,15 @@ export function isAgentActiveNow(aiConfig: AIConfig): boolean {
 
     const now = new Date();
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
-    const currentTime = now.toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const currentTime = now.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
     });
 
     // Obtener configuración del día actual
     const dayConfig = aiConfig.operating_hours[currentDay];
-    
+
     // Si el día no está habilitado
     if (!dayConfig || !dayConfig.enabled) {
       return false;
@@ -174,29 +174,35 @@ export function shouldAIRespond(message: string, aiConfig: AIConfig): boolean {
  * Builds comprehensive system prompt with company context and conversation history
  * @param aiConfig - AI configuration from database
  * @param conversationHistory - Complete conversation history for context
+ * @param clientName - Name of the client to personalize responses
  * @returns string - Complete system prompt
  */
-function buildSystemPrompt(aiConfig: AIConfig, conversationHistory: Message[]): string {
+function buildSystemPrompt(aiConfig: AIConfig, conversationHistory: Message[], clientName?: string): string {
   const now = new Date();
-  const currentDate = now.toLocaleDateString('es-ES', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const currentDate = now.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
-  const currentTime = now.toLocaleTimeString('es-ES', { 
-    hour: '2-digit', 
+  const currentTime = now.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'America/Havana' 
+    timeZone: 'America/Havana'
   });
 
   let systemPrompt = `Eres un asistente virtual inteligente y profesional especializado en atender consultas de clientes.
 
 INFORMACIÓN ACTUAL:
 - Fecha: ${currentDate}
-- Hora: ${currentTime}
+- Hora: ${currentTime}`;
 
-INFORMACIÓN DE LA EMPRESA:`;
+  // Add client information if available
+  if (clientName) {
+    systemPrompt += `\n- Cliente: ${clientName}`;
+  }
+
+  systemPrompt += `\n\nINFORMACIÓN DE LA EMPRESA:`;
 
   // Add company information sections
   if (aiConfig?.goals?.trim()) {
@@ -239,9 +245,13 @@ INFORMACIÓN DE LA EMPRESA:`;
 1. Responde ÚNICAMENTE basándote en la información de la empresa proporcionada
 2. Si hay coincidencia exacta en FAQ, usa esa respuesta
 3. IMPORTANTE: Mantén coherencia total con el contexto de conversación mostrado arriba
-4. RECUERDA y mantén consistencia con cualquier información personal que el cliente haya compartido previamente (nombre, preferencias, etc.)
-5. Si previamente mencionaste el nombre del cliente o cualquier dato personal, mantenlo a lo largo de toda la conversación
-6. Si no tienes información específica, sé honesto y sugiere contactar al equipo
+4. RECUERDA y mantén consistencia con cualquier información personal que el cliente haya compartido previamente (nombre, preferencias, etc.)`;
+
+  if (clientName) {
+    systemPrompt += `\n5. DIRÍGETE AL CLIENTE POR SU NOMBRE: Usa "${clientName}" para personalizar tus respuestas de forma natural`;
+  }
+
+  systemPrompt += `\n6. Si no tienes información específica, sé honesto y sugiere contactar al equipo
 7. Respeta TODAS las restricciones sin excepción
 8. Usa la fecha/hora actual cuando sea relevante
 9. Mantén tono profesional y natural
@@ -268,17 +278,19 @@ function createFallbackResponse(message: string): string {
  * @param aiConfig - AI configuration from database
  * @param conversationHistory - Complete conversation history for context
  * @param userId - User ID for debugging (optional)
+ * @param clientName - Name of the client for personalization (optional)
  * @returns Promise<AIResponse> - AI response or error
  */
 export async function generateAIResponse(
-  message: string, 
-  aiConfig: AIConfig, 
+  message: string,
+  aiConfig: AIConfig,
   conversationHistory: Message[] = [],
-  userId?: string
+  userId?: string,
+  clientName?: string
 ): Promise<AIResponse> {
   try {
     console.log('🤖 Generating AI response for message length:', message.length);
-    
+
     if (!aiConfig?.is_active) {
       return {
         success: false,
@@ -311,7 +323,7 @@ export async function generateAIResponse(
     }
 
     // Build prompts
-    const systemPrompt = buildSystemPrompt(aiConfig, conversationHistory);
+    const systemPrompt = buildSystemPrompt(aiConfig, conversationHistory, clientName);
     const userPrompt = `Cliente: "${message}"
 
 Responde a este mensaje siguiendo las instrucciones del system prompt y manteniendo coherencia con el contexto de la conversación.`;
