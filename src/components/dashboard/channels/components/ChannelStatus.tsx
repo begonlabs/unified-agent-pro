@@ -36,12 +36,6 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
               <Badge variant="default" className="bg-pink-600">
                 <Instagram className="h-3 w-3 mr-1" />
                 Instagram
-                {(() => {
-                  const igChannel = channels.find(c => c.channel_type === 'instagram');
-                  const config = igChannel?.channel_config as InstagramConfig;
-                  const needsVerification = config ? instagramNeedsVerification(config) : false;
-                  return needsVerification ? ' (Necesita Verificación)' : ' (Verificado)';
-                })()}
               </Badge>
             )}
             {!getChannelStatus('whatsapp') && !getChannelStatus('facebook') && !getChannelStatus('instagram') && (

@@ -60,17 +60,10 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                     <Badge variant="default" className="bg-blue-600 text-xs">
                       Conectado
                     </Badge>
-                    <Badge
-                      variant={config?.webhook_subscribed ? "default" : "secondary"}
-                      className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
-                    >
-                      {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
-                    </Badge>
                   </div>
                 </div>
                 <div className="text-xs text-blue-800 space-y-1">
                   <p>ID: {config?.page_id || 'N/A'}</p>
-                  <p>Webhook: {config?.webhook_subscribed ? 'Activo' : 'Inactivo'}</p>
                   <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
                   {config?.webhook_subscribed && (
                     <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>

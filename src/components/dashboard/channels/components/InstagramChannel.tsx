@@ -75,21 +75,11 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                     <Badge variant="default" className="bg-pink-600 text-xs">
                       Conectado
                     </Badge>
-                    {needsVerification ? (
+                    {needsVerification && (
                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
                         Necesita Verificación
                       </Badge>
-                    ) : (
-                      <Badge
-                        variant={config?.webhook_subscribed ? "default" : "secondary"}
-                        className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
-                      >
-                        {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
-                      </Badge>
                     )}
-                    <Badge variant="outline" className="text-xs">
-                      {config?.account_type || 'PERSONAL'}
-                    </Badge>
                   </div>
                 </div>
 
@@ -131,20 +121,8 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
 
                 <div className="text-xs text-pink-800 space-y-1">
                   <p>Usuario ID: {config?.instagram_user_id || 'N/A'}</p>
-                  {config?.instagram_business_account_id && (
-                    <p>Business Account ID: {config.instagram_business_account_id}</p>
-                  )}
-                  <p>Tipo de cuenta: {config?.account_type || 'PERSONAL'}</p>
-                  <p>Token: {config?.token_type || 'short_lived'} ({config?.expires_at ? new Date(config.expires_at) > new Date() ? 'Válido' : 'Expirado' : 'N/A'})</p>
                   <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
-                  {config?.expires_at && (
-                    <p className={`font-medium ${new Date(config.expires_at) > new Date() ? 'text-green-700' : 'text-red-700'}`}>
-                      {new Date(config.expires_at) > new Date()
-                        ? `Expira: ${new Date(config.expires_at).toLocaleDateString('es-ES')}`
-                        : 'Token expirado'
-                      }
-                    </p>
-                  )}
+                  <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-2">
                   <Button
