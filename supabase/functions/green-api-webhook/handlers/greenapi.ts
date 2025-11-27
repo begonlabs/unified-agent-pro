@@ -101,7 +101,7 @@ async function getContactInfo(
         const result = await response.json();
         return {
             avatar: result.avatar || null,
-            name: result.name || null  // WhatsApp profile name
+            name: result.name || result.contactName || null // Try public name, then contact book name
         };
 
     } catch (error) {
@@ -111,6 +111,20 @@ async function getContactInfo(
 }
 
 export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
+    // ... (skip to clientName assignment)
+    // Get WhatsApp profile info before creating client
+    console.log('🔍 Fetching WhatsApp profile info for new client');
+    const contactInfo = await getContactInfo(
+        senderId,
+        idInstance,
+        channel.channel_config.apiTokenInstance
+    );
+
+    // Try all possible sources for the name
+    const clientName = contactInfo.name ||
+        event.senderData?.senderName ||
+        event.senderData?.chatName ||
+        `WhatsApp User ${senderId.slice(-4)}`;
     try {
         console.log('🎯 Processing Green API event');
 
@@ -218,7 +232,11 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 channel.channel_config.apiTokenInstance
             );
 
-            const clientName = contactInfo.name || event.senderData?.senderName || `WhatsApp User ${senderId.slice(-4)}`;
+            // Try all possible sources for the name
+            const clientName = contactInfo.name ||
+                event.senderData?.senderName ||
+                event.senderData?.chatName ||
+                `WhatsApp User ${senderId.slice(-4)}`;
 
             const { data: newClient, error: clientCreateError } = await supabase
                 .from('crm_clients')
