@@ -58,8 +58,14 @@ interface Channel {
 
 // Función helper para verificar estado de canal (fuera del hook para evitar dependencias)
 const getChannelStatus = (channels: Channel[], channelType: string): boolean => {
-  const channel = channels.find(c => c.channel_type === channelType);
-  
+  // Para WhatsApp, buscar tanto 'whatsapp' como 'whatsapp_green_api'
+  let channel: Channel | undefined;
+  if (channelType === 'whatsapp') {
+    channel = channels.find(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api');
+  } else {
+    channel = channels.find(c => c.channel_type === channelType);
+  }
+
   if (!channel || !channel.channel_config) {
     return false;
   }
@@ -67,6 +73,11 @@ const getChannelStatus = (channels: Channel[], channelType: string): boolean => 
   // Verificación específica por tipo de canal
   switch (channelType) {
     case 'whatsapp': {
+      // Si es Green API, solo verificar is_connected
+      if (channel.channel_type === 'whatsapp_green_api') {
+        return Boolean(channel.is_connected);
+      }
+      // Para WhatsApp Business API (Meta)
       const config = channel.channel_config as WhatsAppConfig;
       const hasPhoneNumberId = Boolean(config?.phone_number_id);
       const hasBusinessAccountId = Boolean(config?.business_account_id);
@@ -74,7 +85,7 @@ const getChannelStatus = (channels: Channel[], channelType: string): boolean => 
       const isConnected = Boolean(channel.is_connected);
       return hasPhoneNumberId && hasBusinessAccountId && hasAccessToken && isConnected;
     }
-    
+
     case 'facebook': {
       const config = channel.channel_config as FacebookConfig;
       const hasPageId = Boolean(config?.page_id);
@@ -83,7 +94,7 @@ const getChannelStatus = (channels: Channel[], channelType: string): boolean => 
       const isConnected = Boolean(channel.is_connected);
       return hasPageId && hasPageToken && hasUserToken && isConnected;
     }
-    
+
     case 'instagram': {
       const config = channel.channel_config as InstagramConfig;
       const hasUsername = Boolean(config?.username);
@@ -92,11 +103,11 @@ const getChannelStatus = (channels: Channel[], channelType: string): boolean => 
       const hasAccountType = Boolean(config?.account_type);
       const isConnected = Boolean(channel.is_connected);
       const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
-      
-      return hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType && 
-             isConnected && isTokenValid;
+
+      return hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType &&
+        isConnected && isTokenValid;
     }
-    
+
     default:
       return channel?.is_connected || false;
   }
@@ -114,11 +125,11 @@ export const useChannelsStatus = () => {
 
   const fetchChannels = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
       // Fetching channels status
-      
+
       const { data } = await supabaseSelect(
         supabase
           .from('communication_channels')
@@ -126,18 +137,18 @@ export const useChannelsStatus = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: true })
       );
-      
+
       // Channels fetched successfully
       const channelsData = (data as Channel[]) || [];
       setChannels(channelsData);
-      
+
       // Actualizar estado de cada canal usando la función helper
       setStatus({
         whatsapp: getChannelStatus(channelsData, 'whatsapp'),
         facebook: getChannelStatus(channelsData, 'facebook'),
         instagram: getChannelStatus(channelsData, 'instagram')
       });
-      
+
     } catch (error: unknown) {
       console.error('Sidebar: Error loading channels:', error);
       handleSupabaseError(error, "Error al cargar estado de canales");
