@@ -58,7 +58,7 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                   </div>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                     <Badge variant="default" className="bg-blue-600 text-xs">
-                      Conectado
+                      En Línea
                     </Badge>
                   </div>
                 </div>

@@ -54,7 +54,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
                     </span>
                   </div>
                   <Badge variant="default" className="bg-green-600 text-xs">
-                    Conectado
+                    En Línea
                   </Badge>
                 </div>
                 <div className="text-xs text-green-800 space-y-1">

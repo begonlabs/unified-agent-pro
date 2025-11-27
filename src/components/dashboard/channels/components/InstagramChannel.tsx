@@ -73,7 +73,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                   </div>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                     <Badge variant="default" className="bg-pink-600 text-xs">
-                      Conectado
+                      En Línea
                     </Badge>
                     {needsVerification && (
                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
