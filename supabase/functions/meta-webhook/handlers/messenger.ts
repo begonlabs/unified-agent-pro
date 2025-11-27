@@ -73,8 +73,8 @@ interface Message {
  * Send AI response to Facebook Messenger
  */
 async function sendAIResponseToFacebook(
-  message: string, 
-  pageId: string, 
+  message: string,
+  pageId: string,
   recipientId: string
 ): Promise<{ success: boolean; facebook_message_id?: string }> {
   try {
@@ -121,9 +121,9 @@ async function sendAIResponseToFacebook(
 
     const result = await response.json();
     console.log('✅ Mensaje de IA enviado a Facebook:', result.message_id);
-    return { 
-      success: true, 
-      facebook_message_id: result.message_id 
+    return {
+      success: true,
+      facebook_message_id: result.message_id
     };
 
   } catch (error) {
@@ -148,7 +148,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     let eventType: string = 'unknown';
     let shouldProcess: boolean = false;
     let messageId: string | undefined;
-    
+
     if (event.message?.text) {
       messageText = event.message.text;
       messageId = event.message.mid;
@@ -228,7 +228,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         .eq('platform_message_id', messageId)
         .limit(1)
         .single();
-      
+
       if (existingMessage) {
         console.log('⏭️ Skipping Messenger message - already processed:', {
           platform_message_id: messageId,
@@ -251,7 +251,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         messageText,
         messageId
       });
-      
+
       // First check if this exact platform_message_id was already processed
       if (messageId) {
         const { data: existingMessage } = await supabase
@@ -260,13 +260,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           .eq('platform_message_id', messageId)
           .limit(1)
           .single();
-        
+
         if (existingMessage) {
           console.log('⏭️ Skipping echo message - platform_message_id already exists:', messageId);
           return;
         }
       }
-      
+
       // Check if there's a recent IA message with the same content (last 60 seconds)
       const { data: recentIAMessage } = await supabase
         .from('messages')
@@ -276,12 +276,12 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         .gte('created_at', new Date(Date.now() - 60000).toISOString())
         .limit(1)
         .single();
-      
+
       if (recentIAMessage) {
         console.log('⏭️ Skipping echo message - corresponds to recent IA response:', recentIAMessage.id);
         return;
       }
-      
+
       // Check if there's a recent agent message with same content (from frontend)
       const { data: recentAgentMessage } = await supabase
         .from('messages')
@@ -291,7 +291,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         .gte('created_at', new Date(Date.now() - 60000).toISOString())
         .limit(1)
         .single();
-      
+
       if (recentAgentMessage) {
         console.log('⏭️ Skipping echo message - corresponds to recent agent message from frontend:', recentAgentMessage.id);
         return;
@@ -300,14 +300,14 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
     // Determine the page ID based on echo status
     const pageId = isEcho ? senderId : recipientId;
-    
+
     console.log('🔍 Looking for channel with page_id:', pageId, {
       isEcho,
       senderId,
       recipientId,
       logic: isEcho ? 'echo: using senderId as pageId' : 'normal: using recipientId as pageId'
     });
-    
+
     // Handle multiple channels with same page_id (take most recent)
     const { data: allChannels, error: channelSearchError } = await supabase
       .from('communication_channels')
@@ -321,10 +321,10 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       console.error('❌ No channel found for page:', pageId, channelSearchError?.message);
       return;
     }
-    
+
     // Take the most recent channel if multiple exist
     const channel = allChannels[0];
-    
+
     if (allChannels.length > 1) {
       console.log('⚠️ Multiple channels found for same page, using most recent:', {
         page_id: pageId,
@@ -336,7 +336,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     }
 
     console.log('✅ Found channel:', { id: channel.id, user_id: channel.user_id });
-    
+
     console.log('🔍 Echo detection:', {
       isEcho,
       hasIsEcho: event.message ? Object.prototype.hasOwnProperty.call(event.message, 'is_echo') : false,
@@ -345,16 +345,48 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       recipientId
     });
 
+    /**
+     * Get Facebook user profile (name and picture)
+     */
+    async function getFacebookUserProfile(
+      userId: string,
+      pageAccessToken: string
+    ): Promise<{ name: string; avatar_url?: string }> {
+      try {
+        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
+        const response = await fetch(
+          `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,profile_pic&access_token=${pageAccessToken}`
+        );
+
+        if (!response.ok) {
+          console.error('❌ Error fetching Facebook profile:', await response.text());
+          return { name: `Facebook User ${userId.slice(-4)}` };
+        }
+
+        const data = await response.json();
+        const name = `${data.first_name} ${data.last_name}`.trim();
+        return {
+          name: name || `Facebook User ${userId.slice(-4)}`,
+          avatar_url: data.profile_pic
+        };
+      } catch (error) {
+        console.error('❌ Error in getFacebookUserProfile:', error);
+        return { name: `Facebook User ${userId.slice(-4)}` };
+      }
+    }
+
+    // ... inside handleMessengerEvent ...
+
     // Find or create client (handle echo messages)
     let client: CRMClient;
     const realUserId = isEcho ? recipientId : senderId;
-    
+
     console.log('👤 Client identification:', {
       isEcho,
       realUserId,
       logic: isEcho ? 'echo: using recipient as user' : 'normal: using sender as user'
     });
-    
+
     const { data: existingClient, error: clientSearchError } = await supabase
       .from('crm_clients')
       .select('*')
@@ -362,21 +394,43 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       .eq('phone', realUserId)
       .single();
 
+    // Fetch profile info if needed (new client or missing info)
+    let profileInfo = { name: `Facebook User ${realUserId.slice(-4)}`, avatar_url: undefined };
+
+    // Only fetch from Facebook if we have the token and it's not an echo (or if we want to update echo recipient too)
+    // Usually we fetch for the person interacting with the page
+    if (channel.channel_config.page_access_token) {
+      profileInfo = await getFacebookUserProfile(realUserId, channel.channel_config.page_access_token);
+    }
+
     if (existingClient && !clientSearchError) {
       client = existingClient;
       console.log('✅ Found existing client:', client.id);
+
+      // Update if name is generic or avatar is missing
+      const isGenericName = client.name.includes('Facebook User');
+      if ((isGenericName || !client.avatar_url) && profileInfo.name && !profileInfo.name.includes('Facebook User')) {
+        console.log('🔄 Updating client profile info:', profileInfo);
+        await supabase
+          .from('crm_clients')
+          .update({
+            name: profileInfo.name,
+            avatar_url: profileInfo.avatar_url || client.avatar_url
+          })
+          .eq('id', client.id);
+      }
+
     } else {
       // Create new client
-      const clientName = `Facebook User ${realUserId.slice(-4)}`;
-        
       const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')
         .insert({
           user_id: channel.user_id,
-          name: clientName,
+          name: profileInfo.name,
           phone: realUserId,
           status: 'active',
-          source: 'facebook'
+          source: 'facebook',
+          avatar_url: profileInfo.avatar_url
         })
         .select()
         .single();
@@ -393,13 +447,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     // Find or create conversation
     let conversation: Conversation;
     const threadId = realUserId;
-    
+
     console.log('💬 Conversation identification:', {
       threadId,
       realUserId,
       clientId: client.id
     });
-    
+
     const { data: existingConv, error: convSearchError } = await supabase
       .from('conversations')
       .select('*')
@@ -440,7 +494,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     // Determine sender type based on echo status
     const senderType = isEcho ? 'agent' : 'client';
     const senderName = isEcho ? 'Agente' : client.name;
-    
+
     console.log('📋 Message classification:', {
       isEcho,
       senderType,
@@ -478,7 +532,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     // Update conversation last_message_at
     await supabase
       .from('conversations')
-      .update({ 
+      .update({
         last_message_at: new Date().toISOString(),
         status: 'open'
       })
@@ -497,7 +551,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     if (!isEcho && eventType === 'text_message' && conversation.ai_enabled) {
       try {
         console.log('🤖 Generando respuesta automática de IA para conversación:', conversation.id);
-        
+
         // 🔥 FIX 1: Verificar si ya existe una respuesta IA reciente (últimos 5 segundos)
         const { data: veryRecentAI, count: recentAICount } = await supabase
           .from('messages')
@@ -506,12 +560,12 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           .eq('sender_type', 'ia')
           .gte('created_at', new Date(Date.now() - 5000).toISOString())
           .limit(1);
-        
+
         if (recentAICount && recentAICount > 0) {
           console.log('⏭️ Skipping AI response - IA responded in last 5 seconds');
           return;
         }
-        
+
         // 🔥 FIX 2: Verificar si este mensaje específico ya tiene respuesta
         if (messageId) {
           // Buscar el mensaje del cliente que acabamos de guardar
@@ -521,7 +575,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
             .eq('platform_message_id', messageId)
             .eq('conversation_id', conversation.id)
             .single();
-          
+
           if (thisClientMessage) {
             // Buscar si ya hay una respuesta IA después de este mensaje
             const { data: existingResponse } = await supabase
@@ -533,14 +587,14 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
               .lte('created_at', new Date(new Date(thisClientMessage.created_at).getTime() + 30000).toISOString())
               .limit(1)
               .single();
-            
+
             if (existingResponse) {
               console.log('⏭️ Skipping AI response - this message already has an AI response');
               return;
             }
           }
         }
-        
+
         //  3: Verificar patrón de mensajes (client-ia-client-ia)
         const { data: lastTwoMessages } = await supabase
           .from('messages')
@@ -548,13 +602,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           .eq('conversation_id', conversation.id)
           .order('created_at', { ascending: false })
           .limit(2);
-        
+
         if (lastTwoMessages && lastTwoMessages.length === 2) {
           // Si los últimos 2 mensajes son [client, ia] significa que ya respondimos
-          if (lastTwoMessages[0].sender_type === 'client' && 
-              lastTwoMessages[1].sender_type === 'ia') {
-            const timeDiff = new Date(lastTwoMessages[0].created_at).getTime() - 
-                           new Date(lastTwoMessages[1].created_at).getTime();
+          if (lastTwoMessages[0].sender_type === 'client' &&
+            lastTwoMessages[1].sender_type === 'ia') {
+            const timeDiff = new Date(lastTwoMessages[0].created_at).getTime() -
+              new Date(lastTwoMessages[1].created_at).getTime();
             // Si el mensaje client es menos de 3 segundos después de la IA, es probable un duplicado
             if (timeDiff < 3000) {
               console.log('⏭️ Skipping AI response - pattern suggests duplicate webhook');
@@ -562,7 +616,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
             }
           }
         }
-        
+
         // Obtener configuración de IA del usuario
         const { data: aiConfig } = await supabase
           .from('ai_configurations')
@@ -625,7 +679,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
               .gte('created_at', new Date(Date.now() - 10000).toISOString())
               .limit(1)
               .single();
-            
+
             if (doubleCheck) {
               console.log('⏭️ Skipping save - message already saved by another process');
               return;
