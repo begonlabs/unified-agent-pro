@@ -354,8 +354,9 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     ): Promise<{ name: string; avatar_url?: string; error?: string }> {
       try {
         const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
-        // Use 'picture' field with type=large to get a good quality image
-        const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,picture.type(large)&access_token=${pageAccessToken}`;
+        // Use 'name' and 'profile_pic' fields for PSID (Page-Scoped ID) compatibility
+        // These fields work with both regular user IDs and PSIDs
+        const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,profile_pic&access_token=${pageAccessToken}`;
 
         console.log('🔍 Fetching Facebook profile:', { userId, graphVersion });
 
@@ -380,12 +381,12 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         const data = await response.json();
         console.log('✅ Facebook profile data received:', JSON.stringify(data));
 
-        const name = `${data.first_name} ${data.last_name}`.trim();
-        // Facebook returns picture in data.picture.data.url
-        const avatarUrl = data.picture?.data?.url || `https://graph.facebook.com/${userId}/picture?type=large`;
+        const name = data.name || `Facebook User ${userId.slice(-4)}`;
+        // Facebook returns profile_pic as a direct URL (similar to Instagram)
+        const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
 
         return {
-          name: name || `Facebook User ${userId.slice(-4)}`,
+          name: name,
           avatar_url: avatarUrl
         };
       } catch (error) {
