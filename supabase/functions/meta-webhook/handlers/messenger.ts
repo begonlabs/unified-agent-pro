@@ -353,7 +353,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       pageAccessToken: string
     ): Promise<{ name: string; avatar_url?: string }> {
       try {
-        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
+        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v19.0';
         // Use 'picture' field with type=large to get a good quality image
         const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,picture.type(large)&access_token=${pageAccessToken}`;
 

@@ -255,7 +255,7 @@ async function getInstagramUserProfile(
   accessToken: string
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
-    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v19.0';
     // Use 'profile_pic' field to get the profile picture URL
     // Note: This URL expires after a few days, so we should ideally cache the image or refresh it
     const url = `https://graph.instagram.com/${graphVersion}/${userId}?fields=username,profile_pic&access_token=${accessToken}`;
