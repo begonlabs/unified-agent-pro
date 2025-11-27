@@ -111,20 +111,6 @@ async function getContactInfo(
 }
 
 export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
-    // ... (skip to clientName assignment)
-    // Get WhatsApp profile info before creating client
-    console.log('🔍 Fetching WhatsApp profile info for new client');
-    const contactInfo = await getContactInfo(
-        senderId,
-        idInstance,
-        channel.channel_config.apiTokenInstance
-    );
-
-    // Try all possible sources for the name
-    const clientName = contactInfo.name ||
-        event.senderData?.senderName ||
-        event.senderData?.chatName ||
-        `WhatsApp User ${senderId.slice(-4)}`;
     try {
         console.log('🎯 Processing Green API event');
 
