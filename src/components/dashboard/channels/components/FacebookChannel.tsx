@@ -25,8 +25,8 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
   return (
     <div className="space-y-4">
       {!isConnected ? (
-        <>
-          <Button 
+        <div className="text-center space-y-4">
+          <Button
             onClick={onConnect}
             className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
           >
@@ -42,7 +42,7 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
               <li>Autoriza los permisos necesarios</li>
             </ul>
           </div>
-        </>
+        </div>
       ) : (
         <div className="space-y-3">
           {facebookChannels.map((channel) => {
@@ -60,8 +60,8 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                     <Badge variant="default" className="bg-blue-600 text-xs">
                       Conectado
                     </Badge>
-                    <Badge 
-                      variant={config?.webhook_subscribed ? "default" : "secondary"} 
+                    <Badge
+                      variant={config?.webhook_subscribed ? "default" : "secondary"}
                       className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
                     >
                       {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
@@ -77,17 +77,17 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-100 text-xs sm:text-sm"
                     onClick={onReconnect}
                   >
                     Reconectar
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
                     onClick={() => onDisconnect(channel.id)}
                   >

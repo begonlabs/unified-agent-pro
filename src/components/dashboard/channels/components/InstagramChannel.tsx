@@ -36,8 +36,8 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   return (
     <div className="space-y-4">
       {!isConnected ? (
-        <>
-          <Button 
+        <div className="text-center space-y-4">
+          <Button
             onClick={onConnect}
             className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
           >
@@ -53,7 +53,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
               <li>Autoriza los permisos de mensajería</li>
             </ul>
           </div>
-        </>
+        </div>
       ) : (
         <div className="space-y-3">
           {instagramChannels.map((channel) => {
@@ -61,7 +61,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
             const needsVerification = instagramNeedsVerification(config);
             const channelVerification = igVerifications[channel.id];
             const isGenerating = isGeneratingCode[channel.id];
-            
+
             return (
               <div key={channel.id} className="bg-pink-50 p-3 rounded-lg border border-pink-200">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
@@ -80,8 +80,8 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                         Necesita Verificación
                       </Badge>
                     ) : (
-                      <Badge 
-                        variant={config?.webhook_subscribed ? "default" : "secondary"} 
+                      <Badge
+                        variant={config?.webhook_subscribed ? "default" : "secondary"}
                         className={`text-xs ${config?.webhook_subscribed ? 'bg-green-600' : 'bg-gray-400'}`}
                       >
                         {config?.webhook_subscribed ? 'Webhook OK' : 'Webhook Pendiente'}
@@ -102,10 +102,10 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                     <p className="text-xs text-yellow-700 mb-2">
                       Instagram requiere verificar la cuenta comercial para recibir mensajes correctamente.
                     </p>
-                    
+
                     {!channelVerification ? (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => onGenerateVerificationCode(channel.id)}
                         disabled={isGenerating}
                         className="bg-yellow-600 hover:bg-yellow-700 text-white"
@@ -139,25 +139,25 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                   <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
                   {config?.expires_at && (
                     <p className={`font-medium ${new Date(config.expires_at) > new Date() ? 'text-green-700' : 'text-red-700'}`}>
-                      {new Date(config.expires_at) > new Date() 
-                        ? `Expira: ${new Date(config.expires_at).toLocaleDateString('es-ES')}` 
+                      {new Date(config.expires_at) > new Date()
+                        ? `Expira: ${new Date(config.expires_at).toLocaleDateString('es-ES')}`
                         : 'Token expirado'
                       }
                     </p>
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1 text-pink-600 border-pink-300 hover:bg-pink-100 text-xs sm:text-sm"
                     onClick={onReconnect}
                   >
                     Reconectar
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
                     onClick={() => onDisconnect(channel.id)}
                   >
