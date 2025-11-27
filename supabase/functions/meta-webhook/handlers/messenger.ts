@@ -351,7 +351,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     async function getFacebookUserProfile(
       userId: string,
       pageAccessToken: string
-    ): Promise<{ name: string; avatar_url?: string }> {
+    ): Promise<{ name: string; avatar_url?: string; error?: string }> {
       try {
         const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
         // Use 'picture' field with type=large to get a good quality image
@@ -363,16 +363,17 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
         if (!response.ok) {
           const errorText = await response.text();
+          const errorMsg = `HTTP ${response.status}: ${errorText}`;
           console.error('❌ Error fetching Facebook profile:', {
             status: response.status,
             error: errorText,
             userId
           });
-          // Fallback: Try to use the public picture URL directly
-          // This often works even if the API call fails for permissions
+          // Return fallback WITH error information
           return {
             name: `Facebook User ${userId.slice(-4)}`,
-            avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
+            avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
+            error: errorMsg
           };
         }
 
@@ -388,11 +389,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           avatar_url: avatarUrl
         };
       } catch (error) {
+        const errorMsg = `Exception: ${error.message}`;
         console.error('❌ Error in getFacebookUserProfile:', error);
-        // Fallback on error too
+        // Return fallback WITH error information
         return {
           name: `Facebook User ${userId.slice(-4)}`,
-          avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
+          avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
+          error: errorMsg
         };
       }
     }
@@ -445,27 +448,46 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       const isGenericName = client.name.includes('Facebook User');
       if ((isGenericName || !client.avatar_url) && profileInfo.name && !profileInfo.name.includes('Facebook User')) {
         console.log('🔄 Updating client profile info:', profileInfo);
+        const updateData: any = {
+          name: profileInfo.name,
+          avatar_url: profileInfo.avatar_url || client.avatar_url
+        };
+        // Save error to metadata if profile fetch failed
+        if (profileInfo.error) {
+          updateData.metadata = { ...client.metadata, profile_fetch_error: profileInfo.error, error_timestamp: new Date().toISOString() };
+        }
+        await supabase
+          .from('crm_clients')
+          .update(updateData)
+          .eq('id', client.id);
+      } else if (profileInfo.error) {
+        // If no update needed but there was an error, save it anyway
+        console.log('⚠️ Saving profile fetch error to client metadata');
         await supabase
           .from('crm_clients')
           .update({
-            name: profileInfo.name,
-            avatar_url: profileInfo.avatar_url || client.avatar_url
+            metadata: { ...client.metadata, profile_fetch_error: profileInfo.error, error_timestamp: new Date().toISOString() }
           })
           .eq('id', client.id);
       }
 
     } else {
       // Create new client
+      const clientData: any = {
+        user_id: channel.user_id,
+        name: profileInfo.name,
+        phone: realUserId,
+        status: 'active',
+        source: 'facebook',
+        avatar_url: profileInfo.avatar_url
+      };
+      // Save error to metadata if profile fetch failed
+      if (profileInfo.error) {
+        clientData.metadata = { profile_fetch_error: profileInfo.error, error_timestamp: new Date().toISOString() };
+      }
       const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')
-        .insert({
-          user_id: channel.user_id,
-          name: profileInfo.name,
-          phone: realUserId,
-          status: 'active',
-          source: 'facebook',
-          avatar_url: profileInfo.avatar_url
-        })
+        .insert(clientData)
         .select()
         .single();
 
