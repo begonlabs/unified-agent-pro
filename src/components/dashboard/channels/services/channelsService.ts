@@ -273,7 +273,8 @@ export class ChannelsService {
       'pages_show_list',
       'pages_manage_metadata',
       'pages_messaging',
-      'pages_read_engagement', // Required to see pages
+      'pages_read_engagement',
+      'business_management', // Added for Business Manager pages
       'public_profile'
     ].join(',');
 
