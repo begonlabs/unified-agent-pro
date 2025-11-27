@@ -256,9 +256,9 @@ async function getInstagramUserProfile(
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
-    // For Instagram, we can only get username from the user's IGSID
-    // Profile picture is not directly available via Graph API for privacy reasons
-    const url = `https://graph.instagram.com/${graphVersion}/${userId}?fields=username&access_token=${accessToken}`;
+    // Use 'profile_pic' field to get the profile picture URL
+    // Note: This URL expires after a few days, so we should ideally cache the image or refresh it
+    const url = `https://graph.instagram.com/${graphVersion}/${userId}?fields=username,profile_pic&access_token=${accessToken}`;
 
     console.log('🔍 Fetching Instagram profile:', { userId, graphVersion });
 
@@ -282,14 +282,11 @@ async function getInstagramUserProfile(
     console.log('✅ Instagram profile data received:', JSON.stringify(data));
 
     const username = data.username || `Instagram User ${userId.slice(-4)}`;
-
-    // Instagram doesn't provide profile pictures via Graph API
-    // We could potentially construct a URL but it may not work due to privacy settings
-    // For now, we'll just use the username
+    const avatarUrl = data.profile_pic;
 
     return {
       name: `@${username}`,
-      avatar_url: undefined // Instagram doesn't expose profile pics via API
+      avatar_url: avatarUrl
     };
   } catch (error) {
     console.error('❌ Error in getInstagramUserProfile:', error);
