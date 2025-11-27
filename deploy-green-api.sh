@@ -43,6 +43,14 @@ echo -e "${YELLOW}   → Copiando send-message...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/send-message"
 sudo cp -r supabase/functions/send-message "$FUNCTIONS_VOLUME/"
 
+echo -e "${YELLOW}   → Copiando meta-webhook...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/meta-webhook"
+sudo cp -r supabase/functions/meta-webhook "$FUNCTIONS_VOLUME/"
+
+echo -e "${YELLOW}   → Copiando meta-oauth...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/meta-oauth"
+sudo cp -r supabase/functions/meta-oauth "$FUNCTIONS_VOLUME/"
+
 echo -e "${YELLOW}   → Copiando _shared...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/_shared"
 sudo cp -r supabase/functions/_shared "$FUNCTIONS_VOLUME/"
