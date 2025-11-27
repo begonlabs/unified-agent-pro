@@ -204,12 +204,12 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
                         </Button>
 
                         <div className="bg-blue-50 p-3 rounded-lg border">
-                            <p className="text-blue-800 text-xs sm:text-sm">
-                                Para conectar tu WhatsApp, simplemente genera el código QR y escanéalo con tu aplicación móvil.
-                            </p>
-                            <div className="mt-2 text-xs text-muted-foreground">
-                                <p>Instancia: {idInstance}</p>
-                            </div>
+                            <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión mediante QR:</h4>
+                            <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                                <li>Genera el código QR con el botón</li>
+                                <li>Escanea el código con tu celular</li>
+                                <li>Instancia: {idInstance}</li>
+                            </ul>
                         </div>
                     </div>
                 </>
