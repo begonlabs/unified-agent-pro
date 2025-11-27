@@ -20,13 +20,31 @@ git pull origin main
 echo -e "${GREEN}✅ Código actualizado${NC}"
 echo ""
 
-# 2. Deploy de Edge Functions
+# 2. Deploy de Edge Functions (via Docker volume copy)
 echo -e "${BLUE}📡 Paso 2: Desplegando Edge Functions a Supabase...${NC}"
-echo -e "${YELLOW}   → Desplegando green-api-webhook...${NC}"
-supabase functions deploy green-api-webhook
 
-echo -e "${YELLOW}   → Desplegando send-ai-message...${NC}"
-supabase functions deploy send-ai-message
+# Verificar que exista el volumen de Supabase
+FUNCTIONS_VOLUME="/root/supabase-project/volumes/functions"
+
+if [ ! -d "$FUNCTIONS_VOLUME" ]; then
+    echo -e "${YELLOW}⚠️  Volumen de funciones no encontrado. Intentando crear...${NC}"
+    sudo mkdir -p "$FUNCTIONS_VOLUME"
+fi
+
+echo -e "${YELLOW}   → Copiando green-api-webhook...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/green-api-webhook"
+sudo cp -r supabase/functions/green-api-webhook "$FUNCTIONS_VOLUME/"
+
+echo -e "${YELLOW}   → Copiando send-ai-message...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/send-ai-message"
+sudo cp -r supabase/functions/send-ai-message "$FUNCTIONS_VOLUME/"
+
+echo -e "${YELLOW}   → Copiando _shared...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/_shared"
+sudo cp -r supabase/functions/_shared "$FUNCTIONS_VOLUME/"
+
+echo -e "${YELLOW}   → Reiniciando Supabase Edge Runtime...${NC}"
+docker restart supabase-edge-functions
 
 echo -e "${GREEN}✅ Edge Functions desplegadas${NC}"
 echo ""

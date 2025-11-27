@@ -74,13 +74,13 @@ async function sendAIResponseViaGreenApi(
 }
 
 /**
- * Get Contact Avatar from Green API
+ * Get Contact Info (Avatar + Name) from Green API
  */
-async function getAvatarUrl(
+async function getContactInfo(
     chatId: string,
     idInstance: string,
     apiToken: string
-): Promise<string | null> {
+): Promise<{ avatar: string | null; name: string | null }> {
     try {
         const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/getContactInfo/${apiToken}`;
 
@@ -95,15 +95,18 @@ async function getAvatarUrl(
         });
 
         if (!response.ok) {
-            return null;
+            return { avatar: null, name: null };
         }
 
         const result = await response.json();
-        return result.avatar || null;
+        return {
+            avatar: result.avatar || null,
+            name: result.name || null  // WhatsApp profile name
+        };
 
     } catch (error) {
-        console.error('❌ Error fetching avatar:', error);
-        return null;
+        console.error('❌ Error fetching contact info:', error);
+        return { avatar: null, name: null };
     }
 }
 
@@ -197,7 +200,15 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
             client = existingClient;
             console.log('✅ Found existing client:', client.id);
         } else {
-            const clientName = event.senderData?.senderName || `WhatsApp User ${senderId.slice(-4)}`;
+            // Get WhatsApp profile info before creating client
+            console.log('🔍 Fetching WhatsApp profile info for new client');
+            const contactInfo = await getContactInfo(
+                senderId,
+                idInstance,
+                channel.channel_config.apiTokenInstance
+            );
+
+            const clientName = contactInfo.name || event.senderData?.senderName || `WhatsApp User ${senderId.slice(-4)}`;
 
             const { data: newClient, error: clientCreateError } = await supabase
                 .from('crm_clients')
@@ -206,7 +217,8 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                     name: clientName,
                     phone: senderId,
                     status: 'active',
-                    source: 'whatsapp_green_api'
+                    source: 'whatsapp_green_api',
+                    avatar_url: contactInfo.avatar  // Save avatar immediately for new clients
                 })
                 .select()
                 .single();
@@ -217,33 +229,43 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
             }
 
             client = newClient;
-            console.log('✅ Created new client:', client.id);
+            console.log('✅ Created new client:', client.id, 'with name:', clientName);
         }
 
-        // 🔄 Update Avatar if missing
-        if (!client.avatar_url) {
-            console.log('🖼️ Fetching avatar for client:', client.id);
+        // 🔄 Update Avatar and Name if missing (for existing clients created before this feature)
+        if (!client.avatar_url || client.name.includes('WhatsApp User')) {
+            console.log('🖼️ Fetching contact info for existing client:', client.id);
             try {
-                const avatarUrl = await getAvatarUrl(
+                const contactInfo = await getContactInfo(
                     senderId,
                     idInstance,
                     channel.channel_config.apiTokenInstance
                 );
 
-                if (avatarUrl) {
-                    console.log('✅ Found avatar URL:', avatarUrl);
+                const updates: any = {};
+
+                if (!client.avatar_url && contactInfo.avatar) {
+                    console.log('✅ Found avatar URL:', contactInfo.avatar);
+                    updates.avatar_url = contactInfo.avatar;
+                }
+
+                if (client.name.includes('WhatsApp User') && contactInfo.name) {
+                    console.log('✅ Found WhatsApp profile name:', contactInfo.name);
+                    updates.name = contactInfo.name;
+                }
+
+                if (Object.keys(updates).length > 0) {
                     await supabase
                         .from('crm_clients')
-                        .update({ avatar_url: avatarUrl })
+                        .update(updates)
                         .eq('id', client.id);
 
                     // Update local client object
-                    client.avatar_url = avatarUrl;
-                } else {
-                    console.log('❌ No avatar found for user');
+                    Object.assign(client, updates);
+                    console.log('✅ Updated client info successfully');
                 }
             } catch (error) {
-                console.error('❌ Error updating avatar:', error);
+                console.error('❌ Error updating client info:', error);
             }
         }
 
