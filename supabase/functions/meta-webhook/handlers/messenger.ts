@@ -355,16 +355,25 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       try {
         const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
         // Use 'picture' field with type=large to get a good quality image
-        const response = await fetch(
-          `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,picture.type(large)&access_token=${pageAccessToken}`
-        );
+        const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,picture.type(large)&access_token=${pageAccessToken}`;
+
+        console.log('🔍 Fetching Facebook profile:', { userId, graphVersion });
+
+        const response = await fetch(url);
 
         if (!response.ok) {
-          console.error('❌ Error fetching Facebook profile:', await response.text());
+          const errorText = await response.text();
+          console.error('❌ Error fetching Facebook profile:', {
+            status: response.status,
+            error: errorText,
+            userId
+          });
           return { name: `Facebook User ${userId.slice(-4)}` };
         }
 
         const data = await response.json();
+        console.log('✅ Facebook profile data received:', JSON.stringify(data));
+
         const name = `${data.first_name} ${data.last_name}`.trim();
         // Facebook returns picture in data.picture.data.url
         const avatarUrl = data.picture?.data?.url;
