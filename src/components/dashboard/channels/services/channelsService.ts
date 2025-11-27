@@ -274,7 +274,6 @@ export class ChannelsService {
       'pages_manage_metadata',
       'pages_messaging',
       'pages_read_engagement', // Required to see pages
-      'pages_read_user_content', // Added for reading content
       'public_profile'
     ].join(',');
 
