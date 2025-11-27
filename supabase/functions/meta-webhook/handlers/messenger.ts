@@ -368,7 +368,12 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
             error: errorText,
             userId
           });
-          return { name: `Facebook User ${userId.slice(-4)}` };
+          // Fallback: Try to use the public picture URL directly
+          // This often works even if the API call fails for permissions
+          return {
+            name: `Facebook User ${userId.slice(-4)}`,
+            avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
+          };
         }
 
         const data = await response.json();
@@ -376,7 +381,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
 
         const name = `${data.first_name} ${data.last_name}`.trim();
         // Facebook returns picture in data.picture.data.url
-        const avatarUrl = data.picture?.data?.url;
+        const avatarUrl = data.picture?.data?.url || `https://graph.facebook.com/${userId}/picture?type=large`;
 
         return {
           name: name || `Facebook User ${userId.slice(-4)}`,
@@ -384,7 +389,11 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         };
       } catch (error) {
         console.error('❌ Error in getFacebookUserProfile:', error);
-        return { name: `Facebook User ${userId.slice(-4)}` };
+        // Fallback on error too
+        return {
+          name: `Facebook User ${userId.slice(-4)}`,
+          avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
+        };
       }
     }
 
