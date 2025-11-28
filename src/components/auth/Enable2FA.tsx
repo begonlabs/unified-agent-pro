@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -164,7 +164,7 @@ export const Enable2FA: React.FC<Enable2FAProps> = ({ onSuccess }) => {
                             </div>
 
                             <div className="flex justify-center p-6 bg-white rounded-lg border-2">
-                                <QRCode value={qrData.qr_code} size={220} level="H" />
+                                <QRCodeSVG value={qrData.qr_code} size={220} level="H" />
                             </div>
 
                             <div className="bg-muted p-4 rounded-lg space-y-2">
