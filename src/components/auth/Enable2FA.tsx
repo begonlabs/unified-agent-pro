@@ -190,7 +190,18 @@ export const Enable2FA: React.FC<Enable2FAProps> = ({ onSuccess }) => {
                             </div>
 
                             <div className="flex justify-center p-6 bg-white rounded-lg border-2">
-                                <QRCodeSVG value={qrData.qr_code} size={220} level="H" />
+                                {qrData.uri ? (
+                                    <QRCodeSVG
+                                        value={qrData.uri}
+                                        size={200}
+                                        level="M"
+                                        includeMargin={true}
+                                    />
+                                ) : (
+                                    <div className="text-sm text-muted-foreground">
+                                        Error al generar código QR
+                                    </div>
+                                )}
                             </div>
 
                             <div className="bg-muted p-4 rounded-lg space-y-2">
