@@ -48,7 +48,17 @@ export const Enable2FA: React.FC<Enable2FAProps> = ({ onSuccess }) => {
             setQRData(data);
             setStep('qr');
         } catch (err: any) {
-            setError(err.message || 'Error al configurar 2FA');
+            console.error('MFA enrollment error:', err);
+
+            // Check if MFA is not enabled in backend
+            if (err.message?.includes('MFA') && err.message?.includes('not enabled')) {
+                setError('MFA no está habilitado en el servidor. Por favor contacta al administrador.');
+            } else if (err.message?.includes('factor') && err.message?.includes('exists')) {
+                setError('Ya existe un factor MFA. Intenta de nuevo en unos segundos.');
+            } else {
+                setError(err.message || 'Error al configurar 2FA');
+            }
+
             toast({
                 title: 'Error',
                 description: err.message || 'No se pudo iniciar la configuración de 2FA',
