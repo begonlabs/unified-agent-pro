@@ -55,6 +55,10 @@ echo -e "${YELLOW}   → Copiando _shared...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/_shared"
 sudo cp -r supabase/functions/_shared "$FUNCTIONS_VOLUME/"
 
+echo -e "${YELLOW}   → Copiando scrape-website...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/scrape-website"
+sudo cp -r supabase/functions/scrape-website "$FUNCTIONS_VOLUME/"
+
 echo -e "${YELLOW}   → Reiniciando Supabase Edge Runtime...${NC}"
 docker restart supabase-edge-functions
 
