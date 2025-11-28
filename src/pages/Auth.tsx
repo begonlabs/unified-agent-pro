@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MessageSquare, 
-  Bot, 
-  BarChart3, 
-  Zap, 
-  Shield, 
+import {
+  MessageSquare,
+  Bot,
+  BarChart3,
+  Zap,
+  Shield,
   Sparkles,
   CheckCircle,
   ArrowRight,
@@ -26,6 +26,8 @@ import logoWhite from '@/assets/logo_white.png';
 import { useToast } from '@/hooks/use-toast';
 import { prepareForSignIn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { Verify2FA } from '@/components/auth/Verify2FA';
+import { MFAService } from '@/services/mfaService';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -37,6 +39,8 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [showMFAVerification, setShowMFAVerification] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -74,7 +78,7 @@ const Auth = () => {
 
   useEffect(() => {
     console.log('Auth component mounted, checking session...');
-    
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('Session check result:', { session: session?.user?.email, error });
       if (session) {
@@ -100,7 +104,7 @@ const Auth = () => {
     try {
       // Preparar para login limpio
       await prepareForSignIn();
-      
+
       console.log('Calling supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -111,7 +115,7 @@ const Auth = () => {
 
       if (error) {
         console.error('Sign in error:', error);
-        
+
         // Manejo específico de errores
         let errorMessage = "Error desconocido";
         if (error.message.includes('Invalid login credentials')) {
@@ -123,17 +127,32 @@ const Auth = () => {
         } else {
           errorMessage = error.message;
         }
-        
+
         throw new Error(errorMessage);
       }
-      
+
       if (data.user) {
+        // Check if user has MFA enabled
+        console.log('Checking for MFA factors...');
+        const factors = await MFAService.getActiveMFAFactors();
+        const verifiedFactors = factors.filter(f => f.status === 'verified');
+
+        if (verifiedFactors.length > 0) {
+          // User has 2FA enabled, show verification screen
+          console.log('MFA required, showing verification screen');
+          setMfaFactorId(verifiedFactors[0].id);
+          setShowMFAVerification(true);
+          setLoading(false);
+          return;
+        }
+
+        // No MFA, proceed with normal login
         console.log('Sign in successful, forcing page reload for clean state');
         toast({
           title: "¡Bienvenido de vuelta!",
           description: "Has iniciado sesión exitosamente.",
         });
-        
+
         // Forzar recarga completa para estado limpio
         setTimeout(() => {
           window.location.href = '/dashboard';
@@ -151,10 +170,30 @@ const Auth = () => {
     }
   };
 
+  const handleMFASuccess = () => {
+    console.log('2FA verification successful, redirecting to dashboard');
+    toast({
+      title: "¡Bienvenido de vuelta!",
+      description: "Has iniciado sesión exitosamente.",
+    });
+
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 500);
+  };
+
+  const handleMFACancel = () => {
+    console.log('2FA verification cancelled');
+    setShowMFAVerification(false);
+    setMfaFactorId(null);
+    // Log out the user
+    supabase.auth.signOut();
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Attempting sign up with email:', email, 'company:', companyName);
-    
+
     // Validate password confirmation
     if (password !== confirmPassword) {
       toast({
@@ -181,7 +220,7 @@ const Auth = () => {
     try {
       // Preparar para registro limpio
       await prepareForSignIn();
-      
+
       console.log('Calling supabase.auth.signUp...');
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -198,7 +237,7 @@ const Auth = () => {
 
       if (error) {
         console.error('Sign up error:', error);
-        
+
         // Manejo específico de errores de registro
         let errorMessage = "Error desconocido";
         if (error.message.includes('User already registered')) {
@@ -210,18 +249,18 @@ const Auth = () => {
         } else {
           errorMessage = error.message;
         }
-        
+
         throw new Error(errorMessage);
       }
 
       console.log('Sign up successful');
-      
+
       // Mensaje diferente dependiendo si necesita confirmación
       const needsConfirmation = !data.user?.email_confirmed_at;
-      
+
       toast({
         title: "¡Registro exitoso!",
-        description: needsConfirmation 
+        description: needsConfirmation
           ? "Te has registrado correctamente. Revisa tu email para confirmar tu cuenta."
           : "Te has registrado correctamente. Puedes iniciar sesión ahora.",
       });
@@ -233,7 +272,7 @@ const Auth = () => {
           signInTab?.click();
         }, 1000);
       }
-      
+
     } catch (error: unknown) {
       console.error('Sign up catch block:', error);
       toast({
@@ -269,7 +308,7 @@ const Auth = () => {
       // Volver al formulario de login
       setShowForgotPassword(false);
       setForgotPasswordEmail('');
-      
+
     } catch (error: unknown) {
       console.error('Forgot password catch block:', error);
       toast({
@@ -289,11 +328,11 @@ const Auth = () => {
         <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-          </div>
-          
+      </div>
+
       {/* Botón de vuelta */}
-      <Link 
-        to="/" 
+      <Link
+        to="/"
         className="fixed top-6 left-6 z-50 group"
       >
         <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-full border border-white/20 hover:border-white/40 text-white transition-all duration-300 hover:scale-105">
@@ -304,7 +343,7 @@ const Auth = () => {
 
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
+
           {/* Hero Section */}
           <div className="text-center lg:text-left space-y-8">
             {/* Logo y Marca */}
@@ -319,14 +358,14 @@ const Auth = () => {
                 <p className="text-sm text-gray-400 font-medium">Powered by AI</p>
               </div>
             </div>
-            
+
             {/* Título Principal */}
             <div className="space-y-4">
               <Badge className="bg-gradient-to-r from-[#3a0caa]/20 to-[#710db2]/20 text-[#3a0caa] border-[#3a0caa]/30 px-4 py-1">
                 Revoluciona tu comunicación empresarial
               </Badge>
               <h2 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
-                Centraliza y 
+                Centraliza y
                 <span className="bg-gradient-to-r from-[#3a0caa] to-[#710db2] bg-clip-text text-transparent"> automatiza </span>
                 tus conversaciones
               </h2>
@@ -346,7 +385,7 @@ const Auth = () => {
                   <p className="text-gray-300 text-sm">Gestiona todos tus canales desde un solo lugar</p>
                 </div>
               </div>
-              
+
               <div className="group hover:scale-105 transition-transform duration-300">
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 hover:border-purple-400/50 transition-colors">
                   <div className="p-3 bg-gradient-to-r from-[#710db2] to-[#3a0caa] rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
@@ -356,7 +395,7 @@ const Auth = () => {
                   <p className="text-gray-300 text-sm">Respuestas inteligentes y automatización completa</p>
                 </div>
               </div>
-              
+
               <div className="group hover:scale-105 transition-transform duration-300">
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 hover:border-purple-400/50 transition-colors">
                   <div className="p-3 bg-gradient-to-r from-[#3a0caa] to-[#710db2] rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
@@ -381,11 +420,11 @@ const Auth = () => {
               <div className="flex items-center gap-3 text-gray-300">
                 <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
                 <span>Sin permanencia, cancela cuando quieras</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Auth Form */}
+          {/* Auth Form */}
           <div className="flex justify-center lg:justify-end">
             <Card className="w-full max-w-md bg-white/95 backdrop-blur-lg shadow-2xl border-0">
               <CardHeader className="text-center space-y-2 pb-8">
@@ -402,11 +441,11 @@ const Auth = () => {
                 </CardTitle>
                 <CardDescription className="text-gray-600">
                   7 días gratis • No se requiere tarjeta de crédito
-            </CardDescription>
-          </CardHeader>
-              
+                </CardDescription>
+              </CardHeader>
+
               <CardContent className="space-y-6">
-            <Tabs defaultValue="signin" className="w-full">
+                <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100">
                     <TabsTrigger value="signin" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                       Iniciar Sesión
@@ -414,117 +453,125 @@ const Auth = () => {
                     <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                       Registrarse
                     </TabsTrigger>
-              </TabsList>
-              
+                  </TabsList>
+
                   <TabsContent value="signin" className="space-y-4 mt-6">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="email"
-                            placeholder="tu@empresa.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                            className="pl-10 h-12 border-gray-200 focus:border-purple-400"
-                      required
-                    />
-                  </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Tu contraseña"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
-                      required
-                    />
+                    {showMFAVerification && mfaFactorId ? (
+                      <Verify2FA
+                        factorId={mfaFactorId}
+                        onSuccess={handleMFASuccess}
+                        onCancel={handleMFACancel}
+                      />
+                    ) : (
+                      <form onSubmit={handleSignIn} className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                              type="email"
+                              placeholder="tu@empresa.com"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="pl-10 h-12 border-gray-200 focus:border-purple-400"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="Tu contraseña"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Forgot Password Link */}
+                        <div className="text-right">
                           <button
                             type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => setShowForgotPassword(true)}
+                            className="text-sm text-[#3a0caa] hover:text-[#710db2] font-medium transition-colors"
                           >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            ¿Olvidaste tu contraseña?
                           </button>
                         </div>
-                      </div>
-                      
-                      {/* Forgot Password Link */}
-                      <div className="text-right">
-                        <button
-                          type="button"
-                          onClick={() => setShowForgotPassword(true)}
-                          className="text-sm text-[#3a0caa] hover:text-[#710db2] font-medium transition-colors"
+
+                        <Button
+                          type="submit"
+                          className="w-full h-12 bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white font-semibold"
+                          disabled={loading}
                         >
-                          ¿Olvidaste tu contraseña?
-                        </button>
-                      </div>
-                      
-                      <Button 
-                        type="submit" 
-                        className="w-full h-12 bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white font-semibold"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <div className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Iniciando...
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            Iniciar Sesión
-                            <ArrowRight className="h-4 w-4" />
-                  </div>
-                        )}
-                  </Button>
-                </form>
-              </TabsContent>
-              
+                          {loading ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Iniciando...
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              Iniciar Sesión
+                              <ArrowRight className="h-4 w-4" />
+                            </div>
+                          )}
+                        </Button>
+                      </form>
+                    )}
+                  </TabsContent>
+
                   <TabsContent value="signup" className="space-y-4 mt-6">
-                <form onSubmit={handleSignUp} className="space-y-4">
+                    <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
                         <div className="relative">
                           <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="text"
+                          <Input
+                            type="text"
                             placeholder="Nombre de tu empresa"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
                             className="pl-10 h-12 border-gray-200 focus:border-purple-400"
-                      required
-                    />
-                  </div>
+                            required
+                          />
+                        </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="email"
+                          <Input
+                            type="email"
                             placeholder="tu@empresa.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="pl-10 h-12 border-gray-200 focus:border-purple-400"
-                      required
-                    />
-                  </div>
+                            required
+                          />
+                        </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
+                          <Input
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Crea una contraseña segura"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
-                      required
-                    />
+                            required
+                          />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
@@ -533,13 +580,13 @@ const Auth = () => {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
-                        
+
                         {/* Password Strength Meter */}
                         {password && (
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                <div 
+                                <div
                                   className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(getPasswordStrength(password).score)}`}
                                   style={{ width: `${(getPasswordStrength(password).score / 5) * 100}%` }}
                                 ></div>
@@ -548,7 +595,7 @@ const Auth = () => {
                                 {getPasswordStrengthText(getPasswordStrength(password).score)}
                               </span>
                             </div>
-                            
+
                             {/* Password Requirements */}
                             <div className="grid grid-cols-2 gap-1 text-xs">
                               <div className={`flex items-center gap-1 ${getPasswordStrength(password).requirements.length ? 'text-green-600' : 'text-gray-400'}`}>
@@ -575,19 +622,19 @@ const Auth = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Confirm Password Field */}
                       <div className="space-y-2">
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
+                          <Input
                             type={showConfirmPassword ? 'text' : 'password'}
                             placeholder="Confirma tu contraseña"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
                             className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-400"
-                      required
-                    />
+                            required
+                          />
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -596,7 +643,7 @@ const Auth = () => {
                             {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
-                        
+
                         {/* Password Match Indicator */}
                         {confirmPassword && (
                           <div className={`flex items-center gap-1 text-xs ${password === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
@@ -605,9 +652,9 @@ const Auth = () => {
                           </div>
                         )}
                       </div>
-                      
-                      <Button 
-                        type="submit" 
+
+                      <Button
+                        type="submit"
                         className="w-full h-12 bg-gradient-to-r from-[#710db2] to-[#3a0caa] hover:from-[#2b0a63] hover:to-[#270a59] text-white font-semibold"
                         disabled={loading || password !== confirmPassword || getPasswordStrength(password).score < 4}
                       >
@@ -620,12 +667,12 @@ const Auth = () => {
                           <div className="flex items-center gap-2">
                             <Sparkles className="h-4 w-4" />
                             Crear Cuenta Gratis
-                  </div>
+                          </div>
                         )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
 
                 {/* Trust indicators */}
                 <div className="pt-4 border-t border-gray-100">
@@ -644,9 +691,9 @@ const Auth = () => {
                     </div>
                   </div>
                 </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
@@ -667,7 +714,7 @@ const Auth = () => {
                 Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
@@ -683,7 +730,7 @@ const Auth = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <Button
                     type="button"
