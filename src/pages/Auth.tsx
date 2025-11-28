@@ -79,17 +79,47 @@ const Auth = () => {
   useEffect(() => {
     console.log('Auth component mounted, checking session...');
 
+    const handleSession = async (session: any) => {
+      try {
+        // Check if user has MFA enabled
+        const factors = await MFAService.getActiveMFAFactors();
+        const verifiedFactors = factors.filter(f => f.status === 'verified');
+
+        if (verifiedFactors.length > 0) {
+          // User has 2FA enabled
+          // Check if current session is verified with MFA (AAL2)
+          // We check the amr (Authentication Methods References) array in the session
+          const amr = session.user?.amr || [];
+          const isMFAVerified = amr.some((r: any) => r.method === 'totp' || r.method === 'recovery');
+
+          if (!isMFAVerified) {
+            console.log('User has MFA enabled but session is AAL1. Showing verification screen.');
+            setMfaFactorId(verifiedFactors[0].id);
+            setShowMFAVerification(true);
+            return; // Stay on Auth page for verification
+          }
+        }
+
+        // No MFA or already verified -> Go to dashboard
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Error checking MFA status:', error);
+        // Fallback to dashboard if check fails (fail open or closed decision)
+        navigate('/dashboard');
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('Session check result:', { session: session?.user?.email, error });
       if (session) {
-        navigate('/dashboard');
+        handleSession(session);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       if (event === 'SIGNED_IN' && session) {
-        navigate('/dashboard');
+        handleSession(session);
       }
     });
 
