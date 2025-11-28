@@ -28,6 +28,22 @@ export const Enable2FA: React.FC<Enable2FAProps> = ({ onSuccess }) => {
         setError(null);
 
         try {
+            // First, check for existing factors and clean them up
+            const existingFactors = await MFAService.getActiveMFAFactors();
+
+            // Remove any unverified factors (leftover from previous attempts)
+            const unverifiedFactors = existingFactors.filter(f => f.status === 'unverified');
+
+            for (const factor of unverifiedFactors) {
+                try {
+                    await MFAService.unenrollMFA(factor.id);
+                    console.log('Cleaned up unverified factor:', factor.id);
+                } catch (err) {
+                    console.warn('Failed to clean up factor:', err);
+                }
+            }
+
+            // Now enroll a fresh MFA factor
             const data = await MFAService.enrollMFA();
             setQRData(data);
             setStep('qr');
