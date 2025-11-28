@@ -3,12 +3,13 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Shield, 
-  Key, 
-  AlertTriangle 
+import {
+  Shield,
+  Key,
+  AlertTriangle
 } from 'lucide-react';
 import { ChangePasswordDialogProps } from '../types';
+import { MFASettings } from '@/components/auth/MFASettings';
 
 interface SecurityTabProps {
   onChangePasswordOpen: (open: boolean) => void;
@@ -50,8 +51,8 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
                     <p className="text-xs text-gray-400 mt-1">Última actualización: Hace 2 meses</p>
                   </div>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => onChangePasswordOpen(true)}
                 >
@@ -63,6 +64,9 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
           </div>
 
           <Separator />
+
+          {/* Autenticación de Dos Factores */}
+          <MFASettings />
 
           {/* Zona de Peligro */}
           <div>
