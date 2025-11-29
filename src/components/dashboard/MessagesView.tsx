@@ -426,7 +426,9 @@ const MessagesView = () => {
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.crm_clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conv.channel.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || conv.status === filterStatus;
+    const matchesStatus = filterStatus === 'all' ||
+      (filterStatus === 'unread' && (conv.unread_count || 0) > 0) ||
+      (filterStatus === 'read' && (conv.unread_count || 0) === 0);
     const matchesChannel = filterChannel === 'all' || conv.channel === filterChannel;
 
     return matchesSearch && matchesStatus && matchesChannel;
@@ -444,7 +446,7 @@ const MessagesView = () => {
       try {
         await supabase
           .from('conversations')
-          .update({ unread_count: 0 })
+          .update({ unread_count: 0 } as any)
           .eq('id', conversationId)
           .eq('user_id', user.id);
 
@@ -523,8 +525,8 @@ const MessagesView = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="open">Leído</SelectItem>
-                  <SelectItem value="closed">Cerrados</SelectItem>
+                  <SelectItem value="unread">Nuevo</SelectItem>
+                  <SelectItem value="read">Leído</SelectItem>
                 </SelectContent>
               </Select>
 
