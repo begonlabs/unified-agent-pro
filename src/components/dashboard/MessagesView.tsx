@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,7 +74,7 @@ const MessagesView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
 
 
 
@@ -172,7 +172,11 @@ const MessagesView = () => {
   } = useRealtimeMessages(selectedConversation, user?.id || null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll all anchors (covers both mobile and desktop views)
+    const anchors = document.querySelectorAll('.messages-end-anchor');
+    anchors.forEach(anchor => {
+      anchor.scrollIntoView({ behavior: "smooth" });
+    });
   };
 
   useEffect(() => {
@@ -766,7 +770,7 @@ const MessagesView = () => {
                     </div>
                   ))
                 )}
-                <div ref={messagesEndRef} />
+                <div className="messages-end-anchor" />
               </div>
             </div>
 
@@ -937,7 +941,9 @@ const MessagesView = () => {
                         </div>
                       </div>
                     ))
+
                   )}
+                  <div className="messages-end-anchor" />
                 </div>
               </div>
 
