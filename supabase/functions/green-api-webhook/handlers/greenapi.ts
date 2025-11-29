@@ -44,8 +44,16 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
     try {
         console.log('🎯 Processing Green API event');
 
-        // Extract message text and media info
+        // Extract message text (Robust logic restored)
         let messageText: string | undefined;
+
+        // 1. Try to extract text from standard fields (Priority to existing logic)
+        if (event.messageData?.textMessageData?.textMessage) {
+            messageText = event.messageData.textMessageData.textMessage;
+        } else if (event.messageData?.extendedTextMessageData?.text) {
+            messageText = event.messageData.extendedTextMessageData.text;
+        }
+
         let mediaUrl: string | undefined;
         let mediaType: 'image' | 'audio' | 'video' | 'document' | undefined;
         let mediaCaption: string | undefined;
@@ -54,12 +62,8 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
 
         const typeMessage = event.messageData?.typeMessage;
 
-        if (typeMessage === 'textMessage' && event.messageData?.textMessageData?.textMessage) {
-            messageText = event.messageData.textMessageData.textMessage;
-        } else if (typeMessage === 'extendedTextMessage' && event.messageData?.extendedTextMessageData?.text) {
-            messageText = event.messageData.extendedTextMessageData.text;
-        } else if (['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'voiceMessage'].includes(typeMessage || '')) {
-            // Handle media messages
+        // 2. Handle media messages
+        if (['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'voiceMessage'].includes(typeMessage || '')) {
             const fileData = event.messageData?.fileMessageData;
             if (fileData?.downloadUrl) {
                 mediaUrl = fileData.downloadUrl;
@@ -73,13 +77,20 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 else if (typeMessage === 'videoMessage') mediaType = 'video';
                 else mediaType = 'document';
 
-                // Set fallback text for content
-                messageText = mediaCaption || (
-                    mediaType === 'image' ? '📷 Imagen' :
-                        mediaType === 'audio' ? '🎵 Audio' :
-                            mediaType === 'video' ? '🎥 Video' :
-                                `📄 Archivo: ${fileName || 'Documento'}`
-                );
+                // Use caption as text if available and no text extracted yet
+                if (mediaCaption && !messageText) {
+                    messageText = mediaCaption;
+                }
+
+                // Set fallback text if still empty
+                if (!messageText) {
+                    messageText = (
+                        mediaType === 'image' ? '📷 Imagen' :
+                            mediaType === 'audio' ? '🎵 Audio' :
+                                mediaType === 'video' ? '🎥 Video' :
+                                    `📄 Archivo: ${fileName || 'Documento'}`
+                    );
+                }
             }
         }
 
