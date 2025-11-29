@@ -740,8 +740,14 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       return;
     }
 
-    // Update conversation (increment unread count for client messages)
-    await supabase.rpc('increment_unread', { conversation_id: conversation.id });
+    // Update conversation last_message_at
+    await supabase
+      .from('conversations')
+      .update({
+        last_message_at: new Date().toISOString(),
+        status: 'open'
+      })
+      .eq('id', conversation.id);
 
     console.log('✅ Instagram message saved successfully:', {
       conversation_id: conversation.id,
