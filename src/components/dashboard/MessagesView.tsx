@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,6 +74,10 @@ const MessagesView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+
+
   const [isSending, setIsSending] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
   const [previousMessageCount, setPreviousMessageCount] = useState<Record<string, number>>({});
@@ -166,6 +170,18 @@ const MessagesView = () => {
     sendOptimisticMessage,
     updateMessageStatus
   } = useRealtimeMessages(selectedConversation, user?.id || null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    // Small delay to ensure DOM is updated
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messages, selectedConversation]);
 
   // Función principal de envío (sin debouncing directo)
   const sendMessageCore = async () => {
@@ -750,6 +766,7 @@ const MessagesView = () => {
                     </div>
                   ))
                 )}
+                <div ref={messagesEndRef} />
               </div>
             </div>
 
