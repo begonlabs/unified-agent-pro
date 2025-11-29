@@ -11,13 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Facebook, Instagram, Phone, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Channel {
-    id: string;
-    channel_type: string;
-    channel_config: any;
-    is_connected: boolean;
-}
+import { supabaseSelect } from '@/lib/supabaseUtils';
+import type { Channel } from '@/components/dashboard/channels/types';
 
 interface ChannelSelectorModalProps {
     open: boolean;
@@ -46,13 +41,13 @@ export const ChannelSelectorModal: React.FC<ChannelSelectorModalProps> = ({
     const loadChannels = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('channels')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('is_connected', true);
-
-            if (error) throw error;
+            const { data } = await supabaseSelect(
+                supabase
+                    .from('communication_channels')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('is_connected', true)
+            );
 
             setChannels(data || []);
 
@@ -106,13 +101,14 @@ export const ChannelSelectorModal: React.FC<ChannelSelectorModalProps> = ({
     };
 
     const getChannelName = (channel: Channel) => {
-        const config = channel.channel_config;
+        const config = channel.channel_config as any;
         switch (channel.channel_type) {
             case 'facebook':
                 return config?.page_name || 'Página de Facebook';
             case 'instagram':
                 return `@${config?.username}` || 'Instagram';
             case 'whatsapp':
+            case 'whatsapp_green_api':
                 return config?.display_phone_number || config?.phone_number || 'WhatsApp Business';
             default:
                 return channel.channel_type;
