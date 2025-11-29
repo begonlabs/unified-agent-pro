@@ -55,6 +55,7 @@ interface Conversation {
   created_at: string;
   crm_clients?: Client;
   ai_enabled: boolean | null;
+  unread_count?: number;
 }
 
 interface Message {
@@ -434,9 +435,21 @@ const MessagesView = () => {
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 
   // Funciones para navegación móvil tipo WhatsApp
-  const handleConversationSelect = (conversationId: string) => {
+  const handleConversationSelect = async (conversationId: string) => {
     setSelectedConversation(conversationId);
     setMobileView('chat'); // Cambiar a vista de chat en móvil
+
+    // Reset unread count when opening conversation
+    if (user?.id) {
+      await supabase
+        .from('conversations')
+        .update({ unread_count: 0 })
+        .eq('id', conversationId)
+        .eq('user_id', user.id);
+
+      // Refresh conversations to update UI
+      refreshConversations();
+    }
   };
 
   const handleBackToList = () => {
@@ -546,19 +559,27 @@ const MessagesView = () => {
                   >
                     <div className="p-3 sm:p-4">
                       <div className="flex items-start gap-3">
-                        <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
-                          {conversation.crm_clients?.avatar_url ? (
-                            <img
-                              src={conversation.crm_clients.avatar_url}
-                              alt={conversation.crm_clients.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
-                              {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
-                            </AvatarFallback>
+                        <div className="relative">
+                          <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
+                            {conversation.crm_clients?.avatar_url ? (
+                              <img
+                                src={conversation.crm_clients.avatar_url}
+                                alt={conversation.crm_clients.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
+                                {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          {/* Unread badge */}
+                          {conversation.unread_count && conversation.unread_count > 0 && (
+                            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-pulse">
+                              {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
+                            </div>
                           )}
-                        </Avatar>
+                        </div>
                         <div className="flex-1 min-w-0">
                           {/* Nombre del cliente - línea completa */}
                           <div className="mb-1">

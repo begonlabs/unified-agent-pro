@@ -586,14 +586,8 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       return;
     }
 
-    // Update conversation last_message_at
-    await supabase
-      .from('conversations')
-      .update({
-        last_message_at: new Date().toISOString(),
-        status: 'open'
-      })
-      .eq('id', conversation.id);
+    // Update conversation (increment unread count for client messages)
+    await supabase.rpc('increment_unread', { conversation_id: conversation.id });
 
     console.log('✅ Message saved successfully:', {
       conversation_id: conversation.id,
