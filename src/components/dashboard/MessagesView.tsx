@@ -55,6 +55,7 @@ interface Conversation {
   created_at: string;
   crm_clients?: Client;
   ai_enabled: boolean | null;
+  unread_count?: number;
 }
 
 interface Message {
@@ -434,9 +435,24 @@ const MessagesView = () => {
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 
   // Funciones para navegación móvil tipo WhatsApp
-  const handleConversationSelect = (conversationId: string) => {
+  const handleConversationSelect = async (conversationId: string) => {
     setSelectedConversation(conversationId);
     setMobileView('chat'); // Cambiar a vista de chat en móvil
+
+    // Resetear contador de mensajes no leídos
+    if (user?.id) {
+      try {
+        await supabase
+          .from('conversations')
+          .update({ unread_count: 0 })
+          .eq('id', conversationId)
+          .eq('user_id', user.id);
+
+        console.log('✅ Unread count reset for conversation:', conversationId);
+      } catch (error) {
+        console.error('Error resetting unread count:', error);
+      }
+    }
   };
 
   const handleBackToList = () => {
@@ -578,10 +594,10 @@ const MessagesView = () => {
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-1 flex-wrap">
                               <Badge
-                                variant={conversation.status === 'open' ? 'default' : 'secondary'}
+                                variant={(conversation.unread_count || 0) > 0 ? 'destructive' : 'default'}
                                 className="text-xs"
                               >
-                                {conversation.status === 'open' ? 'Leído' : conversation.status}
+                                {(conversation.unread_count || 0) > 0 ? 'Nuevo' : 'Leído'}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
@@ -663,16 +679,14 @@ const MessagesView = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-2 py-1">
-                  <Bot className="h-3 w-3 text-white" />
-                  <span className="text-xs text-white">IA</span>
-                  <Switch
-                    checked={selectedConv?.ai_enabled || false}
-                    onCheckedChange={(checked) => toggleConversationAI(selectedConv?.id || '', checked)}
-                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/20"
-                  />
-                </div>
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-2 py-1">
+                <Bot className="h-3 w-3 text-white" />
+                <span className="text-xs text-white">IA</span>
+                <Switch
+                  checked={selectedConv?.ai_enabled || false}
+                  onCheckedChange={(checked) => toggleConversationAI(selectedConv?.id || '', checked)}
+                  className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/20"
+                />
               </div>
             </div>
 
@@ -842,14 +856,6 @@ const MessagesView = () => {
                         onCheckedChange={(checked) => toggleConversationAI(selectedConv?.id || '', checked)}
                         className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/20"
                       />
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge
-                        className="bg-white/20 text-white border-white/20 text-xs"
-                        variant={selectedConv?.status === 'open' ? 'default' : 'secondary'}
-                      >
-                        {selectedConv?.status === 'open' ? 'Leído' : selectedConv?.status}
-                      </Badge>
                     </div>
                   </div>
                 </div>

@@ -133,7 +133,7 @@ export async function handleWhatsAppEvent(event: WhatsAppEvent): Promise<void> {
     if (event.type === 'message' && event.message) {
       await handleIncomingMessage(event, supabase);
     }
-    
+
     // Handle status events (delivered, read, etc.)
     if (event.type === 'status' && event.status) {
       await handleMessageStatus(event, supabase);
@@ -149,7 +149,7 @@ export async function handleWhatsAppEvent(event: WhatsAppEvent): Promise<void> {
  */
 async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseClient): Promise<void> {
   const { message, contacts, metadata } = event;
-  
+
   if (!message?.text?.body || !message.from || !metadata?.phone_number_id) {
     console.log('⚠️ Event ignored: Not a valid text message or missing required fields.');
     return;
@@ -171,7 +171,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
       .eq('platform_message_id', messageId)
       .limit(1)
       .single();
-    
+
     if (existingMessage) {
       console.log('⏭️ Skipping WhatsApp message - already processed:', {
         platform_message_id: messageId,
@@ -214,7 +214,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
     // Get contact name from WhatsApp if available
     const contactName = contacts?.find(c => c.wa_id === senderPhoneNumber)?.profile?.name;
     const clientName = contactName || `WhatsApp ${senderPhoneNumber.slice(-4)}`;
-      
+
     const { data: newClient, error: clientCreateError } = await supabase
       .from('crm_clients')
       .insert({
@@ -239,7 +239,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
   // Find or create conversation
   let conversation: Conversation;
   const threadId = senderPhoneNumber; // Use phone number as thread ID
-  
+
   const { data: existingConv, error: convSearchError } = await supabase
     .from('conversations')
     .select('*')
@@ -303,12 +303,19 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
     return;
   }
 
-  // Update conversation last_message_at
+  // Update conversation last_message_at and increment unread_count for client messages
+  const { data: convData } = await supabase
+    .from('conversations')
+    .select('unread_count')
+    .eq('id', conversation.id)
+    .single();
+
   await supabase
     .from('conversations')
-    .update({ 
+    .update({
       last_message_at: new Date().toISOString(),
-      status: 'open'
+      status: 'open',
+      unread_count: (convData?.unread_count || 0) + 1
     })
     .eq('id', conversation.id);
 
@@ -322,7 +329,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
   if (messageText && conversation.ai_enabled && messageData.sender_type === 'client') {
     try {
       console.log('🤖 Generating AI response for WhatsApp:', conversation.id);
-      
+
       // 🔥 CRITICAL: Check if we already have an AI response right after this specific client message
       const { data: clientMessage } = await supabase
         .from('messages')
@@ -330,7 +337,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
         .eq('platform_message_id', messageId)
         .eq('conversation_id', conversation.id)
         .single();
-      
+
       if (clientMessage) {
         // Check if there's already an IA message created immediately after this client message
         const { data: existingAIResponse } = await supabase
@@ -342,7 +349,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
           .lte('created_at', new Date(new Date(clientMessage.created_at).getTime() + 30000).toISOString())
           .limit(1)
           .single();
-        
+
         if (existingAIResponse) {
           console.log('⏭️ Skipping AI response - already responded to this specific WhatsApp message:', {
             client_message_id: clientMessage.id,
@@ -351,7 +358,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
           return;
         }
       }
-      
+
       const { data: aiConfig } = await supabase
         .from('ai_configurations')
         .select('*')
@@ -425,16 +432,16 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
         }
 
         console.log('✅ AI response for WhatsApp saved successfully');
-        
+
         // Send AI message via WhatsApp Cloud API
         try {
           const accessToken = channel.channel_config.access_token;
           const businessPhoneNumberId = phoneNumberId;
           const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0';
-          
+
           console.log('📤 Sending AI message via WhatsApp Cloud API to:', senderPhoneNumber);
           console.log('🔧 Using Meta Graph API version:', graphVersion);
-          
+
           // Use Cloud API endpoint with configurable version
           const whatsappApiResponse = await fetch(
             `https://graph.facebook.com/${graphVersion}/${businessPhoneNumberId}/messages`,
@@ -448,8 +455,8 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
                 messaging_product: 'whatsapp',
                 to: senderPhoneNumber,
                 type: 'text',
-                text: { 
-                  body: aiResponse.response 
+                text: {
+                  body: aiResponse.response
                 }
               })
             }
@@ -458,7 +465,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
           if (!whatsappApiResponse.ok) {
             const errorData = await whatsappApiResponse.text();
             console.error('❌ Error sending message via WhatsApp API:', errorData);
-            
+
             // Try to parse error for 24h window issue
             try {
               const errorJson = JSON.parse(errorData);
@@ -475,23 +482,24 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
           } else {
             const result = await whatsappApiResponse.json();
             console.log('✅ AI message sent to WhatsApp:', result.messages?.[0]?.id);
-            
+
             // Update the platform_message_id with the real WhatsApp message ID
             if (result.messages?.[0]?.id && savedMessage) {
               await supabase
                 .from('messages')
                 .update({ platform_message_id: result.messages[0].id })
                 .eq('id', savedMessage.id);
-              
+
               console.log('✅ Message ID updated in database:', result.messages[0].id);
             }
-            
-            // Update conversation timestamp
+
+            // Update conversation timestamp (don't increment unread_count for IA messages)
             await supabase
               .from('conversations')
-              .update({ 
+              .update({
                 last_message_at: new Date().toISOString(),
                 status: 'open'
+                // Note: NOT incrementing unread_count for IA responses
               })
               .eq('id', conversation.id);
           }
@@ -514,7 +522,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
  */
 async function handleMessageStatus(event: WhatsAppEvent, supabase: SupabaseClient): Promise<void> {
   const { status, metadata } = event;
-  
+
   if (!status?.id || !status.status) {
     console.log('⚠️ Status event ignored: Missing required fields.');
     return;
@@ -575,7 +583,7 @@ async function handleMessageStatus(event: WhatsAppEvent, supabase: SupabaseClien
         recipient_id: status.recipient_id,
         // Helpful context for 24h window error
         is_24h_window_error: status.errors[0]?.code === 131047,
-        solution: status.errors[0]?.code === 131047 
+        solution: status.errors[0]?.code === 131047
           ? 'Use Template Messages for re-engagement outside 24h window'
           : 'Check error code at https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes/'
       });

@@ -13,6 +13,7 @@ interface Conversation {
   created_at: string;
   user_id: string;
   ai_enabled: boolean | null;
+  unread_count?: number;
   crm_clients?: {
     id: string;
     name: string;

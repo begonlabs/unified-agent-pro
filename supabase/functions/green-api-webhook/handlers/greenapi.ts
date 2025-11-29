@@ -352,12 +352,19 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
             return;
         }
 
-        // Update conversation
+        // Update conversation and increment unread_count for client messages
+        const { data: convData } = await supabase
+            .from('conversations')
+            .select('unread_count')
+            .eq('id', conversation.id)
+            .single();
+
         await supabase
             .from('conversations')
             .update({
                 last_message_at: new Date().toISOString(),
-                status: 'open'
+                status: 'open',
+                unread_count: (convData?.unread_count || 0) + 1
             })
             .eq('id', conversation.id);
 

@@ -586,14 +586,33 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       return;
     }
 
-    // Update conversation last_message_at
-    await supabase
-      .from('conversations')
-      .update({
-        last_message_at: new Date().toISOString(),
-        status: 'open'
-      })
-      .eq('id', conversation.id);
+    // Update conversation last_message_at and increment unread_count for client messages only
+    if (senderType === 'client') {
+      // Client message - increment unread_count
+      const { data: convData } = await supabase
+        .from('conversations')
+        .select('unread_count')
+        .eq('id', conversation.id)
+        .single();
+
+      await supabase
+        .from('conversations')
+        .update({
+          last_message_at: new Date().toISOString(),
+          status: 'open',
+          unread_count: (convData?.unread_count || 0) + 1
+        })
+        .eq('id', conversation.id);
+    } else {
+      // Agent/echo message - don't increment unread_count
+      await supabase
+        .from('conversations')
+        .update({
+          last_message_at: new Date().toISOString(),
+          status: 'open'
+        })
+        .eq('id', conversation.id);
+    }
 
     console.log('✅ Message saved successfully:', {
       conversation_id: conversation.id,
