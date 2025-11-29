@@ -93,7 +93,7 @@ export class BusinessInfoService {
         businessInfo: BusinessInfo
     ): Promise<void> {
         const { error } = await supabase
-            .from('channels')
+            .from('communication_channels')
             .update({
                 metadata: {
                     business_info: businessInfo
@@ -118,7 +118,7 @@ export class BusinessInfoService {
     ): Promise<void> {
         // Get current AI agent config
         const { data: aiAgent, error: fetchError } = await supabase
-            .from('ai_agents')
+            .from('ai_configurations')
             .select('knowledge_base')
             .eq('user_id', userId)
             .single();
@@ -148,7 +148,7 @@ export class BusinessInfoService {
 
         // Update AI agent knowledge base
         const { error: updateError } = await supabase
-            .from('ai_agents')
+            .from('ai_configurations')
             .update({ knowledge_base: updatedKnowledge })
             .eq('user_id', userId);
 
