@@ -28,98 +28,59 @@ interface GreenApiEvent {
             text?: string;
             description?: string;
         };
+        fileMessageData?: {
+            downloadUrl: string;
+            caption?: string;
+            fileName?: string;
+            mimeType?: string;
+            jpegThumbnail?: string;
+        };
     };
 }
 
-/**
- * Send AI response via Green API
- */
-async function sendAIResponseViaGreenApi(
-    message: string,
-    chatId: string,
-    idInstance: string,
-    apiToken: string
-): Promise<{ success: boolean; messageId?: string }> {
-    try {
-        const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chatId: chatId,
-                message: message
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.text();
-            console.error('❌ Error sending message via Green API:', response.status, errorData);
-            return { success: false };
-        }
-
-        const result = await response.json();
-        console.log('✅ Message sent via Green API:', result.idMessage);
-        return {
-            success: true,
-            messageId: result.idMessage
-        };
-
-    } catch (error) {
-        console.error('❌ Error in sendAIResponseViaGreenApi:', error);
-        return { success: false };
-    }
-}
-
-/**
- * Get Contact Info (Avatar + Name) from Green API
- */
-async function getContactInfo(
-    chatId: string,
-    idInstance: string,
-    apiToken: string
-): Promise<{ avatar: string | null; name: string | null }> {
-    try {
-        const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/getContactInfo/${apiToken}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chatId: chatId
-            })
-        });
-
-        if (!response.ok) {
-            return { avatar: null, name: null };
-        }
-
-        const result = await response.json();
-        return {
-            avatar: result.avatar || null,
-            name: result.name || result.contactName || null // Try public name, then contact book name
-        };
-
-    } catch (error) {
-        console.error('❌ Error fetching contact info:', error);
-        return { avatar: null, name: null };
-    }
-}
+// ... (keep existing helper functions) ...
 
 export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
     try {
         console.log('🎯 Processing Green API event');
 
-        // Extract message text
+        // Extract message text and media info
         let messageText: string | undefined;
-        if (event.messageData?.textMessageData?.textMessage) {
+        let mediaUrl: string | undefined;
+        let mediaType: 'image' | 'audio' | 'video' | 'document' | undefined;
+        let mediaCaption: string | undefined;
+        let fileName: string | undefined;
+        let mimeType: string | undefined;
+
+        const typeMessage = event.messageData?.typeMessage;
+
+        if (typeMessage === 'textMessage' && event.messageData?.textMessageData?.textMessage) {
             messageText = event.messageData.textMessageData.textMessage;
-        } else if (event.messageData?.extendedTextMessageData?.text) {
+        } else if (typeMessage === 'extendedTextMessage' && event.messageData?.extendedTextMessageData?.text) {
             messageText = event.messageData.extendedTextMessageData.text;
+        } else if (['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'voiceMessage'].includes(typeMessage || '')) {
+            // Handle media messages
+            const fileData = event.messageData?.fileMessageData;
+            if (fileData?.downloadUrl) {
+                mediaUrl = fileData.downloadUrl;
+                mediaCaption = fileData.caption;
+                fileName = fileData.fileName;
+                mimeType = fileData.mimeType;
+
+                // Determine media type
+                if (typeMessage === 'imageMessage') mediaType = 'image';
+                else if (typeMessage === 'audioMessage' || typeMessage === 'voiceMessage') mediaType = 'audio';
+                else if (typeMessage === 'videoMessage') mediaType = 'video';
+                else mediaType = 'document';
+
+                // Set fallback text for content
+                messageText = mediaCaption || (
+                    mediaType === 'image' ? '📷 Imagen' :
+                        mediaType === 'audio' ? '🎵 Audio' :
+                            mediaType === 'video' ? '🎥 Video' :
+                                `📄 Archivo: ${fileName || 'Documento'}`
+                );
+            }
         }
 
         // 🚫 Block ghost messages with {{SWE001}}
@@ -148,6 +109,7 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
 
         console.log('📝 Event details:', {
             messageText,
+            mediaType,
             idInstance,
             chatId,
             senderId,
@@ -334,7 +296,13 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 idInstance,
                 chatId,
                 senderId,
-                timestamp: event.timestamp
+                timestamp: event.timestamp,
+                // Media info
+                file_url: mediaUrl,
+                file_type: mediaType,
+                file_name: fileName,
+                file_caption: mediaCaption,
+                mime_type: mimeType
             }
         };
 
