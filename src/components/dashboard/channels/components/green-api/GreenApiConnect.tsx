@@ -114,6 +114,52 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
         }
     };
 
+    const configureWebhook = async () => {
+        if (!idInstance || !apiToken) return false;
+
+        try {
+            console.log('Configuring Green API Webhook...');
+            const apiUrl = `https://7107.api.green-api.com`;
+            const webhookUrl = 'https://supabase.ondai.ai/functions/v1/green-api-webhook';
+
+            const response = await fetch(`${apiUrl}/waInstance${idInstance}/SetSettings/${apiToken}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    webhookUrl: webhookUrl,
+                    webhookUrlToken: "",
+                    delaySendMessagesMilliseconds: 0,
+                    markIncomingMessagesReaded: "no",
+                    markIncomingMessagesReadedOnReply: "no",
+                    sharedSession: "yes",
+                    outgoingWebhook: "yes",
+                    outgoingMessageWebhook: "yes",
+                    outgoingAPIMessageWebhook: "yes",
+                    incomingWebhook: "yes",
+                    deviceWebhook: "yes",
+                    statusInstanceWebhook: "yes",
+                    stateWebhook: "yes",
+                    enableMessagesHistory: "yes",
+                    keepOnlineStatus: "yes"
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Webhook configured successfully:', data);
+                return true;
+            } else {
+                console.error('Failed to configure webhook:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error configuring webhook:', error);
+            return false;
+        }
+    };
+
     const checkStatus = async () => {
         if (!idInstance || !apiToken) return;
 
@@ -132,6 +178,9 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSucc
                     if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
 
                     setStatus('connected');
+
+                    // Configure Webhook before saving
+                    await configureWebhook();
 
                     // Save to Supabase
                     await saveToSupabase();
