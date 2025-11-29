@@ -3,6 +3,7 @@
 // This enables autocomplete, go to definition, etc.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -42,15 +43,43 @@ serve(async (req) => {
 
         const html = await response.text();
 
-        // 2. Extract visible text (simple cleanup)
-        // Remove scripts, styles, and HTML tags
-        const textContent = html
-            .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
-            .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .substring(0, 15000); // Limit to ~15k chars to avoid token limits
+        // 2. Extract visible text using DOMParser (Better than regex)
+        const doc = new DOMParser().parseFromString(html, "text/html");
+
+        if (!doc) {
+            throw new Error("Failed to parse HTML");
+        }
+
+        // Remove unwanted elements
+        const scripts = doc.querySelectorAll("script, style, noscript, iframe, svg");
+        scripts.forEach((node) => node.remove());
+
+        // Extract text from important elements to preserve structure
+        // We prioritize headers, paragraphs, lists, and table cells
+        const contentNodes = doc.querySelectorAll("body h1, body h2, body h3, body h4, body p, body li, body td, body th, body div");
+
+        let textContent = "";
+        const seenText = new Set(); // To avoid duplicates
+
+        contentNodes.forEach((node) => {
+            const text = node.textContent.trim();
+            // Filter out empty, very short, or duplicate text
+            if (text.length > 20 && !seenText.has(text)) {
+                textContent += text + "\n";
+                seenText.add(text);
+            }
+        });
+
+        // Fallback: if structured extraction failed (e.g. mostly divs), get body text
+        if (textContent.length < 500) {
+            console.log("Structured extraction yielded little text, falling back to body text");
+            textContent = doc.body?.textContent || "";
+            // Clean up whitespace
+            textContent = textContent.replace(/\s+/g, " ").trim();
+        }
+
+        // Limit length
+        textContent = textContent.substring(0, 20000);
 
         console.log(`Extracted ${textContent.length} characters of text`);
 
@@ -62,10 +91,12 @@ serve(async (req) => {
 
         const prompt = `
       Analyze the following website content and extract key business information.
+      The content is scraped from a website, so it might contain some noise. Focus on the main business details.
+      
       Return ONLY a JSON object with the following fields (if information is found, otherwise empty string):
-      - description: A summary of what the business does.
-      - services: A list of services offered.
-      - products: A list of products offered.
+      - description: A clear summary of what the business does.
+      - services: A list of services offered (bullet points).
+      - products: A list of products offered (bullet points).
       - pricing: Any pricing information found.
       - contact: Contact details (email, phone, address).
       - about: Mission, vision, or "about us" information.
