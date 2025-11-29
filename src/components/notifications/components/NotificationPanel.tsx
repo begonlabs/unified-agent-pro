@@ -32,11 +32,10 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   loading = false
 }) => {
   const [filter, setFilter] = useState<NotificationType | 'all'>('all');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Filtrar notificaciones
-  const filteredNotifications = filter === 'all' 
-    ? notifications 
+  const filteredNotifications = filter === 'all'
+    ? notifications
     : notifications.filter(n => n.type === filter);
 
   // Contar por tipo
@@ -46,86 +45,90 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   }, {} as Record<NotificationType, number>);
 
   return (
-    <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden max-h-[85vh]">
+    <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden max-h-[85vh] flex flex-col w-full sm:w-[400px]">
       {/* Header */}
-      <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-[#3a0caa]/5 to-[#710db2]/5">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
+      <div className="p-4 border-b border-gray-100 bg-white z-10">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-[#3a0caa]" />
-            <h3 className="font-bold text-gray-900 text-sm sm:text-base">Notificaciones</h3>
+            <h3 className="font-bold text-gray-900 text-lg">Notificaciones</h3>
             {unreadCount > 0 && (
-              <Badge variant="destructive" className="text-xs">
-                {unreadCount}
+              <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 text-xs px-2 h-5">
+                {unreadCount} nuevas
               </Badge>
             )}
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2">
+          {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="h-7 w-7 sm:w-auto px-1 sm:px-2"
+              onClick={onMarkAllAsRead}
+              className="h-8 px-2 text-gray-500 hover:text-blue-600 text-xs font-medium"
             >
-              <Filter className="h-4 w-4" />
+              <CheckCheck className="h-3.5 w-3.5 mr-1.5" />
+              Marcar leídas
             </Button>
-
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onMarkAllAsRead}
-                className="h-7 px-1 sm:px-2 text-[#3a0caa] hover:text-[#270a59]"
-              >
-                <CheckCheck className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Marcar todas</span>
-              </Button>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Filtros */}
-        {showFilters && (
-          <div className="flex flex-wrap gap-1 mt-2 max-h-20 overflow-y-auto">
-            <Badge
-              variant={filter === 'all' ? 'default' : 'outline'}
-              className="cursor-pointer text-xs whitespace-nowrap"
-              onClick={() => setFilter('all')}
+        {/* Filtros Simples */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <button
+            onClick={() => setFilter('all')}
+            className={`
+              px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap
+              ${filter === 'all'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+            `}
+          >
+            Todas
+          </button>
+
+          {/* Mostrar solo filtros con notificaciones */}
+          {(Object.keys(countByType) as NotificationType[]).map(type => (
+            <button
+              key={type}
+              onClick={() => setFilter(type)}
+              className={`
+                px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-1.5
+                ${filter === type
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+              `}
             >
-              Todas ({notifications.length})
-            </Badge>
-            {(Object.keys(countByType) as NotificationType[]).map(type => (
-              <Badge
-                key={type}
-                variant={filter === type ? 'default' : 'outline'}
-                className="cursor-pointer text-xs whitespace-nowrap"
-                onClick={() => setFilter(type)}
-              >
-                {notificationTypeLabels[type]} ({countByType[type]})
-              </Badge>
-            ))}
-          </div>
-        )}
+              {notificationTypeLabels[type]}
+              <span className={`text-[10px] px-1 rounded-full ${filter === type ? 'bg-white/20' : 'bg-gray-300/50'}`}>
+                {countByType[type]}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Lista de notificaciones */}
-      <ScrollArea className="h-[60vh] sm:h-[500px] max-h-[calc(85vh-10rem)]">
+      <ScrollArea className="flex-1 h-[400px] sm:h-[500px]">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-[#3a0caa]" />
+          <div className="flex items-center justify-center h-40">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-gray-400 px-4">
-            <Bell className="h-12 w-12 mb-2 opacity-20" />
-            <p className="text-sm text-center">
-              {filter === 'all' 
-                ? 'No tienes notificaciones' 
-                : `No hay notificaciones de ${notificationTypeLabels[filter]}`
+          <div className="flex flex-col items-center justify-center h-64 text-gray-400 px-8 text-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <Bell className="h-8 w-8 text-gray-300" />
+            </div>
+            <p className="text-gray-900 font-medium mb-1">
+              {filter === 'all' ? 'Estás al día' : 'Sin notificaciones'}
+            </p>
+            <p className="text-sm text-gray-500">
+              {filter === 'all'
+                ? 'No tienes nuevas notificaciones en este momento.'
+                : `No hay notificaciones de tipo "${notificationTypeLabels[filter]}"`
               }
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-50">
             {filteredNotifications.map(notification => (
               <NotificationItem
                 key={notification.id}
@@ -140,14 +143,11 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
       </ScrollArea>
 
       {/* Footer */}
-      {filteredNotifications.length > 0 && (
-        <div className="p-3 border-t bg-gray-50 text-center">
-          <p className="text-xs text-gray-500">
-            {filteredNotifications.length} notificación{filteredNotifications.length !== 1 ? 'es' : ''}
-            {filter !== 'all' && ` (filtrado: ${notificationTypeLabels[filter]})`}
-          </p>
-        </div>
-      )}
+      <div className="p-3 border-t border-gray-100 bg-gray-50/50 text-center">
+        <Button variant="link" size="sm" className="text-xs text-gray-500 h-auto p-0 hover:no-underline">
+          Ver historial completo
+        </Button>
+      </div>
     </div>
   );
 };

@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  MessageSquare, 
-  AlertCircle, 
-  Radio, 
-  CheckCircle, 
+import {
+  MessageSquare,
+  AlertCircle,
+  Radio,
+  CheckCircle,
   AlertTriangle,
   Wifi,
   Settings,
@@ -97,10 +97,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const getPriorityBadge = () => {
     if (notification.priority === 'urgent') {
-      return <Badge variant="destructive" className="text-xs">Urgente</Badge>;
-    }
-    if (notification.priority === 'high') {
-      return <Badge variant="default" className="text-xs bg-orange-500">Alta</Badge>;
+      return <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Urgente</Badge>;
     }
     return null;
   };
@@ -109,36 +106,33 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     <div
       onClick={handleClick}
       className={`
-        relative p-2 sm:p-3 border-l-4 ${config.borderColor} cursor-pointer
-        transition-all duration-200 hover:shadow-md
-        ${isUnread ? `${config.bgColor} border` : 'bg-white border border-gray-200'}
-        ${isUnread ? 'font-medium' : 'font-normal'}
-        group
+        relative p-3 sm:p-4 cursor-pointer
+        transition-all duration-200 hover:bg-gray-50
+        ${isUnread ? 'bg-white' : 'bg-white/60'}
+        group border-b border-gray-100 last:border-0
       `}
     >
-      {/* Indicador de no leída */}
-      {isUnread && (
-        <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-      )}
-
-      <div className="flex gap-2 sm:gap-3">
+      <div className="flex gap-3">
         {/* Icono */}
-        <div className={`flex-shrink-0 p-1.5 sm:p-2 rounded-lg ${config.bgColor}`}>
-          <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${config.color}`} />
+        <div className={`flex-shrink-0 mt-0.5 p-2 rounded-full ${config.bgColor} bg-opacity-60`}>
+          <Icon className={`h-4 w-4 ${config.color}`} />
         </div>
 
         {/* Contenido */}
-        <div className="flex-1 min-w-0 pr-6 sm:pr-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-0.5">
+            <h4 className={`text-sm text-gray-900 line-clamp-1 ${isUnread ? 'font-semibold' : 'font-medium'}`}>
               {notification.title}
             </h4>
-            <div className="flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {getPriorityBadge()}
+              {isUnread && (
+                <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+              )}
             </div>
           </div>
 
-          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+          <p className={`text-sm text-gray-600 line-clamp-2 mb-1.5 ${isUnread ? 'text-gray-700' : 'text-gray-500'}`}>
             {notification.message}
           </p>
 
@@ -148,23 +142,23 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             </span>
 
             {notification.action_label && (
-              <span className="text-xs text-[#3a0caa] font-medium truncate">
-                {notification.action_label} →
+              <span className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+                {notification.action_label}
               </span>
             )}
           </div>
         </div>
 
-        {/* Botón eliminar (visible en hover en desktop, siempre visible en mobile) */}
+        {/* Botón eliminar (visible en hover) */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           data-delete-button
           onClick={handleDelete}
-          className="sm:opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-red-100 flex-shrink-0 absolute right-1 top-1 sm:relative sm:right-0 sm:top-0"
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 -mr-1 -mt-1 text-gray-400 hover:text-red-500 hover:bg-red-50"
           aria-label="Eliminar notificación"
         >
-          <X className="h-4 w-4 text-red-500" />
+          <X className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
