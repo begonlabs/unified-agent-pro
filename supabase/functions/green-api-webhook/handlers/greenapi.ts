@@ -247,7 +247,12 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
         }
 
         // 🔄 Update Avatar and Name if missing (for existing clients created before this feature)
-        if (!client.avatar_url || client.name.includes('WhatsApp User')) {
+        // Also update if name looks like an ID (contains @s.whatsapp.net) or is just numbers
+        const isDefaultName = client.name.includes('WhatsApp User') ||
+            client.name.includes('@s.whatsapp.net') ||
+            /^\d+$/.test(client.name);
+
+        if (!client.avatar_url || isDefaultName) {
             console.log('🖼️ Fetching contact info for existing client:', client.id);
             try {
                 const contactInfo = await getContactInfo(
@@ -263,7 +268,7 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                     updates.avatar_url = contactInfo.avatar;
                 }
 
-                if (client.name.includes('WhatsApp User') && contactInfo.name) {
+                if (isDefaultName && contactInfo.name) {
                     console.log('✅ Found WhatsApp profile name:', contactInfo.name);
                     updates.name = contactInfo.name;
                 }
