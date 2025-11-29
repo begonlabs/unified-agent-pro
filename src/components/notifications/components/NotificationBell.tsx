@@ -98,7 +98,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isMobile = f
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-full sm:w-[400px] p-0 mr-2 sm:mr-0"
+        className="w-full sm:w-[400px] p-0 mr-2 sm:mr-0 z-[100]"
         align="end"
         sideOffset={8}
       >
