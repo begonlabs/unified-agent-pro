@@ -64,14 +64,6 @@ interface Message {
   sender_name?: string;
   is_automated: boolean;
   created_at: string;
-  metadata?: {
-    file_url?: string;
-    file_type?: 'image' | 'audio' | 'video' | 'document';
-    file_name?: string;
-    file_caption?: string;
-    mime_type?: string;
-    [key: string]: any;
-  };
 }
 
 const MessagesView = () => {
@@ -715,53 +707,7 @@ const MessagesView = () => {
                               : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
                             }`}
                         >
-                          {/* Render Media */}
-                          {message.metadata?.file_url && (
-                            <div className="mb-2">
-                              {message.metadata.file_type === 'image' ? (
-                                <div className="relative group cursor-pointer">
-                                  <img
-                                    src={message.metadata.file_url}
-                                    alt={message.metadata.file_caption || 'Imagen'}
-                                    className="rounded-lg max-w-full max-h-64 object-cover"
-                                    onClick={() => window.open(message.metadata?.file_url, '_blank')}
-                                  />
-                                </div>
-                              ) : message.metadata.file_type === 'audio' ? (
-                                <audio controls className="max-w-full">
-                                  <source src={message.metadata.file_url} type={message.metadata.mime_type || 'audio/ogg'} />
-                                  Tu navegador no soporta audio.
-                                </audio>
-                              ) : message.metadata.file_type === 'video' ? (
-                                <video controls className="rounded-lg max-w-full max-h-64">
-                                  <source src={message.metadata.file_url} type={message.metadata.mime_type || 'video/mp4'} />
-                                  Tu navegador no soporta video.
-                                </video>
-                              ) : (
-                                <a
-                                  href={message.metadata.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-gray-800"
-                                >
-                                  <div className="bg-white p-2 rounded-full">
-                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{message.metadata.file_name || 'Documento'}</p>
-                                    <p className="text-xs text-gray-500">Click para descargar</p>
-                                  </div>
-                                </a>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Render Text Content (only if different from caption or if it's a text message) */}
-                          {(!message.metadata?.file_url || (message.content && message.content !== message.metadata?.file_caption)) && (
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          )}
+                          <p className="text-sm leading-relaxed">{message.content}</p>
                           <div className="flex items-center justify-end gap-2 mt-1">
                             <p className="text-xs opacity-70">
                               {new Date(message.created_at).toLocaleTimeString([], {
