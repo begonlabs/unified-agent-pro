@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChannelsViewProps, InstagramConfig } from './types';
 import { NotificationService } from '@/components/notifications';
 import { EmailService } from '@/services/emailService';
+import { BusinessInfoService } from '@/services/businessInfoService';
 import { useChannels } from './hooks/useChannels';
 import { useChannelConnections } from './hooks/useChannelConnections';
 import { useInstagramVerification } from './hooks/useInstagramVerification';
@@ -131,6 +132,51 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           });
         }
       });
+
+      // Auto-importar información del negocio
+      setTimeout(async () => {
+        try {
+          const channelsData = await fetchChannels();
+
+          // Buscar el canal recién conectado
+          const newChannel = channelsData?.find(c =>
+            c.channel_type === channel && c.is_connected
+          );
+
+          if (newChannel && channel) {
+            let pageId: string | undefined;
+            let accessToken: string | undefined;
+
+            // Extraer page_id y access_token según el tipo de canal
+            if (channel === 'facebook') {
+              const config = newChannel.channel_config as any;
+              pageId = config?.page_id;
+              accessToken = config?.page_access_token;
+            } else if (channel === 'instagram') {
+              const config = newChannel.channel_config as any;
+              pageId = config?.instagram_business_account_id;
+              accessToken = config?.access_token;
+            } else if (channel === 'whatsapp') {
+              const config = newChannel.channel_config as any;
+              pageId = config?.phone_number_id;
+              accessToken = config?.access_token;
+            }
+
+            if (pageId && accessToken) {
+              console.log(`Auto-importing business info for ${channel}`);
+              await BusinessInfoService.importBusinessInfo(
+                currentUser.id,
+                newChannel.id,
+                channel as 'facebook' | 'instagram' | 'whatsapp',
+                pageId,
+                accessToken
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Error auto-importing business info:', error);
+        }
+      }, 2000); // Esperar 2 segundos para que se guarde el canal
 
       // Limpiar URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
