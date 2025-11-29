@@ -175,7 +175,7 @@ const MessagesView = () => {
     // Scroll all anchors (covers both mobile and desktop views)
     const anchors = document.querySelectorAll('.messages-end-anchor');
     anchors.forEach(anchor => {
-      anchor.scrollIntoView({ behavior: "smooth" });
+      anchor.scrollIntoView({ behavior: "auto" });
     });
   };
 
