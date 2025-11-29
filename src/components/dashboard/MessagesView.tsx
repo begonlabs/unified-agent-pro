@@ -677,7 +677,7 @@ const MessagesView = () => {
             </div>
 
             {/* Área de mensajes con scroll independiente */}
-            <div className="flex-1 overflow-y-auto bg-gray-100 p-3">
+            <div className="flex-1 overflow-y-auto p-3" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
               <div className="space-y-3 max-w-full">
                 {messages.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -856,7 +856,7 @@ const MessagesView = () => {
               </div>
 
               {/* Messages con scroll independiente */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {messages.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-muted-foreground">
