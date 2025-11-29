@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Brain, Upload, FileText, Building2, Loader2 } from 'lucide-react';
 import { SectionStatus } from '../shared/SectionStatus';
 import { WebsiteScraperModal } from '../WebsiteScraperModal';
+import { ChannelSelectorModal } from '../ChannelSelectorModal';
 import { BusinessInfoService } from '@/services/businessInfoService';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +26,7 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
   onCommonQuestionsChange
 }) => {
   const [isScraperOpen, setIsScraperOpen] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
+  const [isChannelSelectorOpen, setIsChannelSelectorOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const isCompleted = !!knowledgeBase.trim();
@@ -37,41 +38,14 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
     onKnowledgeBaseChange(newKnowledge);
   };
 
-  const handleImportBusinessInfo = async () => {
-    if (!user?.id) {
-      toast({
-        title: 'Error',
-        description: 'Usuario no autenticado',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsImporting(true);
+  const handleImportBusinessInfo = async (selectedChannels: any[]) => {
+    if (!user?.id) return;
 
     try {
-      // Obtener canales conectados
-      const { data: channels, error } = await supabase
-        .from('channels')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_connected', true);
-
-      if (error) throw error;
-
-      if (!channels || channels.length === 0) {
-        toast({
-          title: 'Sin canales',
-          description: 'No tienes canales conectados. Conecta Facebook, Instagram o WhatsApp primero.',
-          variant: 'destructive'
-        });
-        return;
-      }
-
       let importedCount = 0;
 
-      // Importar de cada canal
-      for (const channel of channels) {
+      // Importar de cada canal seleccionado
+      for (const channel of selectedChannels) {
         let pageId: string | undefined;
         let accessToken: string | undefined;
         const config = channel.channel_config as any;
@@ -116,7 +90,7 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
       } else {
         toast({
           title: 'Sin datos',
-          description: 'No se pudo extraer información de los canales conectados.',
+          description: 'No se pudo extraer información de los canales seleccionados.',
           variant: 'destructive'
         });
       }
@@ -128,8 +102,6 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
         description: 'No se pudo importar la información del negocio',
         variant: 'destructive'
       });
-    } finally {
-      setIsImporting(false);
     }
   };
 
@@ -182,15 +154,11 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
 
             <div
               className="p-3 sm:p-4 border-2 border-dashed border-blue-300 rounded-lg text-center cursor-pointer hover:bg-blue-50 transition-colors group"
-              onClick={handleImportBusinessInfo}
+              onClick={() => setIsChannelSelectorOpen(true)}
             >
-              {isImporting ? (
-                <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 mx-auto mb-2 animate-spin" />
-              ) : (
-                <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400 mx-auto mb-2 group-hover:text-blue-600 transition-colors" />
-              )}
+              <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400 mx-auto mb-2 group-hover:text-blue-600 transition-colors" />
               <p className="text-xs sm:text-sm text-gray-600 group-hover:text-blue-700 font-medium">
-                {isImporting ? 'Importando...' : 'Importar de Canales'}
+                Importar de Canales
               </p>
               <p className="text-xs text-gray-400">Extraer info de FB/IG/WA</p>
             </div>
@@ -217,6 +185,15 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
         onOpenChange={setIsScraperOpen}
         onSave={handleSaveScrapedData}
       />
+
+      {user && (
+        <ChannelSelectorModal
+          open={isChannelSelectorOpen}
+          onOpenChange={setIsChannelSelectorOpen}
+          userId={user.id}
+          onImport={handleImportBusinessInfo}
+        />
+      )}
     </div>
   );
 };
