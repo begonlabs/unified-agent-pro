@@ -35,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
 import { useDebounce, useMessageSender } from '@/hooks/useDebounce';
 import { NotificationService } from '@/components/notifications';
+import { formatWhatsAppNumber } from '@/utils/phoneNumberUtils';
 
 interface Client {
   id: string;
@@ -617,7 +618,21 @@ const MessagesView = () => {
                           {/* Información de contacto */}
                           <div className="mb-2">
                             <p className="text-xs sm:text-sm text-gray-600 truncate">
-                              {conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'}
+                              {conversation.channel === 'whatsapp' && conversation.crm_clients?.phone ? (
+                                (() => {
+                                  const formatted = formatWhatsAppNumber(conversation.crm_clients.phone || '');
+                                  return formatted ? (
+                                    <span className="flex items-center gap-2">
+                                      <span>{formatted.flag}</span>
+                                      <span>{formatted.formattedNumber}</span>
+                                    </span>
+                                  ) : (
+                                    conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'
+                                  );
+                                })()
+                              ) : (
+                                conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'
+                              )}
                             </p>
                           </div>
 
@@ -691,6 +706,19 @@ const MessagesView = () => {
                       {getChannelIcon(selectedConv?.channel || '')}
                       <span className="capitalize">{selectedConv?.channel}</span>
                     </div>
+                    {selectedConv?.channel === 'whatsapp' && selectedConv?.crm_clients?.phone && (
+                      (() => {
+                        const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
+                        return formatted ? (
+                          <span className="flex items-center gap-1">
+                            <span>{formatted.flag}</span>
+                            <span>{formatted.formattedNumber}</span>
+                          </span>
+                        ) : (
+                          <span>{selectedConv.crm_clients.phone}</span>
+                        );
+                      })()
+                    )}
                     {messagesConnected ? (
                       <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
                         <Wifi className="h-3 w-3 text-green-400" />
@@ -922,7 +950,21 @@ const MessagesView = () => {
                           <span className="truncate">{selectedConv.crm_clients.email}</span>
                         )}
                         {selectedConv?.crm_clients?.phone && (
-                          <span>{selectedConv.crm_clients.phone}</span>
+                          selectedConv.channel === 'whatsapp' ? (
+                            (() => {
+                              const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
+                              return formatted ? (
+                                <span className="flex items-center gap-1">
+                                  <span>{formatted.flag}</span>
+                                  <span>{formatted.formattedNumber}</span>
+                                </span>
+                              ) : (
+                                <span>{selectedConv.crm_clients.phone}</span>
+                              );
+                            })()
+                          ) : (
+                            <span>{selectedConv.crm_clients.phone}</span>
+                          )
                         )}
                         {/* Estado de conexión de mensajes */}
                         <div className="flex items-center gap-1">
