@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import {
   Search,
   Phone,
@@ -16,6 +17,8 @@ import {
   Instagram,
   Facebook,
   Send,
+  Smile,
+  Plus,
   User,
   Bot,
   Filter,
@@ -28,6 +31,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeConversations } from '@/hooks/useRealtimeConversations';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
 import { useDebounce, useMessageSender } from '@/hooks/useDebounce';
 import { NotificationService } from '@/components/notifications';
@@ -79,6 +83,7 @@ const MessagesView = () => {
 
 
   const [isSending, setIsSending] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
   const [previousMessageCount, setPreviousMessageCount] = useState<Record<string, number>>({});
   const { toast } = useToast();
@@ -187,8 +192,13 @@ const MessagesView = () => {
     return () => clearTimeout(timeoutId);
   }, [messages, selectedConversation]);
 
-  // Función principal de envío (sin debouncing directo)
-  const sendMessageCore = async () => {
+  // Manejar selección de emoji
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user?.id || isSending) {
       console.log('🚫 SendMessage: Condiciones no cumplidas', {
         hasMessage: !!newMessage.trim(),
@@ -355,9 +365,6 @@ const MessagesView = () => {
       setIsSending(false);
     }
   };
-
-  // Función con debouncing para uso en el UI
-  const sendMessage = useDebounce(sendMessageCore, 500);
 
   // Función para habilitar/deshabilitar IA en una conversación
   const toggleConversationAI = async (conversationId: string, aiEnabled: boolean) => {
@@ -775,12 +782,35 @@ const MessagesView = () => {
               </div>
             </div>
 
-            {/* Input fijo tipo WhatsApp */}
-            <div className="flex-shrink-0 p-3 bg-white border-t shadow-lg">
+            {/* Input de mensaje estilo WhatsApp */}
+            <div className="p-2 bg-[#202c33] border-t border-gray-700">
               <div className="flex gap-2 items-end">
+                {/* Botón de emoji */}
+                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[44px] w-[44px] rounded-full hover:bg-[#2a3942] text-gray-400 hover:text-white"
+                    >
+                      <Smile className="h-6 w-6" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" className="w-full p-0 border-none">
+                    <EmojiPicker
+                      onEmojiClick={handleEmojiClick}
+                      width={320}
+                      height={400}
+                      theme="dark"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                {/* Input de texto */}
                 <div className="flex-1">
                   <Textarea
-                    placeholder="Escribe tu mensaje..."
+                    placeholder="Escribe un mensaje..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -789,17 +819,19 @@ const MessagesView = () => {
                         sendMessage();
                       }
                     }}
-                    className="min-h-[44px] max-h-32 resize-none text-sm rounded-full border-gray-300 focus:border-blue-500"
+                    className="min-h-[44px] max-h-32 resize-none text-sm rounded-lg bg-[#2a3942] border-[#2a3942] text-white placeholder:text-gray-400 focus:border-[#00a884] focus:ring-[#00a884]"
                     rows={1}
                   />
                 </div>
+
+                {/* Botón de enviar */}
                 <Button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || isSending}
                   size="lg"
                   className={`h-[44px] w-[44px] rounded-full transition-all duration-200 ${isSending
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-[#00a884] hover:bg-[#06cf9c] active:scale-95'
                     }`}
                 >
                   {isSending ? (
@@ -949,47 +981,70 @@ const MessagesView = () => {
                 </div>
               </div>
 
-              {/* Message Input fijo */}
-              <div className="flex-shrink-0 p-3 sm:p-4 bg-white border-t shadow-lg">
-                <div className="max-w-4xl mx-auto">
-                  <div className="flex gap-2 sm:gap-3 items-end">
-                    <div className="flex-1">
-                      <Textarea
-                        placeholder="Escribe tu mensaje..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            sendMessage();
-                          }
-                        }}
-                        className="min-h-[50px] sm:min-h-[60px] max-h-32 resize-none text-sm sm:text-base"
-                        rows={2}
+              {/* Input de mensaje estilo WhatsApp */}
+              <div className="p-3 sm:p-4 bg-[#202c33] border-t border-gray-700">
+                <div className="flex gap-2 sm:gap-3 items-end">
+                  {/* Botón de emoji */}
+                  <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-[50px] sm:h-[60px] w-[50px] sm:w-[60px] rounded-full hover:bg-[#2a3942] text-gray-400 hover:text-white"
+                      >
+                        <Smile className="h-6 w-6 sm:h-7 sm:w-7" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" className="w-full p-0 border-none">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        width={350}
+                        height={450}
+                        theme="dark"
                       />
-                    </div>
-                    <Button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() || isSending}
-                      size="lg"
-                      className={`h-[50px] sm:h-[60px] px-3 sm:px-6 transition-all duration-200 ${isSending
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
-                        }`}
-                    >
-                      {isSending ? (
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent" />
-                          <span className="text-xs">Enviando...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-                          <span className="text-xs hidden sm:inline">Enviar</span>
-                        </div>
-                      )}
-                    </Button>
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Input de texto */}
+                  <div className="flex-1">
+                    <Textarea
+                      placeholder="Escribe un mensaje..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      className="min-h-[50px] sm:min-h-[60px] max-h-32 resize-none text-sm sm:text-base rounded-lg bg-[#2a3942] border-[#2a3942] text-white placeholder:text-gray-400 focus:border-[#00a884] focus:ring-[#00a884]"
+                      rows={2}
+                    />
                   </div>
+
+                  {/* Botón de enviar */}
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || isSending}
+                    size="lg"
+                    className={`h-[50px] sm:h-[60px] px-4 sm:px-6 transition-all duration-200 ${isSending
+                        ? 'bg-gray-600 cursor-not-allowed'
+                        : 'bg-[#00a884] hover:bg-[#06cf9c] active:scale-95'
+                      }`}
+                  >
+                    {isSending ? (
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent" />
+                        <span className="text-xs sm:text-sm">Enviando...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="text-xs sm:text-sm hidden sm:inline">Enviar</span>
+                      </div>
+                    )}
+                  </Button>
                 </div>
               </div>
             </>
