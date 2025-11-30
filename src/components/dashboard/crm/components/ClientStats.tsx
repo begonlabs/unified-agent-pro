@@ -20,7 +20,7 @@ export const ClientStats: React.FC<ClientStatsProps> = ({ stats }) => {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 text-center">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 text-center">
             <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
               <div className="text-lg sm:text-xl lg:text-2xl font-bold">{stats.total}</div>
               <div className="text-xs text-white/80">Total</div>
@@ -35,7 +35,11 @@ export const ClientStats: React.FC<ClientStatsProps> = ({ stats }) => {
             </div>
             <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
               <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-200">{stats.active}</div>
-              <div className="text-xs text-white/80">Activos</div>
+              <div className="text-xs text-white/80">Clientes</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-2 sm:p-3 lg:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-300">{stats.inactive}</div>
+              <div className="text-xs text-white/80">Inactivos</div>
             </div>
           </div>
         </div>
