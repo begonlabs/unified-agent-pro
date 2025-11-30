@@ -83,7 +83,8 @@ const MessagesView = () => {
 
 
   const [isSending, setIsSending] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showEmojiPickerMobile, setShowEmojiPickerMobile] = useState(false);
+  const [showEmojiPickerDesktop, setShowEmojiPickerDesktop] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
   const [previousMessageCount, setPreviousMessageCount] = useState<Record<string, number>>({});
   const { toast } = useToast();
@@ -195,7 +196,8 @@ const MessagesView = () => {
   // Manejar selección de emoji
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
-    setShowEmojiPicker(false);
+    setShowEmojiPickerMobile(false);
+    setShowEmojiPickerDesktop(false);
   };
 
   const sendMessage = async () => {
@@ -786,7 +788,7 @@ const MessagesView = () => {
             <div className="p-2 bg-[#202c33] border-t border-gray-700">
               <div className="flex gap-2 items-end">
                 {/* Botón de emoji */}
-                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <Popover open={showEmojiPickerMobile} onOpenChange={setShowEmojiPickerMobile}>
                   <PopoverTrigger asChild>
                     <Button
                       type="button"
@@ -802,7 +804,6 @@ const MessagesView = () => {
                       onEmojiClick={handleEmojiClick}
                       width={320}
                       height={400}
-                      theme="dark"
                     />
                   </PopoverContent>
                 </Popover>
@@ -985,7 +986,7 @@ const MessagesView = () => {
               <div className="p-3 sm:p-4 bg-[#202c33] border-t border-gray-700">
                 <div className="flex gap-2 sm:gap-3 items-end">
                   {/* Botón de emoji */}
-                  <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                  <Popover open={showEmojiPickerDesktop} onOpenChange={setShowEmojiPickerDesktop}>
                     <PopoverTrigger asChild>
                       <Button
                         type="button"
@@ -1001,7 +1002,6 @@ const MessagesView = () => {
                         onEmojiClick={handleEmojiClick}
                         width={350}
                         height={450}
-                        theme="dark"
                       />
                     </PopoverContent>
                   </Popover>
@@ -1029,8 +1029,8 @@ const MessagesView = () => {
                     disabled={!newMessage.trim() || isSending}
                     size="lg"
                     className={`h-[50px] sm:h-[60px] px-4 sm:px-6 transition-all duration-200 ${isSending
-                        ? 'bg-gray-600 cursor-not-allowed'
-                        : 'bg-[#00a884] hover:bg-[#06cf9c] active:scale-95'
+                      ? 'bg-gray-600 cursor-not-allowed'
+                      : 'bg-[#00a884] hover:bg-[#06cf9c] active:scale-95'
                       }`}
                   >
                     {isSending ? (
