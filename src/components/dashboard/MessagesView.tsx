@@ -804,6 +804,10 @@ const MessagesView = () => {
                       onEmojiClick={handleEmojiClick}
                       width={320}
                       height={400}
+                      searchPlaceholder="Buscar emoji..."
+                      previewConfig={{
+                        showPreview: false
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -1001,6 +1005,10 @@ const MessagesView = () => {
                         onEmojiClick={handleEmojiClick}
                         width={350}
                         height={450}
+                        searchPlaceholder="Buscar emoji..."
+                        previewConfig={{
+                          showPreview: false
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
