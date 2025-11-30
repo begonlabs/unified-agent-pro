@@ -784,8 +784,8 @@ const MessagesView = () => {
               </div>
             </div>
 
-            {/* Input de mensaje estilo WhatsApp */}
-            <div className="p-2 bg-[#202c33] border-t border-gray-700">
+            {/* Input de mensaje estilo claro con bordes redondeados */}
+            <div className="p-2 bg-white border-t border-gray-200">
               <div className="flex gap-2 items-end">
                 {/* Botón de emoji */}
                 <Popover open={showEmojiPickerMobile} onOpenChange={setShowEmojiPickerMobile}>
@@ -794,7 +794,7 @@ const MessagesView = () => {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-[44px] w-[44px] rounded-full hover:bg-[#2a3942] text-gray-400 hover:text-white"
+                      className="h-[44px] w-[44px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800"
                     >
                       <Smile className="h-6 w-6" />
                     </Button>
@@ -820,7 +820,7 @@ const MessagesView = () => {
                         sendMessage();
                       }
                     }}
-                    className="min-h-[44px] max-h-32 resize-none text-sm rounded-lg bg-[#2a3942] border-[#2a3942] text-white placeholder:text-gray-400 focus:border-[#00a884] focus:ring-[#00a884]"
+                    className="min-h-[44px] max-h-32 resize-none text-sm rounded-full border-gray-300 focus:border-blue-500 bg-white"
                     rows={1}
                   />
                 </div>
@@ -831,8 +831,8 @@ const MessagesView = () => {
                   disabled={!newMessage.trim() || isSending}
                   size="lg"
                   className={`h-[44px] w-[44px] rounded-full transition-all duration-200 ${isSending
-                    ? 'bg-gray-600 cursor-not-allowed'
-                    : 'bg-[#00a884] hover:bg-[#06cf9c] active:scale-95'
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                     }`}
                 >
                   {isSending ? (
@@ -982,8 +982,8 @@ const MessagesView = () => {
                 </div>
               </div>
 
-              {/* Input de mensaje estilo WhatsApp */}
-              <div className="p-3 sm:p-4 bg-[#202c33] border-t border-gray-700">
+              {/* Input de mensaje estilo claro con bordes redondeados */}
+              <div className="p-3 sm:p-4 bg-white border-t border-gray-200">
                 <div className="flex gap-2 sm:gap-3 items-end">
                   {/* Botón de emoji */}
                   <Popover open={showEmojiPickerDesktop} onOpenChange={setShowEmojiPickerDesktop}>
@@ -992,7 +992,7 @@ const MessagesView = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-[50px] sm:h-[60px] w-[50px] sm:w-[60px] rounded-full hover:bg-[#2a3942] text-gray-400 hover:text-white"
+                        className="h-[50px] sm:h-[60px] w-[50px] sm:w-[60px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800"
                       >
                         <Smile className="h-6 w-6 sm:h-7 sm:w-7" />
                       </Button>
@@ -1018,7 +1018,7 @@ const MessagesView = () => {
                           sendMessage();
                         }
                       }}
-                      className="min-h-[50px] sm:min-h-[60px] max-h-32 resize-none text-sm sm:text-base rounded-lg bg-[#2a3942] border-[#2a3942] text-white placeholder:text-gray-400 focus:border-[#00a884] focus:ring-[#00a884]"
+                      className="min-h-[50px] sm:min-h-[60px] max-h-32 resize-none text-sm sm:text-base rounded-full border-gray-300 focus:border-blue-500 bg-white"
                       rows={2}
                     />
                   </div>
@@ -1029,8 +1029,8 @@ const MessagesView = () => {
                     disabled={!newMessage.trim() || isSending}
                     size="lg"
                     className={`h-[50px] sm:h-[60px] px-4 sm:px-6 transition-all duration-200 ${isSending
-                      ? 'bg-gray-600 cursor-not-allowed'
-                      : 'bg-[#00a884] hover:bg-[#06cf9c] active:scale-95'
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                       }`}
                   >
                     {isSending ? (
