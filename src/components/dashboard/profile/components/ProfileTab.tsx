@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Building,
   Mail,
   Phone,
@@ -16,6 +23,7 @@ import {
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { Profile, ProfileFormData } from '../types';
+import { COUNTRIES } from '../data/countries';
 
 interface ProfileTabProps {
   profile: Profile;
@@ -152,14 +160,24 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <Flag className="h-3 w-3 sm:h-4 sm:w-4" />
                 País
               </Label>
-              <Input
-                id="country"
+              <Select
                 value={profileData.country}
-                onChange={(e) => onProfileDataChange({ ...profileData, country: e.target.value })}
+                onValueChange={(value) => onProfileDataChange({ ...profileData, country: value })}
                 disabled={!editingProfile}
-                className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
-                placeholder="US, MX, ES, etc."
-              />
+              >
+                <SelectTrigger
+                  className={`text-sm sm:text-base ${!editingProfile ? 'opacity-50' : ''} ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
+                >
+                  <SelectValue placeholder="Selecciona un país" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {editingProfile && (
