@@ -994,7 +994,7 @@ const MessagesView = () => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex-1 flex items-center justify-center" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '400px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
               <div className="text-center">
                 <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg max-w-md mx-auto">
                   <MessageCircle className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
