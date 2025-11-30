@@ -38,6 +38,28 @@ export const ClientCard: React.FC<ClientCardProps> = ({
     }
   };
 
+  // Helper function to translate status labels
+  const getStatusLabel = (status: string, customStatus?: string): string => {
+    if (customStatus) return customStatus;
+
+    const statusMap: Record<string, string> = {
+      'lead': 'Lead',
+      'prospect': 'Prospecto',
+      'client': 'Cliente',
+      'inactive': 'Inactivo'
+    };
+
+    return statusMap[status] || status;
+  };
+
+  // Helper function to normalize source display
+  const getSourceLabel = (source?: string): string => {
+    if (!source) return 'manual';
+    // Normalize whatsapp_green_api to whatsapp for display
+    if (source === 'whatsapp_green_api') return 'whatsapp';
+    return source;
+  };
+
   return (
     <Card className="hover:shadow-md transition-all duration-200">
       <CardContent className="p-3 sm:p-4">
@@ -52,13 +74,16 @@ export const ClientCard: React.FC<ClientCardProps> = ({
             <div className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                 <h3 className="font-semibold text-base sm:text-lg truncate">{client.name}</h3>
+                <div className="flex items-center gap-1 text-xs sm:text-sm">
+                  {getSourceIcon(getSourceLabel(client.source))}
+                  <span className="capitalize">{getSourceLabel(client.source)}</span>
+                </div>
                 <div className="flex items-center gap-1 sm:gap-2">
-                  {getSourceIcon(client.source)}
                   <Badge
                     className={`${CRMService.getStatusColor(client.status)} text-xs`}
                     variant="secondary"
                   >
-                    {client.custom_status || client.status}
+                    {getStatusLabel(client.status, client.custom_status)}
                   </Badge>
                 </div>
               </div>

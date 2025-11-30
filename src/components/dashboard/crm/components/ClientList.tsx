@@ -36,6 +36,14 @@ const getStatusLabel = (status: string, customStatus?: string): string => {
     return statusMap[status] || status;
 };
 
+// Helper function to normalize source display
+const getSourceLabel = (source?: string): string => {
+    if (!source) return 'manual';
+    // Normalize whatsapp_green_api to whatsapp for display
+    if (source === 'whatsapp_green_api') return 'whatsapp';
+    return source;
+};
+
 export const ClientList: React.FC<ClientListProps> = ({
     clients,
     onEdit,
@@ -118,8 +126,8 @@ export const ClientList: React.FC<ClientListProps> = ({
                             </TableCell>
                             <TableCell>
                                 <div className="flex items-center gap-1">
-                                    {getSourceIcon(client.source)}
-                                    <span className="text-xs capitalize">{client.source || 'manual'}</span>
+                                    {getSourceIcon(getSourceLabel(client.source))}
+                                    <span className="text-xs capitalize">{getSourceLabel(client.source)}</span>
                                 </div>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
