@@ -648,7 +648,7 @@ const MessagesView = () => {
         {mobileView === 'chat' && selectedConversation && (
           <div className="sm:hidden flex-1 flex flex-col bg-white">
             {/* Header fijo tipo WhatsApp */}
-            <div className="flex-shrink-0 flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+            <div className="flex-shrink-0 flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
@@ -713,7 +713,8 @@ const MessagesView = () => {
             </div>
 
             {/* Área de mensajes con scroll independiente */}
-            <div className="flex-1 overflow-y-auto p-3" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+            {/* Área de mensajes con scroll independiente */}
+            <div className="flex-1 overflow-y-auto p-3" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '400px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
               <div className="space-y-3 max-w-full">
                 {messages.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -817,7 +818,7 @@ const MessagesView = () => {
           {selectedConversation ? (
             <>
               {/* Chat Header fijo */}
-              <div className="flex-shrink-0 p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+              <div className="flex-shrink-0 p-3 sm:p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
@@ -885,7 +886,8 @@ const MessagesView = () => {
               </div>
 
               {/* Messages con scroll independiente */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+              {/* Messages con scroll independiente */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '400px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {messages.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-muted-foreground">
