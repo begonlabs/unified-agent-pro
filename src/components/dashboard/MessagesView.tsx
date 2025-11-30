@@ -786,7 +786,7 @@ const MessagesView = () => {
 
             {/* Input de mensaje estilo claro con bordes redondeados */}
             <div className="p-2 bg-white border-t border-gray-200">
-              <div className="flex gap-2 items-end">
+              <div className="flex gap-2 items-center">
                 {/* Botón de emoji */}
                 <Popover open={showEmojiPickerMobile} onOpenChange={setShowEmojiPickerMobile}>
                   <PopoverTrigger asChild>
@@ -794,9 +794,9 @@ const MessagesView = () => {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-[44px] w-[44px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                      className="h-[40px] w-[40px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 flex-shrink-0"
                     >
-                      <Smile className="h-6 w-6" />
+                      <Smile className="h-5 w-5" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent side="top" className="w-full p-0 border-none">
@@ -976,7 +976,6 @@ const MessagesView = () => {
                         </div>
                       </div>
                     ))
-
                   )}
                   <div className="messages-end-anchor" />
                 </div>
@@ -984,7 +983,7 @@ const MessagesView = () => {
 
               {/* Input de mensaje estilo claro con bordes redondeados */}
               <div className="p-3 sm:p-4 bg-white border-t border-gray-200">
-                <div className="flex gap-2 sm:gap-3 items-end">
+                <div className="flex gap-2 sm:gap-3 items-center">
                   {/* Botón de emoji */}
                   <Popover open={showEmojiPickerDesktop} onOpenChange={setShowEmojiPickerDesktop}>
                     <PopoverTrigger asChild>
@@ -992,9 +991,9 @@ const MessagesView = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-[50px] sm:h-[60px] w-[50px] sm:w-[60px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                        className="h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 flex-shrink-0"
                       >
-                        <Smile className="h-6 w-6 sm:h-7 sm:w-7" />
+                        <Smile className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent side="top" className="w-full p-0 border-none">
@@ -1029,8 +1028,8 @@ const MessagesView = () => {
                     disabled={!newMessage.trim() || isSending}
                     size="icon"
                     className={`h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full transition-all duration-200 ${isSending
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                       }`}
                   >
                     {isSending ? (
