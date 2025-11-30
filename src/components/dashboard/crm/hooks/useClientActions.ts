@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { parsePhoneNumber } from 'react-phone-number-input';
 import { useToast } from '@/hooks/use-toast';
 import { CRMService } from '../services/crmService';
 import { Client, User, ClientFormData } from '../types';
@@ -18,13 +19,13 @@ export const useClientActions = (user: User | null, clients: Client[], setClient
 
     try {
       console.log('🔄 Updating client status for user:', user.id, 'client:', clientId);
-      
+
       await CRMService.updateClientStatus(clientId, status, user.id);
 
-      setClients(prev => prev.map(client => 
+      setClients(prev => prev.map(client =>
         client.id === clientId ? { ...client, status } : client
       ));
-      
+
       toast({
         title: "Estado actualizado",
         description: "El estado del cliente ha sido actualizado",
@@ -43,12 +44,29 @@ export const useClientActions = (user: User | null, clients: Client[], setClient
     if (!user?.id) return;
 
     try {
-      const { countryCode, number } = CRMService.parsePhoneNumber(formData.phone);
-      
+      let phone = formData.phone;
+      let countryCode = '';
+
+      if (phone) {
+        try {
+          const parsed = parsePhoneNumber(phone);
+          if (parsed) {
+            phone = parsed.number; // E.164 format (e.g. +1305...)
+            countryCode = parsed.countryCallingCode ? `+${parsed.countryCallingCode}` : '';
+          }
+        } catch (e) {
+          console.error('Error parsing phone number:', e);
+          // Fallback to existing logic or just save as is if parsing fails
+          const parsedLegacy = CRMService.parsePhoneNumber(formData.phone);
+          countryCode = parsedLegacy.countryCode;
+          phone = parsedLegacy.number;
+        }
+      }
+
       const clientData = {
         name: formData.name,
         email: formData.email || null,
-        phone: number || null,
+        phone: phone || null,
         phone_country_code: countryCode,
         status: formData.status,
         custom_status: formData.custom_status || null,
@@ -61,17 +79,17 @@ export const useClientActions = (user: User | null, clients: Client[], setClient
 
       await CRMService.updateClient(clientId, clientData, user.id);
 
-      setClients(prev => prev.map(client => 
-        client.id === clientId 
-          ? { 
-              ...client, 
-              ...formData,
-              phone: number,
-              phone_country_code: countryCode
-            }
+      setClients(prev => prev.map(client =>
+        client.id === clientId
+          ? {
+            ...client,
+            ...formData,
+            phone: phone,
+            phone_country_code: countryCode
+          }
           : client
       ));
-      
+
       toast({
         title: "Cliente actualizado",
         description: "Los datos del cliente han sido actualizados correctamente",
