@@ -215,14 +215,59 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
     const contactName = contacts?.find(c => c.wa_id === senderPhoneNumber)?.profile?.name;
     const clientName = contactName || `WhatsApp ${senderPhoneNumber.slice(-4)}`;
 
+    // Extract country from phone number
+    let country = null;
+    try {
+      // Ensure it starts with +
+      const phoneWithPlus = senderPhoneNumber.startsWith('+') ? senderPhoneNumber : `+${senderPhoneNumber}`;
+
+      // Extract country code (1-3 digits after +)
+      const countryCodeMatch = phoneWithPlus.match(/^\+(\d{1,3})/);
+      if (countryCodeMatch) {
+        const countryCode = countryCodeMatch[1];
+        // Map common country codes to country names
+        const countryMap: Record<string, string> = {
+          '1': 'Estados Unidos',
+          '34': 'España',
+          '52': 'México',
+          '54': 'Argentina',
+          '55': 'Brasil',
+          '56': 'Chile',
+          '57': 'Colombia',
+          '58': 'Venezuela',
+          '51': 'Perú',
+          '53': 'Cuba',
+          '593': 'Ecuador',
+          '595': 'Paraguay',
+          '598': 'Uruguay',
+          '591': 'Bolivia',
+          '507': 'Panamá',
+          '506': 'Costa Rica',
+          '503': 'El Salvador',
+          '502': 'Guatemala',
+          '504': 'Honduras',
+          '505': 'Nicaragua',
+          '44': 'Reino Unido',
+          '33': 'Francia',
+          '49': 'Alemania',
+          '39': 'Italia',
+          '351': 'Portugal'
+        };
+        country = countryMap[countryCode] || null;
+      }
+    } catch (error) {
+      console.error('Error extracting country from phone:', error);
+    }
+
     const { data: newClient, error: clientCreateError } = await supabase
       .from('crm_clients')
       .insert({
         user_id: channel.user_id,
         name: clientName,
         phone: senderPhoneNumber,
-        status: 'active',
-        source: 'whatsapp'
+        status: 'lead',
+        source: 'whatsapp',
+        country: country
       })
       .select()
       .single();

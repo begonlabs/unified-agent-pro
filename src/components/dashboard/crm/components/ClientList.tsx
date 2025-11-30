@@ -22,6 +22,20 @@ interface ClientListProps {
     onStatusChange: (clientId: string, status: string) => void;
 }
 
+// Helper function to translate status labels
+const getStatusLabel = (status: string, customStatus?: string): string => {
+    if (customStatus) return customStatus;
+
+    const statusMap: Record<string, string> = {
+        'lead': 'Lead',
+        'prospect': 'Prospecto',
+        'client': 'Cliente',
+        'inactive': 'Inactivo'
+    };
+
+    return statusMap[status] || status;
+};
+
 export const ClientList: React.FC<ClientListProps> = ({
     clients,
     onEdit,
@@ -98,7 +112,7 @@ export const ClientList: React.FC<ClientListProps> = ({
                                         className={`${CRMService.getStatusColor(client.status)} text-xs`}
                                         variant="secondary"
                                     >
-                                        {client.custom_status || client.status}
+                                        {getStatusLabel(client.status, client.custom_status)}
                                     </Badge>
                                 </div>
                             </TableCell>

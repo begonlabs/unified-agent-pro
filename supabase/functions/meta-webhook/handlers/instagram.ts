@@ -636,7 +636,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           name: profileInfo.name,
           phone: realUserId,
           avatar_url: profileInfo.avatar_url,
-          status: 'active',
+          status: 'lead',
           source: 'instagram'
         })
         .select()

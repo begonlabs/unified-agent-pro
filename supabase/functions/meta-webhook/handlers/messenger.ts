@@ -478,7 +478,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         user_id: channel.user_id,
         name: profileInfo.name,
         phone: realUserId,
-        status: 'active',
+        status: 'lead',
         source: 'facebook',
         avatar_url: profileInfo.avatar_url
       };

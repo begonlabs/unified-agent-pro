@@ -224,14 +224,62 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 event.senderData?.chatName ||
                 `WhatsApp User ${senderId.slice(-4)}`;
 
+            // Extract country from phone number
+            let country = null;
+            try {
+                // Remove @s.whatsapp.net or @c.us suffix if present
+                const cleanPhone = senderId.replace(/@s\.whatsapp\.net|@c\.us/g, '');
+                // Ensure it starts with +
+                const phoneWithPlus = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
+
+                // Try to parse the phone number (using a simple regex approach since we can't import libraries in edge functions)
+                // Extract country code (1-3 digits after +)
+                const countryCodeMatch = phoneWithPlus.match(/^\+(\d{1,3})/);
+                if (countryCodeMatch) {
+                    const countryCode = countryCodeMatch[1];
+                    // Map common country codes to country names
+                    const countryMap: Record<string, string> = {
+                        '1': 'Estados Unidos',
+                        '34': 'España',
+                        '52': 'México',
+                        '54': 'Argentina',
+                        '55': 'Brasil',
+                        '56': 'Chile',
+                        '57': 'Colombia',
+                        '58': 'Venezuela',
+                        '51': 'Perú',
+                        '53': 'Cuba',
+                        '593': 'Ecuador',
+                        '595': 'Paraguay',
+                        '598': 'Uruguay',
+                        '591': 'Bolivia',
+                        '507': 'Panamá',
+                        '506': 'Costa Rica',
+                        '503': 'El Salvador',
+                        '502': 'Guatemala',
+                        '504': 'Honduras',
+                        '505': 'Nicaragua',
+                        '44': 'Reino Unido',
+                        '33': 'Francia',
+                        '49': 'Alemania',
+                        '39': 'Italia',
+                        '351': 'Portugal'
+                    };
+                    country = countryMap[countryCode] || null;
+                }
+            } catch (error) {
+                console.error('Error extracting country from phone:', error);
+            }
+
             const { data: newClient, error: clientCreateError } = await supabase
                 .from('crm_clients')
                 .insert({
                     user_id: channel.user_id,
                     name: clientName,
                     phone: senderId,
-                    status: 'active',
-                    source: 'whatsapp_green_api',
+                    status: 'lead',
+                    source: 'whatsapp',
+                    country: country,
                     avatar_url: contactInfo.avatar  // Save avatar immediately for new clients
                 })
                 .select()
