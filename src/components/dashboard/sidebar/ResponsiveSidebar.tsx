@@ -1,5 +1,5 @@
 import React from 'react';
-import { 
+import {
   useSidebarNavigation,
   useSidebarState,
   SidebarContent,
@@ -13,6 +13,12 @@ const ResponsiveSidebar: React.FC<SidebarProps> = ({
   onSignOut,
   user
 }) => {
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   const {
     isAdmin,
     adminLoading,
@@ -44,6 +50,8 @@ const ResponsiveSidebar: React.FC<SidebarProps> = ({
           onAdminAccess={handleAdminAccess}
           onViewChange={handleViewChange}
           isMobile={false}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapse}
         />
       </div>
     );

@@ -7,12 +7,14 @@ interface SidebarNavigationProps {
   currentView: string;
   onViewChange: (view: string) => void;
   isMobile?: boolean;
+  isCollapsed?: boolean;
 }
 
 export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   currentView,
   onViewChange,
-  isMobile = false
+  isMobile = false,
+  isCollapsed = false
 }) => {
   const menuItems = SidebarService.getMenuItems();
 
@@ -24,18 +26,19 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
           <Button
             key={item.id}
             variant={currentView === item.id ? "default" : "ghost"}
-            className={`w-full justify-start gap-2 sm:gap-3 ${
-              isMobile 
-                ? 'text-sm h-9' 
+            className={`w-full ${isCollapsed ? 'justify-center' : 'justify-start'} gap-2 sm:gap-3 ${isMobile
+                ? 'text-sm h-9'
                 : 'text-base h-11'
-            }`}
+              }`}
             onClick={() => onViewChange(item.id)}
           >
             <Icon className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-            <span className={isMobile ? 'hidden sm:inline' : ''}>
-              {item.label}
-            </span>
-            {isMobile && (
+            {!isCollapsed && (
+              <span className={isMobile ? 'hidden sm:inline' : ''}>
+                {item.label}
+              </span>
+            )}
+            {isMobile && !isCollapsed && (
               <span className="sm:hidden">
                 {item.shortLabel || item.label.split(' ')[0]}
               </span>
