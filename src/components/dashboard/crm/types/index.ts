@@ -58,6 +58,8 @@ export interface ClientFiltersProps {
   onExportCSV: () => void;
   onExportExcel: () => void;
   filteredClientsCount: number;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export interface ClientStatsProps {
@@ -79,5 +81,12 @@ export interface CRMViewProps {
 
 export type ClientStatus = 'lead' | 'prospect' | 'client' | 'inactive';
 export type ClientSource = 'manual' | 'whatsapp' | 'facebook' | 'instagram';
+export type ViewMode = 'grid' | 'list';
+
+export interface ClientListProps {
+  clients: Client[];
+  onEdit: (client: Client) => void;
+  onStatusChange: (clientId: string, status: string) => void;
+}
 
 export type { User };

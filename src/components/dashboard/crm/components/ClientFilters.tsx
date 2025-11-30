@@ -2,15 +2,17 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download } from 'lucide-react';
-import { ClientFiltersProps } from '../types';
+import { Search, Download, LayoutGrid, List } from 'lucide-react';
+import { ClientFiltersProps, ViewMode } from '../types';
 
 export const ClientFilters: React.FC<ClientFiltersProps> = ({
   filters,
   onFiltersChange,
   onExportCSV,
   onExportExcel,
-  filteredClientsCount
+  filteredClientsCount,
+  viewMode,
+  onViewModeChange
 }) => {
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
@@ -23,7 +25,7 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
           className="pl-8 sm:pl-10 bg-gray-50 text-sm sm:text-base"
         />
       </div>
-      
+
       <div className="flex gap-2 sm:gap-4">
         <Select value={filters.filterStatus} onValueChange={(value) => onFiltersChange({ ...filters, filterStatus: value })}>
           <SelectTrigger className="w-full sm:w-32 lg:w-40">
@@ -37,7 +39,7 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
             <SelectItem value="inactive">Inactivo</SelectItem>
           </SelectContent>
         </Select>
-        
+
         <Select value={filters.filterSource} onValueChange={(value) => onFiltersChange({ ...filters, filterSource: value })}>
           <SelectTrigger className="w-full sm:w-32 lg:w-40">
             <SelectValue placeholder="Origen" />
@@ -50,6 +52,26 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
             <SelectItem value="instagram">Instagram</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* View mode toggle */}
+        <div className="flex gap-1 border rounded-md p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => onViewModeChange('grid')}
+            className="h-7 px-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => onViewModeChange('list')}
+            className="h-7 px-2"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
 
         {/* Botón de exportación */}
         <div className="flex gap-2">

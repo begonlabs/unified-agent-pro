@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users } from 'lucide-react';
@@ -13,28 +13,33 @@ import { CRMService } from './services/crmService';
 import { ClientStats } from './components/ClientStats';
 import { ClientFilters } from './components/ClientFilters';
 import { ClientCard } from './components/ClientCard';
+import { ClientList } from './components/ClientList';
 import { EditClientDialog } from './components/EditClientDialog';
+import { ViewMode } from './types';
 
 const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   console.log('CRMView: Component is rendering!');
-  
+
   // Obtener usuario de auth si no se pasa como prop
   const { user: authUser } = useAuth();
   const currentUser = propUser || authUser;
-  
+
   // Hooks principales
   const { clients, setClients, loading } = useClients(currentUser);
   const { filters, filteredClients, updateFilters } = useClientFilters(clients);
   const { updateClientStatus, updateClient } = useClientActions(currentUser, clients, setClients);
   const { exportToCSV, exportToExcel } = useExport();
-  const { 
-    isEditDialogOpen, 
-    editingClient, 
-    formData, 
-    openEditDialog, 
-    closeEditDialog, 
-    updateFormData 
+  const {
+    isEditDialogOpen,
+    editingClient,
+    formData,
+    openEditDialog,
+    closeEditDialog,
+    updateFormData
   } = useClientForm();
+
+  // View mode state
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   // Calcular estadísticas
   const clientStats = CRMService.calculateStats(clients);
@@ -42,7 +47,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   // Handlers
   const handleExportCSV = () => exportToCSV(filteredClients);
   const handleExportExcel = () => exportToExcel(filteredClients);
-  
+
   const handleSaveClient = async () => {
     if (editingClient) {
       await updateClient(editingClient.id, formData);
@@ -80,6 +85,8 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
               onExportCSV={handleExportCSV}
               onExportExcel={handleExportExcel}
               filteredClientsCount={filteredClients.length}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
           </CardHeader>
 
@@ -104,16 +111,26 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-3 sm:gap-4 p-3 sm:p-6">
-                  {filteredClients.map((client) => (
-                    <ClientCard
-                      key={client.id}
-                      client={client}
+                viewMode === 'grid' ? (
+                  <div className="grid gap-3 sm:gap-4 p-3 sm:p-6">
+                    {filteredClients.map((client) => (
+                      <ClientCard
+                        key={client.id}
+                        client={client}
+                        onEdit={openEditDialog}
+                        onStatusChange={updateClientStatus}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 sm:p-6">
+                    <ClientList
+                      clients={filteredClients}
                       onEdit={openEditDialog}
                       onStatusChange={updateClientStatus}
                     />
-                  ))}
-                </div>
+                  </div>
+                )
               )}
             </ScrollArea>
           </CardContent>
