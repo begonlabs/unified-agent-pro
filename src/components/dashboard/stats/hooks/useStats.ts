@@ -4,7 +4,7 @@ import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { StatsService } from '../services/statsService';
 import { StatsData, ChartData, User } from '../types';
 
-export const useStats = (user: User | null) => {
+export const useStats = (user: User | null, timeRange: string = '7d') => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<StatsData>({
     totalMessages: 0,
@@ -46,13 +46,13 @@ export const useStats = (user: User | null) => {
 
     try {
       setLoading(true);
-      console.log('🔍 Fetching stats for user:', user.id);
-      
-      const { stats: fetchedStats, chartData: fetchedChartData } = await StatsService.fetchUserStats(user.id);
-      
+      console.log('🔍 Fetching stats for user:', user.id, 'Time range:', timeRange);
+
+      const { stats: fetchedStats, chartData: fetchedChartData } = await StatsService.fetchUserStats(user.id, timeRange);
+
       setStats(fetchedStats);
       setChartData(fetchedChartData);
-      
+
     } catch (error: unknown) {
       const errorInfo = StatsService.handleSupabaseError(error, "No se pudieron cargar las estadísticas");
       toast({
@@ -60,7 +60,7 @@ export const useStats = (user: User | null) => {
         description: errorInfo.description,
         variant: "destructive",
       });
-      
+
       // Reset to empty state on error
       setStats({
         totalMessages: 0,
@@ -80,13 +80,13 @@ export const useStats = (user: User | null) => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, toast]);
+  }, [user?.id, timeRange, toast]);
 
   useEffect(() => {
     if (user?.id) {
       fetchStats();
     }
-  }, [user?.id, fetchStats]);
+  }, [user?.id, timeRange, fetchStats]);
 
   // Listen for data refresh events
   useRefreshListener(
@@ -97,10 +97,10 @@ export const useStats = (user: User | null) => {
     'stats'
   );
 
-  return { 
-    stats, 
-    chartData, 
-    loading, 
-    fetchStats 
+  return {
+    stats,
+    chartData,
+    loading,
+    fetchStats
   };
 };

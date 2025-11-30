@@ -21,8 +21,9 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
   const user = propUser || authUser;
 
   // Hooks
-  const { stats, chartData, loading } = useStats(user);
+  // Hooks
   const { timeRange, setTimeRange, timeRangeOptions } = useTimeRange();
+  const { stats, chartData, loading } = useStats(user, timeRange);
 
   // Calculate automation data for pie chart
   const automationData = StatsService.calculateAutomationData(stats);
