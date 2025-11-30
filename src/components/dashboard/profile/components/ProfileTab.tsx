@@ -144,7 +144,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 defaultCountry="US"
                 international
                 countryCallingCodeEditable={false}
-                className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${editingProfile ? 'border-blue-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500' : ''}`}
+                className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${!editingProfile ? 'opacity-50 cursor-not-allowed' : ''} ${editingProfile ? 'border-blue-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500' : ''}`}
               />
             </div>
             <div className="space-y-2">
