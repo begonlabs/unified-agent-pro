@@ -820,7 +820,7 @@ const MessagesView = () => {
                         sendMessage();
                       }
                     }}
-                    className="min-h-[44px] max-h-32 resize-none text-sm rounded-full border-gray-300 focus:border-blue-500 bg-white"
+                    className="min-h-[40px] max-h-32 resize-none text-sm rounded-full border-gray-300 focus:border-blue-500 bg-white py-2"
                     rows={1}
                   />
                 </div>
@@ -829,8 +829,8 @@ const MessagesView = () => {
                 <Button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || isSending}
-                  size="lg"
-                  className={`h-[44px] w-[44px] rounded-full transition-all duration-200 ${isSending
+                  size="icon"
+                  className={`h-[40px] w-[40px] rounded-full transition-all duration-200 ${isSending
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                     }`}
@@ -1018,8 +1018,8 @@ const MessagesView = () => {
                           sendMessage();
                         }
                       }}
-                      className="min-h-[50px] sm:min-h-[60px] max-h-32 resize-none text-sm sm:text-base rounded-full border-gray-300 focus:border-blue-500 bg-white"
-                      rows={2}
+                      className="min-h-[44px] sm:min-h-[48px] max-h-32 resize-none text-sm sm:text-base rounded-full border-gray-300 focus:border-blue-500 bg-white py-2"
+                      rows={1}
                     />
                   </div>
 
@@ -1027,22 +1027,16 @@ const MessagesView = () => {
                   <Button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || isSending}
-                    size="lg"
-                    className={`h-[50px] sm:h-[60px] px-4 sm:px-6 transition-all duration-200 ${isSending
+                    size="icon"
+                    className={`h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full transition-all duration-200 ${isSending
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                       }`}
                   >
                     {isSending ? (
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent" />
-                        <span className="text-xs sm:text-sm">Enviando...</span>
-                      </div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                     ) : (
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="text-xs sm:text-sm hidden sm:inline">Enviar</span>
-                      </div>
+                      <Send className="h-5 w-5" />
                     )}
                   </Button>
                 </div>
