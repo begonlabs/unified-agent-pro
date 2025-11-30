@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { EditClientDialogProps } from '../types';
+import { COUNTRIES_ES } from '@/utils/countries';
 
 export const EditClientDialog: React.FC<EditClientDialogProps> = ({
   isOpen,
@@ -64,13 +65,21 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label htmlFor="edit-country" className="text-sm sm:text-base">País</Label>
-              <Input
-                id="edit-country"
+              <Select
                 value={formData.country}
-                onChange={(e) => onFormChange({ ...formData, country: e.target.value })}
-                placeholder="País del cliente"
-                className="text-sm sm:text-base"
-              />
+                onValueChange={(value) => onFormChange({ ...formData, country: value })}
+              >
+                <SelectTrigger className="text-sm sm:text-base">
+                  <SelectValue placeholder="Selecciona un país" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {COUNTRIES_ES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="edit-city" className="text-sm sm:text-base">Ciudad</Label>
