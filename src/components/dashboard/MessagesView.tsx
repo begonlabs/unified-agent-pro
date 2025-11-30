@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData, Categories } from 'emoji-picker-react';
 import {
   Search,
   Phone,
@@ -808,6 +808,44 @@ const MessagesView = () => {
                       previewConfig={{
                         showPreview: false
                       }}
+                      categories={[
+                        {
+                          category: Categories.SUGGESTED,
+                          name: "Usados Frecuentemente"
+                        },
+                        {
+                          category: Categories.SMILEYS_PEOPLE,
+                          name: "Caritas y Personas"
+                        },
+                        {
+                          category: Categories.ANIMALS_NATURE,
+                          name: "Animales y Naturaleza"
+                        },
+                        {
+                          category: Categories.FOOD_DRINK,
+                          name: "Comida y Bebida"
+                        },
+                        {
+                          category: Categories.TRAVEL_PLACES,
+                          name: "Viajes y Lugares"
+                        },
+                        {
+                          category: Categories.ACTIVITIES,
+                          name: "Actividades"
+                        },
+                        {
+                          category: Categories.OBJECTS,
+                          name: "Objetos"
+                        },
+                        {
+                          category: Categories.SYMBOLS,
+                          name: "Símbolos"
+                        },
+                        {
+                          category: Categories.FLAGS,
+                          name: "Banderas"
+                        }
+                      ]}
                     />
                   </PopoverContent>
                 </Popover>
@@ -1009,6 +1047,44 @@ const MessagesView = () => {
                         previewConfig={{
                           showPreview: false
                         }}
+                        categories={[
+                          {
+                            category: Categories.SUGGESTED,
+                            name: "Usados Frecuentemente"
+                          },
+                          {
+                            category: Categories.SMILEYS_PEOPLE,
+                            name: "Caritas y Personas"
+                          },
+                          {
+                            category: Categories.ANIMALS_NATURE,
+                            name: "Animales y Naturaleza"
+                          },
+                          {
+                            category: Categories.FOOD_DRINK,
+                            name: "Comida y Bebida"
+                          },
+                          {
+                            category: Categories.TRAVEL_PLACES,
+                            name: "Viajes y Lugares"
+                          },
+                          {
+                            category: Categories.ACTIVITIES,
+                            name: "Actividades"
+                          },
+                          {
+                            category: Categories.OBJECTS,
+                            name: "Objetos"
+                          },
+                          {
+                            category: Categories.SYMBOLS,
+                            name: "Símbolos"
+                          },
+                          {
+                            category: Categories.FLAGS,
+                            name: "Banderas"
+                          }
+                        ]}
                       />
                     </PopoverContent>
                   </Popover>
