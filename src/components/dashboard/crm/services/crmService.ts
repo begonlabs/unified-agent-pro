@@ -128,12 +128,12 @@ export class CRMService {
    */
   static parsePhoneNumber(phoneNumber: string): { countryCode: string; number: string } {
     if (!phoneNumber) return { countryCode: '+1', number: '' };
-    
+
     const match = phoneNumber.match(/^(\+\d{1,4})\s?(.*)$/);
     if (match) {
       return { countryCode: match[1], number: match[2] };
     }
-    
+
     return { countryCode: '+1', number: phoneNumber };
   }
 
@@ -161,11 +161,14 @@ export class CRMService {
   static filterClients(clients: Client[], filters: { searchTerm: string; filterStatus: string; filterSource: string }): Client[] {
     return clients.filter(client => {
       const matchesSearch = client.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-                           client.email?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-                           client.phone?.includes(filters.searchTerm);
+        client.email?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        client.phone?.includes(filters.searchTerm);
       const matchesStatus = filters.filterStatus === 'all' || client.status === filters.filterStatus;
-      const matchesSource = filters.filterSource === 'all' || client.source === filters.filterSource;
-      
+
+      // Normalize source for filtering: treat whatsapp_green_api as whatsapp
+      const normalizedClientSource = client.source === 'whatsapp_green_api' ? 'whatsapp' : client.source;
+      const matchesSource = filters.filterSource === 'all' || normalizedClientSource === filters.filterSource;
+
       return matchesSearch && matchesStatus && matchesSource;
     });
   }
