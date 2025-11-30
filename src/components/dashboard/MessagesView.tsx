@@ -618,7 +618,7 @@ const MessagesView = () => {
                           {/* Información de contacto */}
                           <div className="mb-2">
                             <p className="text-xs sm:text-sm text-gray-600 truncate">
-                              {conversation.channel === 'whatsapp' && conversation.crm_clients?.phone ? (
+                              {conversation.crm_clients?.phone ? (
                                 (() => {
                                   const formatted = formatWhatsAppNumber(conversation.crm_clients.phone || '');
                                   return formatted ? (
@@ -706,7 +706,7 @@ const MessagesView = () => {
                       {getChannelIcon(selectedConv?.channel || '')}
                       <span className="capitalize">{selectedConv?.channel}</span>
                     </div>
-                    {selectedConv?.channel === 'whatsapp' && selectedConv?.crm_clients?.phone && (
+                    {selectedConv?.crm_clients?.phone && (
                       (() => {
                         const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
                         return formatted ? (
@@ -950,21 +950,17 @@ const MessagesView = () => {
                           <span className="truncate">{selectedConv.crm_clients.email}</span>
                         )}
                         {selectedConv?.crm_clients?.phone && (
-                          selectedConv.channel === 'whatsapp' ? (
-                            (() => {
-                              const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
-                              return formatted ? (
-                                <span className="flex items-center gap-1">
-                                  <span>{formatted.flag}</span>
-                                  <span>{formatted.formattedNumber}</span>
-                                </span>
-                              ) : (
-                                <span>{selectedConv.crm_clients.phone}</span>
-                              );
-                            })()
-                          ) : (
-                            <span>{selectedConv.crm_clients.phone}</span>
-                          )
+                          (() => {
+                            const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
+                            return formatted ? (
+                              <span className="flex items-center gap-1">
+                                <span>{formatted.flag}</span>
+                                <span>{formatted.formattedNumber}</span>
+                              </span>
+                            ) : (
+                              <span>{selectedConv.crm_clients.phone}</span>
+                            );
+                          })()
                         )}
                         {/* Estado de conexión de mensajes */}
                         <div className="flex items-center gap-1">

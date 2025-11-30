@@ -20,10 +20,14 @@ export const useClientForm = () => {
 
   const openEditDialog = (client: Client) => {
     setEditingClient(client);
-    const fullPhone = client.phone_country_code && client.phone 
-      ? `${client.phone_country_code} ${client.phone}`
-      : client.phone || '';
-    
+    // Check if phone already has country code (starts with +)
+    let fullPhone = client.phone || '';
+
+    // Only add country code if phone doesn't start with + and we have a country code
+    if (client.phone && !client.phone.startsWith('+') && client.phone_country_code) {
+      fullPhone = `${client.phone_country_code} ${client.phone}`;
+    }
+
     setFormData({
       name: client.name,
       email: client.email || '',
