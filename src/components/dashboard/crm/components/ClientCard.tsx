@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ClientCardProps } from '../types';
 import { CRMService } from '../services/crmService';
+import { formatWhatsAppNumber } from '@/utils/phoneNumberUtils';
 
 export const ClientCard: React.FC<ClientCardProps> = ({
   client,
@@ -72,10 +73,22 @@ export const ClientCard: React.FC<ClientCardProps> = ({
                   <div className="flex items-center gap-1">
                     <Phone className="h-3 w-3 flex-shrink-0" />
                     <span className="flex items-center gap-1">
-                      {client.phone_country_code && (
-                        <span className="text-xs">{client.phone_country_code}</span>
-                      )}
-                      {client.phone}
+                      {(() => {
+                        const formatted = formatWhatsAppNumber(client.phone);
+                        return formatted ? (
+                          <>
+                            <span>{formatted.flag}</span>
+                            <span>{formatted.formattedNumber}</span>
+                          </>
+                        ) : (
+                          <>
+                            {client.phone_country_code && (
+                              <span className="text-xs">{client.phone_country_code}</span>
+                            )}
+                            {client.phone}
+                          </>
+                        );
+                      })()}
                     </span>
                   </div>
                 )}

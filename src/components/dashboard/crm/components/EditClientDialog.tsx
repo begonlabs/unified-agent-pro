@@ -33,7 +33,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               className="text-sm sm:text-base"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="edit-email" className="text-sm sm:text-base">Email</Label>
             <Input
@@ -45,7 +45,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               className="text-sm sm:text-base"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="edit-phone" className="text-sm sm:text-base">Teléfono</Label>
             <PhoneInput
@@ -56,9 +56,11 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               international
               countryCallingCodeEditable={false}
               className="text-sm sm:text-base"
+            // Ensure we handle cases where the phone number might not be in E.164 format initially
+            // or comes from a source like Facebook without a clear country code
             />
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label htmlFor="edit-country" className="text-sm sm:text-base">País</Label>
@@ -81,7 +83,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="edit-address" className="text-sm sm:text-base">Dirección</Label>
             <Input
@@ -92,12 +94,12 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               className="text-sm sm:text-base"
             />
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label htmlFor="edit-status" className="text-sm sm:text-base">Estado</Label>
-              <Select 
-                value={formData.status} 
+              <Select
+                value={formData.status}
                 onValueChange={(value) => onFormChange({ ...formData, status: value })}
               >
                 <SelectTrigger className="text-sm sm:text-base">
@@ -122,7 +124,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="edit-notes" className="text-sm sm:text-base">Notas</Label>
             <textarea
@@ -135,7 +137,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
             />
           </div>
         </div>
-        
+
         <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 pt-3 sm:pt-4">
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto text-sm sm:text-base">
             Cancelar
