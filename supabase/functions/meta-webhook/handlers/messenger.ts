@@ -413,12 +413,26 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       logic: isEcho ? 'echo: using recipient as user' : 'normal: using sender as user'
     });
 
-    const { data: existingClient, error: clientSearchError } = await supabase
+    const { data: existingClientByPsid, error: psidSearchError } = await supabase
       .from('crm_clients')
       .select('*')
       .eq('user_id', channel.user_id)
-      .eq('phone', realUserId)
+      .eq('metadata->>facebook_psid', realUserId)
       .single();
+
+    let existingClient = existingClientByPsid;
+
+    // Fallback: search by phone (legacy behavior)
+    if (!existingClient) {
+      const { data: existingClientByPhone, error: phoneSearchError } = await supabase
+        .from('crm_clients')
+        .select('*')
+        .eq('user_id', channel.user_id)
+        .eq('phone', realUserId)
+        .single();
+
+      existingClient = existingClientByPhone;
+    }
 
     // Fetch profile info if needed (new client or missing info)
     let profileInfo = { name: `Facebook User ${realUserId.slice(-4)}`, avatar_url: undefined };
@@ -441,34 +455,44 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       console.warn('⚠️ Skipping profile fetch: page_access_token is missing from channel_config');
     }
 
-    if (existingClient && !clientSearchError) {
+    if (existingClient) {
       client = existingClient;
       console.log('✅ Found existing client:', client.id);
+
+      // Update metadata with PSID if missing (migration path)
+      const currentMetadata = client.metadata || {};
+      let needsUpdate = false;
+      const updateData: any = {};
+
+      if (!currentMetadata.facebook_psid) {
+        console.log('🔄 Adding facebook_psid to client metadata');
+        updateData.metadata = { ...currentMetadata, facebook_psid: realUserId };
+        needsUpdate = true;
+      }
 
       // Update if name is generic or avatar is missing
       const isGenericName = client.name.includes('Facebook User');
       if ((isGenericName || !client.avatar_url) && profileInfo.name && !profileInfo.name.includes('Facebook User')) {
         console.log('🔄 Updating client profile info:', profileInfo);
-        const updateData: any = {
-          name: profileInfo.name,
-          avatar_url: profileInfo.avatar_url || client.avatar_url
+        updateData.name = profileInfo.name;
+        updateData.avatar_url = profileInfo.avatar_url || client.avatar_url;
+        needsUpdate = true;
+      }
+
+      // Save error to metadata if profile fetch failed
+      if (profileInfo.error) {
+        updateData.metadata = {
+          ...(updateData.metadata || currentMetadata),
+          profile_fetch_error: profileInfo.error,
+          error_timestamp: new Date().toISOString()
         };
-        // Save error to metadata if profile fetch failed
-        if (profileInfo.error) {
-          updateData.metadata = { ...client.metadata, profile_fetch_error: profileInfo.error, error_timestamp: new Date().toISOString() };
-        }
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
         await supabase
           .from('crm_clients')
           .update(updateData)
-          .eq('id', client.id);
-      } else if (profileInfo.error) {
-        // If no update needed but there was an error, save it anyway
-        console.log('⚠️ Saving profile fetch error to client metadata');
-        await supabase
-          .from('crm_clients')
-          .update({
-            metadata: { ...client.metadata, profile_fetch_error: profileInfo.error, error_timestamp: new Date().toISOString() }
-          })
           .eq('id', client.id);
       }
 
@@ -480,11 +504,15 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         phone: realUserId,
         status: 'lead',
         source: 'facebook',
-        avatar_url: profileInfo.avatar_url
+        avatar_url: profileInfo.avatar_url,
+        metadata: {
+          facebook_psid: realUserId
+        }
       };
       // Save error to metadata if profile fetch failed
       if (profileInfo.error) {
-        clientData.metadata = { profile_fetch_error: profileInfo.error, error_timestamp: new Date().toISOString() };
+        clientData.metadata.profile_fetch_error = profileInfo.error;
+        clientData.metadata.error_timestamp = new Date().toISOString();
       }
       const { data: newClient, error: clientCreateError } = await supabase
         .from('crm_clients')

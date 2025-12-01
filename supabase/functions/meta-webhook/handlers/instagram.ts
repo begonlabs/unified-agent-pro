@@ -565,12 +565,26 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       logic: isEcho ? 'echo: using pageId as user' : 'normal: using sender as user'
     });
 
-    const { data: existingClient, error: clientSearchError } = await supabase
+    const { data: existingClientById, error: idSearchError } = await supabase
       .from('crm_clients')
       .select('*')
       .eq('user_id', channel.user_id)
-      .eq('phone', realUserId)
+      .eq('metadata->>instagram_id', realUserId)
       .single();
+
+    let existingClient = existingClientById;
+
+    // Fallback: search by phone (legacy behavior)
+    if (!existingClient) {
+      const { data: existingClientByPhone, error: phoneSearchError } = await supabase
+        .from('crm_clients')
+        .select('*')
+        .eq('user_id', channel.user_id)
+        .eq('phone', realUserId)
+        .single();
+
+      existingClient = existingClientByPhone;
+    }
 
     // Fetch profile info if needed (new client or missing info)
     let profileInfo = { name: `Instagram User ${realUserId.slice(-4)}`, avatar_url: undefined };
@@ -592,41 +606,62 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       console.warn('⚠️ Skipping Instagram profile fetch: access_token is missing from channel_config');
     }
 
-    if (existingClient && !clientSearchError) {
+    if (existingClient) {
       client = existingClient;
       console.log('✅ Found existing client:', client.id);
 
+      // Update metadata with Instagram ID if missing (migration path)
+      const currentMetadata = client.metadata || {};
+      let needsUpdate = false;
+      const updateData: any = {};
+
+      if (!currentMetadata.instagram_id) {
+        console.log('🔄 Adding instagram_id to client metadata');
+        updateData.metadata = { ...currentMetadata, instagram_id: realUserId };
+        needsUpdate = true;
+      }
+
       // Update client info if name is generic or avatar is missing
-      const needsUpdate = (
+      const shouldUpdateProfile = (
         (!client.name || client.name.startsWith('Instagram User')) ||
         !client.avatar_url
       );
 
-      if (needsUpdate && profileInfo) {
+      if (shouldUpdateProfile && profileInfo) {
         console.log('📝 Updating Instagram client with fresh profile data:', {
           client_id: client.id,
           old_name: client.name,
           new_name: profileInfo.name,
           has_avatar: !!profileInfo.avatar_url
         });
+        updateData.name = profileInfo.name;
+        updateData.avatar_url = profileInfo.avatar_url || client.avatar_url;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        // Preserve existing metadata if we're updating it
+        if (updateData.metadata) {
+          updateData.metadata = { ...currentMetadata, ...updateData.metadata };
+        }
 
         const { error: updateError } = await supabase
           .from('crm_clients')
           .update({
-            name: profileInfo.name,
-            avatar_url: profileInfo.avatar_url || client.avatar_url,
+            ...updateData,
             updated_at: new Date().toISOString()
           })
           .eq('id', client.id);
 
         if (!updateError) {
-          client.name = profileInfo.name;
-          client.avatar_url = profileInfo.avatar_url || client.avatar_url;
-          console.log('✅ Instagram client updated with profile data');
+          if (updateData.name) client.name = updateData.name;
+          if (updateData.avatar_url) client.avatar_url = updateData.avatar_url;
+          console.log('✅ Instagram client updated with new data');
         } else {
           console.error('❌ Failed to update Instagram client:', updateError);
         }
       }
+
     } else {
       // Create new client with profile info
       const { data: newClient, error: clientCreateError } = await supabase
@@ -637,7 +672,10 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           phone: realUserId,
           avatar_url: profileInfo.avatar_url,
           status: 'lead',
-          source: 'instagram'
+          source: 'instagram',
+          metadata: {
+            instagram_id: realUserId
+          }
         })
         .select()
         .single();
