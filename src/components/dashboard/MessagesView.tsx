@@ -764,19 +764,23 @@ const MessagesView = () => {
                       {getChannelIcon(selectedConv?.channel || '')}
                       <span className="capitalize">{selectedConv?.channel}</span>
                     </div>
-                    {selectedConv?.crm_clients?.phone && (
-                      (() => {
-                        const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
-                        return formatted ? (
-                          <span className="flex items-center gap-1">
-                            <span>{formatted.flag}</span>
-                            <span>{formatted.formattedNumber}</span>
-                          </span>
-                        ) : (
-                          <span>{selectedConv.crm_clients.phone}</span>
-                        );
-                      })()
-                    )}
+                    {(() => {
+                      const phone = selectedConv?.crm_clients?.phone;
+
+                      // Only show phone if it's NOT a PSID
+                      if (phone && !isPSID(phone)) {
+                        const formatted = formatWhatsAppNumber(phone);
+                        if (formatted) {
+                          return (
+                            <span className="flex items-center gap-1">
+                              <span>{formatted.flag}</span>
+                              <span>{formatted.formattedNumber}</span>
+                            </span>
+                          );
+                        }
+                      }
+                      return null;
+                    })()}
                     {messagesConnected ? (
                       <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
                         <Wifi className="h-3 w-3 text-green-400" />
@@ -1007,19 +1011,23 @@ const MessagesView = () => {
                         {selectedConv?.crm_clients?.email && (
                           <span className="truncate">{selectedConv.crm_clients.email}</span>
                         )}
-                        {selectedConv?.crm_clients?.phone && (
-                          (() => {
-                            const formatted = formatWhatsAppNumber(selectedConv.crm_clients.phone || '');
-                            return formatted ? (
-                              <span className="flex items-center gap-1">
-                                <span>{formatted.flag}</span>
-                                <span>{formatted.formattedNumber}</span>
-                              </span>
-                            ) : (
-                              <span>{selectedConv.crm_clients.phone}</span>
-                            );
-                          })()
-                        )}
+                        {(() => {
+                          const phone = selectedConv?.crm_clients?.phone;
+
+                          // Only show phone if it's NOT a PSID
+                          if (phone && !isPSID(phone)) {
+                            const formatted = formatWhatsAppNumber(phone);
+                            if (formatted) {
+                              return (
+                                <span className="flex items-center gap-1">
+                                  <span>{formatted.flag}</span>
+                                  <span>{formatted.formattedNumber}</span>
+                                </span>
+                              );
+                            }
+                          }
+                          return null;
+                        })()}
                         {/* Estado de conexión de mensajes */}
                         <div className="flex items-center gap-1">
                           {messagesConnected ? (
