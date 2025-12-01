@@ -66,22 +66,22 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
           {/* Trial Warning */}
           {profile.is_trial && trialInfo && (
             <Alert className={`mb-4 ${trialInfo.hasExpired
-                ? 'border-red-500 bg-red-50'
-                : trialInfo.isExpiringSoon
-                  ? 'border-amber-500 bg-amber-50'
-                  : 'border-blue-500 bg-blue-50'
+              ? 'border-red-500 bg-red-50'
+              : trialInfo.isExpiringSoon
+                ? 'border-amber-500 bg-amber-50'
+                : 'border-blue-500 bg-blue-50'
               }`}>
               <AlertTriangle className={`h-4 w-4 ${trialInfo.hasExpired
-                  ? 'text-red-600'
-                  : trialInfo.isExpiringSoon
-                    ? 'text-amber-600'
-                    : 'text-blue-600'
+                ? 'text-red-600'
+                : trialInfo.isExpiringSoon
+                  ? 'text-amber-600'
+                  : 'text-blue-600'
                 }`} />
               <AlertDescription className={`${trialInfo.hasExpired
-                  ? 'text-red-800'
-                  : trialInfo.isExpiringSoon
-                    ? 'text-amber-800'
-                    : 'text-blue-800'
+                ? 'text-red-800'
+                : trialInfo.isExpiringSoon
+                  ? 'text-amber-800'
+                  : 'text-blue-800'
                 }`}>
                 {trialInfo.hasExpired ? (
                   <span>
@@ -180,8 +180,8 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                 <Card
                   key={plan.name}
                   className={`relative transition-all duration-200 ${plan.current
-                      ? 'ring-2 ring-blue-500 shadow-lg'
-                      : 'hover:shadow-md hover:scale-105'
+                    ? 'ring-2 ring-blue-500 shadow-lg'
+                    : 'hover:shadow-md hover:scale-105'
                     }`}
                 >
                   {plan.current && (
@@ -271,18 +271,29 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
       </Card>
 
       {/* Payment Modal */}
-      {selectedPlan && (
-        <PaymentModal
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
-          planName={selectedPlan.name}
-          planPrice={selectedPlan.price}
-          planType={selectedPlan.name.toLowerCase() as 'basico' | 'avanzado' | 'pro'}
-          planFeatures={selectedPlan.features}
-          planIcon={selectedPlan.icon}
-          planColor={selectedPlan.bgColor}
-        />
-      )}
+      {selectedPlan && (() => {
+        // Normalize plan name to match expected types
+        const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' => {
+          const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (normalized === 'basico') return 'basico';
+          if (normalized === 'avanzado') return 'avanzado';
+          if (normalized === 'pro') return 'pro';
+          return 'basico'; // fallback
+        };
+
+        return (
+          <PaymentModal
+            open={paymentModalOpen}
+            onOpenChange={setPaymentModalOpen}
+            planName={selectedPlan.name}
+            planPrice={selectedPlan.price}
+            planType={normalizePlanType(selectedPlan.name)}
+            planFeatures={selectedPlan.features}
+            planIcon={selectedPlan.icon}
+            planColor={selectedPlan.bgColor}
+          />
+        );
+      })()}
     </TabsContent>
   );
 };
