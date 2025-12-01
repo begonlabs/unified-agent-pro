@@ -33,7 +33,7 @@ import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
-import { useDebounce, useMessageSender } from '@/hooks/useDebounce';
+import { useDebounce } from '@/hooks/useDebounce';
 import { NotificationService } from '@/components/notifications';
 import { formatWhatsAppNumber } from '@/utils/phoneNumberUtils';
 
@@ -89,9 +89,6 @@ const MessagesView = () => {
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // Para controlar la vista en móvil
   const [previousMessageCount, setPreviousMessageCount] = useState<Record<string, number>>({});
   const { toast } = useToast();
-
-  // Hook para prevenir mensajes duplicados
-  const { isDuplicateMessage } = useMessageSender();
 
   // Usar los nuevos hooks de realtime
   const {
@@ -213,12 +210,6 @@ const MessagesView = () => {
     }
 
     const messageContent = newMessage.trim();
-
-    // Verificar duplicados
-    if (isDuplicateMessage(messageContent, selectedConversation)) {
-      console.log('🚫 Mensaje duplicado detectado, cancelando envío');
-      return;
-    }
 
     setIsSending(true);
     console.log('📤 Iniciando envío de mensaje:', {
