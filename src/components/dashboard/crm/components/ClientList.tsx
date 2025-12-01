@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Client } from '../types';
 import { CRMService } from '../services/crmService';
-import { formatWhatsAppNumber } from '@/utils/phoneNumberUtils';
+import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
 
 interface ClientListProps {
     clients: Client[];
@@ -97,22 +97,26 @@ export const ClientList: React.FC<ClientListProps> = ({
                                 {client.email || '-'}
                             </TableCell>
                             <TableCell>
-                                {client.phone ? (
-                                    (() => {
-                                        const formatted = formatWhatsAppNumber(client.phone);
-                                        return formatted ? (
-                                            <div className="flex items-center gap-1">
-                                                <Phone className="h-3 w-3 text-muted-foreground" />
-                                                <span>{formatted.flag}</span>
-                                                <span className="text-sm">{formatted.formattedNumber}</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground">{client.phone}</span>
-                                        );
-                                    })()
-                                ) : (
-                                    <span className="text-sm text-muted-foreground">-</span>
-                                )}
+                                {(() => {
+                                    const phone = client.phone;
+
+                                    // If there's a phone and it's NOT a PSID, format and display it
+                                    if (phone && !isPSID(phone)) {
+                                        const formatted = formatWhatsAppNumber(phone);
+                                        if (formatted) {
+                                            return (
+                                                <div className="flex items-center gap-1">
+                                                    <Phone className="h-3 w-3 text-muted-foreground" />
+                                                    <span>{formatted.flag}</span>
+                                                    <span className="text-sm">{formatted.formattedNumber}</span>
+                                                </div>
+                                            );
+                                        }
+                                    }
+
+                                    // Otherwise, show a dash
+                                    return <span className="text-sm text-muted-foreground">-</span>;
+                                })()}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                                 {client.country || '-'}
