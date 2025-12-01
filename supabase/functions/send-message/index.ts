@@ -270,88 +270,89 @@ serve(async (req) => {
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
 
-      const messengerResult = await messengerResponse.json()
+    const messengerResult = await messengerResponse.json()
 
-      // Check if message already exists (avoid duplicates)
-      const { data: existingMessage } = await supabase
-        .from('messages')
-        .select('id')
-        .eq('platform_message_id', messengerResult.message_id)
-        .limit(1)
-        .single();
+    // Check if message already exists (avoid duplicates)
+    const { data: existingMessage } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('platform_message_id', messengerResult.message_id)
+      .limit(1)
+      .single();
 
-      if (existingMessage) {
-        console.log('⚠️ Message already exists with platform_message_id:', messengerResult.message_id);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message_id: messengerResult.message_id,
-            conversation_id: conversation_id,
-            note: 'Message already exists'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // Save message to database with new structure (Option 2)
-      const messageData = {
-        conversation_id: conversation_id,
-        content: message,
-        sender_type: sender_type, // 'agent' or 'ia' based on request
-        is_automated: sender_type === 'ia', // true for IA, false for agent
-        sender_name: sender_name || (sender_type === 'ia' ? 'IA Assistant' : sender_type === 'agent' ? 'Agente' : 'Cliente'),
-        platform_message_id: messengerResult.message_id, // Platform message ID (Facebook/Instagram)
-        metadata: {
-          platform: channelType,
-          platform_message_id: messengerResult.message_id,
-          timestamp: new Date().toISOString(),
-          sent_via: 'send-message-function', // Mark messages sent via this function
-          api_endpoint: apiUrl
-        }
-      };
-
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert(messageData)
-
-      if (messageError) {
-        console.error('Error saving message to database:', messageError)
-        return new Response(
-          JSON.stringify({ error: 'Message sent but failed to save locally' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // Update conversation last_message_at
-      await supabase
-        .from('conversations')
-        .update({
-          last_message_at: new Date().toISOString(),
-          status: 'open'
-        })
-        .eq('id', conversation_id)
-
+    if (existingMessage) {
+      console.log('⚠️ Message already exists with platform_message_id:', messengerResult.message_id);
       return new Response(
         JSON.stringify({
           success: true,
           message_id: messengerResult.message_id,
-          conversation_id: conversation_id
+          conversation_id: conversation_id,
+          note: 'Message already exists'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
 
-    } catch (error) {
-      console.error('Error in send-message function:', error)
+    // Save message to database with new structure (Option 2)
+    const messageData = {
+      conversation_id: conversation_id,
+      content: message,
+      sender_type: sender_type, // 'agent' or 'ia' based on request
+      is_automated: sender_type === 'ia', // true for IA, false for agent
+      sender_name: sender_name || (sender_type === 'ia' ? 'IA Assistant' : sender_type === 'agent' ? 'Agente' : 'Cliente'),
+      platform_message_id: messengerResult.message_id, // Platform message ID (Facebook/Instagram)
+      metadata: {
+        platform: channelType,
+        platform_message_id: messengerResult.message_id,
+        timestamp: new Date().toISOString(),
+        sent_via: 'send-message-function', // Mark messages sent via this function
+        api_endpoint: apiUrl
+      }
+    };
+
+    const { error: messageError } = await supabase
+      .from('messages')
+      .insert(messageData)
+
+    if (messageError) {
+      console.error('Error saving message to database:', messageError)
       return new Response(
-        JSON.stringify({
-          error: `Internal server error: ${error.message}`,
-          debug: { request_url: req.url }
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        JSON.stringify({ error: 'Message sent but failed to save locally' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-  })
+
+    // Update conversation last_message_at
+    await supabase
+      .from('conversations')
+      .update({
+        last_message_at: new Date().toISOString(),
+        status: 'open'
+      })
+      .eq('id', conversation_id)
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message_id: messengerResult.message_id,
+        conversation_id: conversation_id
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in send-message function:', error)
+    return new Response(
+      JSON.stringify({
+        error: `Internal server error: ${error.message}`,
+        debug: { request_url: req.url }
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+  }
+})
