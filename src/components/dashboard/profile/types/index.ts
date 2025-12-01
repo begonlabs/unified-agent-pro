@@ -13,6 +13,11 @@ export interface Profile {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+  // Payment and trial fields
+  trial_start_date?: string;
+  trial_end_date?: string;
+  is_trial?: boolean;
+  payment_status?: 'trial' | 'pending' | 'active' | 'expired' | 'cancelled';
 }
 
 export interface ProfileFormData {
@@ -42,6 +47,7 @@ export interface Plan {
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   bgColor: string;
+  isTrial?: boolean;
 }
 
 export interface PasswordStrength {

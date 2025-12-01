@@ -15,7 +15,7 @@ export class ProfileService {
         .eq('user_id', userId)
         .single()
     );
-    
+
     return data;
   }
 
@@ -24,7 +24,7 @@ export class ProfileService {
    */
   static async updateProfile(userId: string, profileData: ProfileFormData): Promise<void> {
     const { countryCode, number } = this.parsePhoneNumber(profileData.phone);
-    
+
     await supabaseUpdate(
       supabase
         .from('profiles')
@@ -67,12 +67,12 @@ export class ProfileService {
    */
   static parsePhoneNumber(phoneNumber: string): { countryCode: string; number: string } {
     if (!phoneNumber) return { countryCode: '+1', number: '' };
-    
+
     const match = phoneNumber.match(/^(\+\d{1,4})\s?(.*)$/);
     if (match) {
       return { countryCode: match[1], number: match[2] };
     }
-    
+
     return { countryCode: '+1', number: phoneNumber };
   }
 
@@ -82,34 +82,71 @@ export class ProfileService {
   static getPlans(currentPlanType: string): Plan[] {
     return [
       {
-        name: 'Free',
+        name: 'Gratuito',
         price: '$0',
-        description: 'Perfecto para comenzar',
-        features: ['1 canal de comunicación', '100 mensajes/mes', 'IA básica', 'Soporte por email'],
+        description: 'Prueba de 7 días',
+        features: [
+          '7 días de prueba',
+          'Facebook e Instagram',
+          'Sin WhatsApp',
+          'IA básica',
+          'Soporte por email'
+        ],
         current: currentPlanType === 'free',
         icon: Star,
         color: 'text-gray-500',
-        bgColor: 'bg-gray-50'
+        bgColor: 'bg-gray-50',
+        isTrial: true
       },
       {
-        name: 'Premium',
-        price: '$29',
-        description: 'Para empresas en crecimiento',
-        features: ['3 canales', '2,000 mensajes/mes', 'IA avanzada', 'Soporte prioritario', 'Análisis detallados'],
-        current: currentPlanType === 'premium',
+        name: 'Básico',
+        price: '$49',
+        description: 'Perfecto para comenzar',
+        features: [
+          '1 canal de WhatsApp',
+          'Facebook e Instagram',
+          '1,000 mensajes/mes',
+          'IA básica',
+          'Soporte por email'
+        ],
+        current: currentPlanType === 'basico',
         icon: Zap,
         color: 'text-blue-500',
         bgColor: 'bg-blue-50'
       },
       {
-        name: 'Enterprise',
-        price: '$99',
-        description: 'Solución completa',
-        features: ['Canales ilimitados', 'Mensajes ilimitados', 'IA personalizada', 'Soporte 24/7', 'API completa', 'Integraciones avanzadas'],
-        current: currentPlanType === 'enterprise',
-        icon: Crown,
+        name: 'Avanzado',
+        price: '$139',
+        description: 'Para empresas en crecimiento',
+        features: [
+          '3 canales de WhatsApp',
+          'Facebook e Instagram',
+          '5,000 mensajes/mes',
+          'IA avanzada',
+          'Soporte prioritario',
+          'Análisis detallados'
+        ],
+        current: currentPlanType === 'avanzado',
+        icon: Zap,
         color: 'text-purple-500',
         bgColor: 'bg-purple-50'
+      },
+      {
+        name: 'Pro',
+        price: '$399',
+        description: 'Solución completa',
+        features: [
+          'Canales ilimitados',
+          'Mensajes ilimitados',
+          'IA personalizada',
+          'Soporte 24/7',
+          'API completa',
+          'Integraciones avanzadas'
+        ],
+        current: currentPlanType === 'pro',
+        icon: Crown,
+        color: 'text-amber-500',
+        bgColor: 'bg-amber-50'
       }
     ];
   }
@@ -120,8 +157,9 @@ export class ProfileService {
   static getPlanColor(planType: string): string {
     switch (planType) {
       case 'free': return 'bg-gray-100 text-gray-800 border-gray-300';
-      case 'premium': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'enterprise': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'basico': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'avanzado': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'pro': return 'bg-amber-100 text-amber-800 border-amber-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   }
@@ -132,8 +170,9 @@ export class ProfileService {
   static getPlanIcon(planType: string) {
     switch (planType) {
       case 'free': return Star;
-      case 'premium': return Zap;
-      case 'enterprise': return Crown;
+      case 'basico': return Zap;
+      case 'avanzado': return Zap;
+      case 'pro': return Crown;
       default: return Star;
     }
   }

@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  CreditCard, 
-  CheckCircle, 
-  Globe 
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  CreditCard,
+  CheckCircle,
+  Globe,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { Profile, Plan } from '../types';
 import { ProfileService } from '../services/profileService';
+import { PaymentModal } from './PaymentModal';
 
 interface SubscriptionTabProps {
   profile: Profile;
@@ -20,6 +24,30 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
   const plans = ProfileService.getPlans(profile.plan_type);
   const currentPlan = plans.find(p => p.current);
   const PlanIcon = ProfileService.getPlanIcon(profile.plan_type);
+
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+
+  // Calculate trial days remaining
+  const trialInfo = useMemo(() => {
+    if (!profile.is_trial || !profile.trial_end_date) return null;
+
+    const now = new Date();
+    const trialEnd = new Date(profile.trial_end_date);
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return {
+      daysRemaining: Math.max(0, daysRemaining),
+      isExpiringSoon: daysRemaining <= 2 && daysRemaining > 0,
+      hasExpired: daysRemaining <= 0
+    };
+  }, [profile.is_trial, profile.trial_end_date]);
+
+  const handleUpgrade = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setPaymentModalOpen(true);
+  };
 
   return (
     <TabsContent value="subscription" className="space-y-4 sm:space-y-6">
@@ -35,6 +63,39 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Trial Warning */}
+          {profile.is_trial && trialInfo && (
+            <Alert className={`mb-4 ${trialInfo.hasExpired
+                ? 'border-red-500 bg-red-50'
+                : trialInfo.isExpiringSoon
+                  ? 'border-amber-500 bg-amber-50'
+                  : 'border-blue-500 bg-blue-50'
+              }`}>
+              <AlertTriangle className={`h-4 w-4 ${trialInfo.hasExpired
+                  ? 'text-red-600'
+                  : trialInfo.isExpiringSoon
+                    ? 'text-amber-600'
+                    : 'text-blue-600'
+                }`} />
+              <AlertDescription className={`${trialInfo.hasExpired
+                  ? 'text-red-800'
+                  : trialInfo.isExpiringSoon
+                    ? 'text-amber-800'
+                    : 'text-blue-800'
+                }`}>
+                {trialInfo.hasExpired ? (
+                  <span>
+                    <strong>Tu período de prueba ha expirado.</strong> Actualiza a un plan de pago para seguir usando todas las funcionalidades.
+                  </span>
+                ) : (
+                  <span>
+                    <strong>Período de prueba:</strong> Te quedan {trialInfo.daysRemaining} día{trialInfo.daysRemaining !== 1 ? 's' : ''} de prueba gratuita.
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="relative overflow-hidden">
             <div className={`p-6 rounded-xl border-2 ${currentPlan?.bgColor} ${ProfileService.getPlanColor(profile.plan_type)} border-opacity-50`}>
               <div className="flex items-start justify-between">
@@ -43,9 +104,17 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                     <PlanIcon className={`h-6 w-6 ${currentPlan?.color}`} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">
-                      Plan {profile.plan_type?.charAt(0).toUpperCase()}{profile.plan_type?.slice(1)}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-bold">
+                        Plan {currentPlan?.name}
+                      </h3>
+                      {profile.is_trial && (
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Prueba
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-gray-600">
                       {currentPlan?.description}
                     </p>
@@ -55,22 +124,29 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                   <div className="text-3xl font-bold">
                     {currentPlan?.price}
                   </div>
-                  <div className="text-sm text-gray-500">/mes</div>
+                  <div className="text-sm text-gray-500">{profile.is_trial ? '' : '/mes'}</div>
                 </div>
               </div>
-              
+
               <Separator className="my-4" />
-              
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Estado:</span>
-                  <p className="font-medium">{profile.is_active ? 'Activo' : 'Inactivo'}</p>
+                  <p className="font-medium">
+                    {profile.is_trial ? 'Período de Prueba' : profile.is_active ? 'Activo' : 'Inactivo'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Inicio:</span>
                   <p className="font-medium">{ProfileService.formatDate(profile.subscription_start)}</p>
                 </div>
-                {profile.subscription_end && (
+                {profile.is_trial && profile.trial_end_date ? (
+                  <div>
+                    <span className="text-gray-500">Fin de prueba:</span>
+                    <p className="font-medium">{ProfileService.formatDate(profile.trial_end_date)}</p>
+                  </div>
+                ) : profile.subscription_end && (
                   <>
                     <div>
                       <span className="text-gray-500">Próxima renovación:</span>
@@ -101,13 +177,12 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
             {plans.map((plan) => {
               const Icon = plan.icon;
               return (
-                <Card 
-                  key={plan.name} 
-                  className={`relative transition-all duration-200 ${
-                    plan.current 
-                      ? 'ring-2 ring-blue-500 shadow-lg' 
+                <Card
+                  key={plan.name}
+                  className={`relative transition-all duration-200 ${plan.current
+                      ? 'ring-2 ring-blue-500 shadow-lg'
                       : 'hover:shadow-md hover:scale-105'
-                  }`}
+                    }`}
                 >
                   {plan.current && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -116,7 +191,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                       </Badge>
                     </div>
                   )}
-                  
+
                   <CardHeader className="text-center p-4 sm:p-6">
                     <div className={`mx-auto p-2 sm:p-3 rounded-full ${plan.bgColor} border mb-2`}>
                       <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${plan.color}`} />
@@ -128,7 +203,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                     </div>
                     <CardDescription className="text-sm sm:text-base">{plan.description}</CardDescription>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <ul className="space-y-3">
                       {plan.features.map((feature, index) => (
@@ -138,15 +213,23 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                         </li>
                       ))}
                     </ul>
-                    
+
                     <div className="pt-4">
                       {plan.current ? (
                         <Button variant="outline" className="w-full" disabled>
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Plan Actual
                         </Button>
+                      ) : plan.isTrial ? (
+                        <Button variant="outline" className="w-full" disabled>
+                          Plan de Prueba
+                        </Button>
                       ) : (
-                        <Button className="w-full" variant={plan.name === 'Enterprise' ? 'default' : 'outline'}>
+                        <Button
+                          className="w-full"
+                          variant={plan.name === 'Pro' ? 'default' : 'outline'}
+                          onClick={() => handleUpgrade(plan)}
+                        >
                           Cambiar a {plan.name}
                         </Button>
                       )}
@@ -186,6 +269,20 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
           </div>
         </CardContent>
       </Card>
+
+      {/* Payment Modal */}
+      {selectedPlan && (
+        <PaymentModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+          planType={selectedPlan.name.toLowerCase() as 'basico' | 'avanzado' | 'pro'}
+          planFeatures={selectedPlan.features}
+          planIcon={selectedPlan.icon}
+          planColor={selectedPlan.bgColor}
+        />
+      )}
     </TabsContent>
   );
 };

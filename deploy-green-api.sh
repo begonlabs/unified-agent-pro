@@ -63,6 +63,19 @@ echo -e "${YELLOW}   → Copiando fetch-business-info...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/fetch-business-info"
 sudo cp -r supabase/functions/fetch-business-info "$FUNCTIONS_VOLUME/"
 
+# Funciones de pago
+echo -e "${YELLOW}   → Copiando create-payment...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/create-payment"
+sudo cp -r supabase/functions/create-payment "$FUNCTIONS_VOLUME/"
+
+echo -e "${YELLOW}   → Copiando payment-webhook...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/payment-webhook"
+sudo cp -r supabase/functions/payment-webhook "$FUNCTIONS_VOLUME/"
+
+echo -e "${YELLOW}   → Copiando verify-subscription...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/verify-subscription"
+sudo cp -r supabase/functions/verify-subscription "$FUNCTIONS_VOLUME/"
+
 echo -e "${YELLOW}   → Reiniciando Supabase Edge Runtime...${NC}"
 docker restart supabase-edge-functions
 
@@ -81,6 +94,9 @@ echo "  ✅ Código actualizado desde GitHub"
 echo "  ✅ Edge Functions desplegadas:"
 echo "     - https://supabase.ondai.ai/functions/v1/green-api-webhook"
 echo "     - https://supabase.ondai.ai/functions/v1/send-ai-message"
+echo "     - https://supabase.ondai.ai/functions/v1/create-payment"
+echo "     - https://supabase.ondai.ai/functions/v1/payment-webhook"
+echo "     - https://supabase.ondai.ai/functions/v1/verify-subscription"
 echo "  ✅ Frontend reconstruido y desplegado"
 echo ""
 echo "🧪 Próximos pasos para probar:"
