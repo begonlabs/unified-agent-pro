@@ -224,7 +224,10 @@ serve(async (req) => {
       const errorData = await messengerResponse.text()
       console.error(`${channelType} API error:`, errorData)
       return new Response(
-        JSON.stringify({ error: `Failed to send message to ${channelType}` }),
+        JSON.stringify({
+          error: `Failed to send message to ${channelType}`,
+          details: errorData
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

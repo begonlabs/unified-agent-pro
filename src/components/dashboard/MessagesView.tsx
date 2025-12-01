@@ -267,7 +267,7 @@ const MessagesView = () => {
           if (!response.ok) {
             const errorData = await response.json();
             console.error('Error en función send-message:', errorData);
-            throw new Error(`Error enviando mensaje: ${errorData.error || 'Error desconocido'}`);
+            throw new Error(`Error enviando mensaje: ${errorData.error || 'Error desconocido'} ${errorData.details ? `(${errorData.details})` : ''}`);
           } else {
             const result = await response.json();
             console.log(`Mensaje enviado exitosamente a ${conversationCheck.channel}:`, result);
