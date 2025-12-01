@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { ClientCardProps } from '../types';
 import { CRMService } from '../services/crmService';
-import { formatWhatsAppNumber } from '@/utils/phoneNumberUtils';
+import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
 
 export const ClientCard: React.FC<ClientCardProps> = ({
   client,
@@ -94,29 +94,37 @@ export const ClientCard: React.FC<ClientCardProps> = ({
                     <span className="truncate">{client.email}</span>
                   </div>
                 )}
-                {client.phone && (
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-3 w-3 flex-shrink-0" />
-                    <span className="flex items-center gap-1">
-                      {(() => {
-                        const formatted = formatWhatsAppNumber(client.phone);
-                        return formatted ? (
-                          <>
-                            <span>{formatted.flag}</span>
-                            <span>{formatted.formattedNumber}</span>
-                          </>
-                        ) : (
-                          <>
-                            {client.phone_country_code && (
-                              <span className="text-xs">{client.phone_country_code}</span>
-                            )}
-                            {client.phone}
-                          </>
-                        );
-                      })()}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const phone = client.phone;
+
+                  // Only show phone if it's NOT a PSID
+                  if (phone && !isPSID(phone)) {
+                    return (
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 flex-shrink-0" />
+                        <span className="flex items-center gap-1">
+                          {(() => {
+                            const formatted = formatWhatsAppNumber(phone);
+                            return formatted ? (
+                              <>
+                                <span>{formatted.flag}</span>
+                                <span>{formatted.formattedNumber}</span>
+                              </>
+                            ) : (
+                              <>
+                                {client.phone_country_code && (
+                                  <span className="text-xs">{client.phone_country_code}</span>
+                                )}
+                                {phone}
+                              </>
+                            );
+                          })()}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {client.country && (
                   <div className="flex items-center gap-1">
                     <Globe className="h-3 w-3 flex-shrink-0" />
