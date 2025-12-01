@@ -100,10 +100,11 @@ serve(async (req) => {
         }
 
         // Prepare dLocalGo payment request
+        // Use user's country from profile, fallback to UY if not set
         const dlocalgoPayment: DLocalGoPaymentRequest = {
             amount: amount,
             currency: 'USD',
-            country: profile.country || 'US',
+            country: profile.country || 'UY', // Use profile country or default to Uruguay
             payment_method_id: 'CARD',
             payment_method_flow: 'REDIRECT',
             payer: {
