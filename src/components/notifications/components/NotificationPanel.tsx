@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCheck, Loader2, Bell, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { NotificationItem } from './NotificationItem';
 import { NotificationPanelProps, NotificationType } from '../types';
@@ -107,7 +106,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
       </div>
 
       {/* Lista de notificaciones */}
-      <ScrollArea className="flex-1 h-[400px] sm:h-[500px]">
+      <div className="flex-1 overflow-y-auto max-h-[400px] sm:max-h-[500px]">
         {loading ? (
           <div className="flex items-center justify-center h-40">
             <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
@@ -140,7 +139,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-100 bg-gray-50/50 text-center">
