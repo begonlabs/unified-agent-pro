@@ -24,7 +24,8 @@ import {
   Filter,
   Wifi,
   WifiOff,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -483,6 +484,44 @@ const MessagesView = () => {
     setSelectedConversation(null); // Limpiar conversación seleccionada
   };
 
+  const handleDeleteConversation = async (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation(); // Prevent selecting the conversation
+
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta conversación? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Conversación eliminada",
+        description: "La conversación ha sido eliminada correctamente.",
+      });
+
+      // Update local state
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+
+      // If the deleted conversation was selected, deselect it
+      if (selectedConversation === conversationId) {
+        setSelectedConversation(null);
+        setMobileView('list');
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar la conversación.",
+      });
+    }
+  };
+
   // Manejar navegación desde notificaciones
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -577,7 +616,7 @@ const MessagesView = () => {
                 filteredConversations.map((conversation) => (
                   <div
                     key={conversation.id}
-                    className={`cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${selectedConversation === conversation.id
+                    className={`group cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${selectedConversation === conversation.id
                       ? 'bg-blue-50'
                       : 'bg-white'
                       }`}
@@ -649,6 +688,19 @@ const MessagesView = () => {
                           <p className="text-xs text-gray-500">
                             {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
+                        </div>
+
+                        {/* Delete Button - Visible on hover or always visible on mobile */}
+                        <div className="flex items-center self-center pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                            onClick={(e) => handleDeleteConversation(e, conversation.id)}
+                            title="Eliminar conversación"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
