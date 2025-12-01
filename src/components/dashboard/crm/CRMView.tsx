@@ -27,7 +27,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   // Hooks principales
   const { clients, setClients, loading } = useClients(currentUser);
   const { filters, filteredClients, updateFilters } = useClientFilters(clients);
-  const { updateClientStatus, updateClient } = useClientActions(currentUser, clients, setClients);
+  const { updateClientStatus, updateClient, deleteClient } = useClientActions(currentUser, clients, setClients);
   const { exportToCSV, exportToExcel } = useExport();
   const {
     isEditDialogOpen,
@@ -128,6 +128,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                       clients={filteredClients}
                       onEdit={openEditDialog}
                       onStatusChange={updateClientStatus}
+                      onDelete={deleteClient}
                     />
                   </div>
                 )

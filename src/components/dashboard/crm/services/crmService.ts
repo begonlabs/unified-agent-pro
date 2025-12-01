@@ -60,6 +60,33 @@ export class CRMService {
   }
 
   /**
+   * Elimina un cliente
+   */
+  static async deleteClient(clientId: string, userId: string): Promise<void> {
+    // Verificar que el cliente pertenezca al usuario
+    const { data: clientCheck } = await supabase
+      .from('crm_clients')
+      .select('user_id')
+      .eq('id', clientId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!clientCheck) {
+      throw new Error('No tienes permisos para eliminar este cliente');
+    }
+
+    const { error } = await supabase
+      .from('crm_clients')
+      .delete()
+      .eq('id', clientId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Genera contenido CSV para exportación
    */
   static generateCSV(clients: Client[]): string {

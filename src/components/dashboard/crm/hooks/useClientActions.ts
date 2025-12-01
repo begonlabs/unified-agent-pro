@@ -103,8 +103,45 @@ export const useClientActions = (user: User | null, clients: Client[], setClient
     }
   }, [user, setClients, toast]);
 
+  const deleteClient = useCallback(async (clientId: string) => {
+    if (!user?.id) {
+      toast({
+        title: "Error de autenticación",
+        description: "Debes estar autenticado para eliminar clientes",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Confirm deletion
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Deleting client:', clientId, 'for user:', user.id);
+
+      await CRMService.deleteClient(clientId, user.id);
+
+      setClients(prev => prev.filter(client => client.id !== clientId));
+
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente ha sido eliminado correctamente",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo eliminar el cliente";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  }, [user, setClients, toast]);
+
   return {
     updateClientStatus,
-    updateClient
+    updateClient,
+    deleteClient
   };
 };

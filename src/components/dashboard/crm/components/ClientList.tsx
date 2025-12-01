@@ -10,7 +10,8 @@ import {
     Instagram,
     MessageCircle,
     User,
-    Phone
+    Phone,
+    Trash2
 } from 'lucide-react';
 import { Client } from '../types';
 import { CRMService } from '../services/crmService';
@@ -20,6 +21,7 @@ interface ClientListProps {
     clients: Client[];
     onEdit: (client: Client) => void;
     onStatusChange: (clientId: string, status: string) => void;
+    onDelete: (clientId: string) => void;
 }
 
 // Helper function to translate status labels
@@ -47,7 +49,8 @@ const getSourceLabel = (source?: string): string => {
 export const ClientList: React.FC<ClientListProps> = ({
     clients,
     onEdit,
-    onStatusChange
+    onStatusChange,
+    onDelete
 }) => {
     const getSourceIcon = (source?: string) => {
         switch (source) {
@@ -143,6 +146,15 @@ export const ClientList: React.FC<ClientListProps> = ({
                                     >
                                         <Edit className="h-3 w-3 mr-1" />
                                         Editar
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onDelete(client.id)}
+                                        className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Eliminar
                                     </Button>
                                     <Select
                                         value={client.status}
