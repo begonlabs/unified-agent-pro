@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +16,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isMobile = f
   const [isOpen, setIsOpen] = useState(false);
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const previousUnreadCount = useRef(0);
+  const navigate = useNavigate();
 
   // Get current user ID
   const [userId, setUserId] = useState<string | undefined>(undefined);
@@ -61,7 +63,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isMobile = f
 
     // Navegar si tiene URL de acción
     if (notification.action_url) {
-      window.location.href = notification.action_url;
+      // Transform dashboard URLs from /dashboard/view-name to /dashboard?view=view-name
+      let targetUrl = notification.action_url;
+
+      // Check if it's a dashboard sub-route (e.g., /dashboard/ai-agent)
+      const dashboardMatch = targetUrl.match(/^\/dashboard\/(.+)$/);
+      if (dashboardMatch) {
+        const viewName = dashboardMatch[1];
+        targetUrl = `/dashboard?view=${viewName}`;
+        console.log(`🔄 Transformed notification URL: ${notification.action_url} → ${targetUrl}`);
+      }
+
+      navigate(targetUrl);
     }
 
     // Cerrar panel
