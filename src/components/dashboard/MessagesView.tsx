@@ -36,7 +36,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
 import { useDebounce } from '@/hooks/useDebounce';
 import { NotificationService } from '@/components/notifications';
-import { formatWhatsAppNumber } from '@/utils/phoneNumberUtils';
+import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
 
 interface Client {
   id: string;
@@ -648,21 +648,36 @@ const MessagesView = () => {
                           {/* Información de contacto */}
                           <div className="mb-2">
                             <p className="text-xs sm:text-sm text-gray-600 truncate">
-                              {conversation.crm_clients?.phone ? (
-                                (() => {
-                                  const formatted = formatWhatsAppNumber(conversation.crm_clients.phone || '');
-                                  return formatted ? (
-                                    <span className="flex items-center gap-2">
-                                      <span>{formatted.flag}</span>
-                                      <span>{formatted.formattedNumber}</span>
-                                    </span>
-                                  ) : (
-                                    conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'
-                                  );
-                                })()
-                              ) : (
-                                conversation.crm_clients?.email || conversation.crm_clients?.phone || 'Sin contacto'
-                              )}
+                              {(() => {
+                                const phone = conversation.crm_clients?.phone;
+                                const email = conversation.crm_clients?.email;
+
+                                // If there's a phone and it's NOT a PSID, format and display it
+                                if (phone && !isPSID(phone)) {
+                                  const formatted = formatWhatsAppNumber(phone);
+                                  if (formatted) {
+                                    return (
+                                      <span className="flex items-center gap-2">
+                                        <span>{formatted.flag}</span>
+                                        <span>{formatted.formattedNumber}</span>
+                                      </span>
+                                    );
+                                  }
+                                }
+
+                                // If there's an email, show it
+                                if (email) {
+                                  return email;
+                                }
+
+                                // Otherwise, show the channel name
+                                const channelName = conversation.channel === 'facebook' ? 'Facebook' :
+                                  conversation.channel === 'instagram' ? 'Instagram' :
+                                    conversation.channel === 'whatsapp' ? 'WhatsApp' :
+                                      'Sin contacto';
+
+                                return channelName;
+                              })()}
                             </p>
                           </div>
 

@@ -55,3 +55,34 @@ export const formatWhatsAppNumber = (rawPhone: string): FormattedWhatsAppNumber 
         country: undefined
     };
 };
+
+/**
+ * Detects if a string is a Facebook/Instagram PSID (Page-Scoped ID)
+ * PSIDs are long numeric strings that don't match valid phone number patterns
+ */
+export const isPSID = (value: string): boolean => {
+    if (!value) return false;
+
+    // Remove common phone number prefixes
+    const cleaned = value.replace(/^\+/, '').replace('@c.us', '');
+
+    // PSIDs are typically:
+    // - All numeric
+    // - Very long (usually 15+ digits)
+    // - Don't match valid phone number patterns
+
+    // If it's all numeric and very long, it's likely a PSID
+    if (/^\d{15,}$/.test(cleaned)) {
+        return true;
+    }
+
+    // Try to parse as phone number - if it fails, it might be a PSID
+    try {
+        const phoneNumber = parsePhoneNumber(value.startsWith('+') ? value : '+' + cleaned);
+        // If parsing succeeds and we have a valid country, it's a real phone
+        return !phoneNumber || !phoneNumber.country;
+    } catch {
+        // If parsing fails completely, assume it's a PSID
+        return true;
+    }
+};
