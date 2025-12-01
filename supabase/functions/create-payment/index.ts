@@ -115,15 +115,19 @@ serve(async (req) => {
             callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
         }
 
+
         console.log('Creating dLocalGo payment:', dlocalgoPayment)
+
+        // Create Basic Auth header
+        const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+        const authHeader = `Basic ${btoa(authString)}`
 
         // Create payment with dLocalGo
         const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Api-Key': DLOCALGO_API_KEY,
-                'X-Secret-Key': DLOCALGO_SECRET_KEY,
+                'Authorization': authHeader,
             },
             body: JSON.stringify(dlocalgoPayment),
         })
