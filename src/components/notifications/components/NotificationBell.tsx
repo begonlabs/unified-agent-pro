@@ -66,11 +66,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isMobile = f
       // Transform dashboard URLs from /dashboard/view-name to /dashboard?view=view-name
       let targetUrl = notification.action_url;
 
-      // Check if it's a dashboard sub-route (e.g., /dashboard/ai-agent)
-      const dashboardMatch = targetUrl.match(/^\/dashboard\/(.+)$/);
+      // Parse the URL to handle query parameters
+      const urlParts = targetUrl.split('?');
+      const basePath = urlParts[0];
+      const queryString = urlParts[1] || '';
+
+      // Check if it's a dashboard sub-route (e.g., /dashboard/ai-agent or /dashboard/messages)
+      const dashboardMatch = basePath.match(/^\/dashboard\/(.+)$/);
       if (dashboardMatch) {
         const viewName = dashboardMatch[1];
-        targetUrl = `/dashboard?view=${viewName}`;
+        // Combine view parameter with existing query parameters
+        const viewParam = `view=${viewName}`;
+        targetUrl = queryString
+          ? `/dashboard?${viewParam}&${queryString}`
+          : `/dashboard?${viewParam}`;
         console.log(`🔄 Transformed notification URL: ${notification.action_url} → ${targetUrl}`);
       }
 
