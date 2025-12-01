@@ -1,0 +1,8 @@
+export const config = {
+    DLOCALGO_API_KEY: 'TWknwsAtJgazlDsawRIrCYLFJpJNOYMR',
+    DLOCALGO_SECRET_KEY: 'ApizLughS0RbihFquK651wpQoJmK9rJUpagMrUBg',
+    DLOCALGO_API_URL: 'https://api-sbx.dlocalgo.com',
+    PUBLIC_URL: 'https://ondai.ai',
+    SUPABASE_URL: 'https://supabase.ondai.ai',
+    SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NTQzMzc2MDAsImV4cCI6MTkxMjEwNDAwMH0.ApXS8AfpwyHOtDmkrge18dFoBUZCnJIpSD7xF8O8IeQ'
+};

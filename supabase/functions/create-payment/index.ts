@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { config } from '../_shared/config.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -32,12 +33,12 @@ const PLAN_PRICES = {
     pro: 399,
 }
 
-const DLOCALGO_API_KEY = Deno.env.get('DLOCALGO_API_KEY')!
-const DLOCALGO_SECRET_KEY = Deno.env.get('DLOCALGO_SECRET_KEY')!
-const DLOCALGO_API_URL = Deno.env.get('DLOCALGO_API_URL') || 'https://api-sbx.dlocalgo.com'
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const PUBLIC_URL = Deno.env.get('PUBLIC_URL') || 'https://your-app.com'
+const DLOCALGO_API_KEY = config.DLOCALGO_API_KEY
+const DLOCALGO_SECRET_KEY = config.DLOCALGO_SECRET_KEY
+const DLOCALGO_API_URL = config.DLOCALGO_API_URL
+const SUPABASE_URL = config.SUPABASE_URL
+const SUPABASE_SERVICE_ROLE_KEY = config.SUPABASE_SERVICE_ROLE_KEY
+const PUBLIC_URL = config.PUBLIC_URL
 
 serve(async (req) => {
     // Handle CORS preflight requests
