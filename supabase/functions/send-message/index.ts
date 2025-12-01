@@ -215,7 +215,8 @@ serve(async (req) => {
         body: JSON.stringify({
           recipient: { id: recipientId },
           message: { text: message },
-          messaging_type: 'RESPONSE'
+          messaging_type: 'MESSAGE_TAG',
+          tag: 'HUMAN_AGENT'
         })
       }
     )
