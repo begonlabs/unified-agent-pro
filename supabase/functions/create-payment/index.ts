@@ -112,7 +112,7 @@ serve(async (req) => {
                 email: user.email!,
             },
             order_id: orderId,
-            notification_url: `${PUBLIC_URL}/functions/v1/payment-webhook`,
+            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
             callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
         }
 
