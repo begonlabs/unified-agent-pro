@@ -25,7 +25,9 @@ import {
   Wifi,
   WifiOff,
   Loader2,
-  Trash2
+  Trash2,
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,6 +39,10 @@ import { ConversationConnectionStatus } from '@/components/ui/connection-status'
 import { useDebounce } from '@/hooks/useDebounce';
 import { NotificationService } from '@/components/notifications';
 import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
+import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
+import { canSendMessage, getMessageUsagePercentage } from '@/lib/channelPermissions';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Client {
   id: string;
@@ -81,8 +87,10 @@ const MessagesView = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
 
-
-
+  // Profile and Permissions
+  const { profile } = useProfile(user);
+  const messageCheck = profile ? canSendMessage(profile) : { allowed: true };
+  const usagePercentage = profile ? getMessageUsagePercentage(profile) : 0;
 
   const [isSending, setIsSending] = useState(false);
   const [showEmojiPickerMobile, setShowEmojiPickerMobile] = useState(false);
@@ -200,6 +208,16 @@ const MessagesView = () => {
   };
 
   const sendMessage = async () => {
+    // Check permissions first
+    if (!messageCheck.allowed) {
+      toast({
+        title: "Límite de mensajes alcanzado",
+        description: messageCheck.reason || "Has alcanzado el límite de mensajes de tu plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!newMessage.trim() || !selectedConversation || !user?.id || isSending) {
       console.log('🚫 SendMessage: Condiciones no cumplidas', {
         hasMessage: !!newMessage.trim(),
@@ -546,6 +564,48 @@ const MessagesView = () => {
     channels: [...new Set(conversations.map(c => c.channel))].length
   };
 
+  // Render message limit warning
+  const renderMessageLimitWarning = () => {
+    if (!profile) return null;
+
+    // Show warning if usage is high (> 80%) or if limit reached
+    if (usagePercentage >= 80 || !messageCheck.allowed) {
+      return (
+        <div className="px-3 py-2 bg-yellow-50 border-t border-yellow-100">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-yellow-800 flex items-center gap-1">
+              {messageCheck.allowed ? (
+                <>
+                  <AlertTriangle className="h-3 w-3" />
+                  Uso de mensajes: {profile.messages_sent_this_month} / {profile.messages_limit}
+                </>
+              ) : (
+                <>
+                  <Lock className="h-3 w-3 text-red-600" />
+                  <span className="text-red-700">Límite de mensajes alcanzado</span>
+                </>
+              )}
+            </span>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs text-blue-600"
+              onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+            >
+              Mejorar Plan
+            </Button>
+          </div>
+          <Progress
+            value={Math.min(usagePercentage, 100)}
+            className={`h-1.5 ${!messageCheck.allowed ? 'bg-red-100' : 'bg-yellow-100'}`}
+            indicatorClassName={!messageCheck.allowed ? 'bg-red-500' : usagePercentage >= 90 ? 'bg-red-500' : 'bg-yellow-500'}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="h-screen flex bg-gray-50">
       <div className="flex flex-1 overflow-hidden">
@@ -875,8 +935,9 @@ const MessagesView = () => {
             </div>
 
             {/* Input de mensaje estilo claro con bordes redondeados */}
-            <div className="p-2 bg-white border-t border-gray-200">
-              <div className="flex gap-2 items-center">
+            <div className="bg-white border-t border-gray-200">
+              {renderMessageLimitWarning()}
+              <div className="p-2 flex gap-2 items-center">
                 {/* Botón de emoji */}
                 <Popover open={showEmojiPickerMobile} onOpenChange={setShowEmojiPickerMobile}>
                   <PopoverTrigger asChild>
@@ -884,6 +945,7 @@ const MessagesView = () => {
                       type="button"
                       variant="ghost"
                       size="icon"
+                      disabled={!messageCheck.allowed}
                       className="h-[40px] w-[40px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 flex-shrink-0"
                     >
                       <Smile className="h-5 w-5" />
@@ -943,8 +1005,9 @@ const MessagesView = () => {
                 {/* Input de texto */}
                 <div className="flex-1">
                   <Textarea
-                    placeholder="Escribe un mensaje..."
+                    placeholder={messageCheck.allowed ? "Escribe un mensaje..." : "Límite de mensajes alcanzado"}
                     value={newMessage}
+                    disabled={!messageCheck.allowed}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -960,9 +1023,9 @@ const MessagesView = () => {
                 {/* Botón de enviar */}
                 <Button
                   onClick={sendMessage}
-                  disabled={!newMessage.trim() || isSending}
+                  disabled={!newMessage.trim() || isSending || !messageCheck.allowed}
                   size="icon"
-                  className={`h-[40px] w-[40px] rounded-full transition-all duration-200 ${isSending
+                  className={`h-[40px] w-[40px] rounded-full transition-all duration-200 ${isSending || !messageCheck.allowed
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                     }`}
@@ -1128,8 +1191,9 @@ const MessagesView = () => {
               </div>
 
               {/* Input de mensaje estilo claro con bordes redondeados */}
-              <div className="p-3 sm:p-4 bg-white border-t border-gray-200">
-                <div className="flex gap-2 sm:gap-3 items-center">
+              <div className="bg-white border-t border-gray-200">
+                {renderMessageLimitWarning()}
+                <div className="p-3 sm:p-4 flex gap-2 sm:gap-3 items-center">
                   {/* Botón de emoji */}
                   <Popover open={showEmojiPickerDesktop} onOpenChange={setShowEmojiPickerDesktop}>
                     <PopoverTrigger asChild>
@@ -1137,6 +1201,7 @@ const MessagesView = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
+                        disabled={!messageCheck.allowed}
                         className="h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 flex-shrink-0"
                       >
                         <Smile className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -1196,8 +1261,9 @@ const MessagesView = () => {
                   {/* Input de texto */}
                   <div className="flex-1">
                     <Textarea
-                      placeholder="Escribe un mensaje..."
+                      placeholder={messageCheck.allowed ? "Escribe un mensaje..." : "Límite de mensajes alcanzado"}
                       value={newMessage}
+                      disabled={!messageCheck.allowed}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -1213,9 +1279,9 @@ const MessagesView = () => {
                   {/* Botón de enviar */}
                   <Button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || isSending}
+                    disabled={!newMessage.trim() || isSending || !messageCheck.allowed}
                     size="icon"
-                    className={`h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full transition-all duration-200 ${isSending
+                    className={`h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full transition-all duration-200 ${isSending || !messageCheck.allowed
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                       }`}

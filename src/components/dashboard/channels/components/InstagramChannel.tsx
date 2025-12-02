@@ -1,9 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Instagram, AlertCircle } from 'lucide-react';
+import { Instagram, AlertCircle, Lock } from 'lucide-react';
 import { Channel, InstagramConfig, InstagramVerification } from '../types';
 import { VerificationCodeDisplay } from './VerificationCodeDisplay';
+import { ChannelPermissions } from '@/lib/channelPermissions';
+import { Profile } from '@/components/dashboard/profile/types';
+import { canConnectChannel } from '@/lib/channelPermissions';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface InstagramChannelProps {
   channels: Channel[];
@@ -16,6 +20,8 @@ interface InstagramChannelProps {
   verificationPolling: Record<string, NodeJS.Timeout>;
   onGenerateVerificationCode: (channelId: string) => void;
   onCopyCode: (code: string) => void;
+  permissions?: ChannelPermissions | null;
+  profile?: Profile | null;
 }
 
 export const InstagramChannel: React.FC<InstagramChannelProps> = ({
@@ -28,31 +34,54 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   isGeneratingCode,
   verificationPolling,
   onGenerateVerificationCode,
-  onCopyCode
+  onCopyCode,
+  permissions,
+  profile
 }) => {
   const instagramChannels = channels.filter(c => c.channel_type === 'instagram');
   const isConnected = instagramChannels.length > 0;
+
+  // Check permissions
+  const connectionCheck = profile ? canConnectChannel(profile, 'instagram', instagramChannels.length) : { allowed: true };
 
   return (
     <div className="space-y-4">
       {!isConnected ? (
         <div className="text-center space-y-4">
-          <Button
-            onClick={onConnect}
-            className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
-          >
-            <Instagram className="h-4 w-4 mr-2" />
-            Conectar con Instagram
-          </Button>
+          {!connectionCheck.allowed ? (
+            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 text-left">
+              <Lock className="h-4 w-4 text-red-600" />
+              <AlertDescription className="ml-2">
+                {connectionCheck.reason}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto ml-2 text-red-800 underline font-semibold"
+                  onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+                >
+                  Mejorar Plan
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <Button
+                onClick={onConnect}
+                className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
+              >
+                <Instagram className="h-4 w-4 mr-2" />
+                Conectar con Instagram
+              </Button>
 
-          <div className="bg-pink-50 p-3 rounded-lg border">
-            <h4 className="font-medium text-pink-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
-            <ul className="text-xs text-pink-800 space-y-1 list-disc list-inside">
-              <li>Inicia sesión con tu cuenta de Instagram</li>
-              <li>Selecciona las cuentas profesionales</li>
-              <li>Autoriza los permisos de mensajería</li>
-            </ul>
-          </div>
+              <div className="bg-pink-50 p-3 rounded-lg border">
+                <h4 className="font-medium text-pink-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
+                <ul className="text-xs text-pink-800 space-y-1 list-disc list-inside">
+                  <li>Inicia sesión con tu cuenta de Instagram</li>
+                  <li>Selecciona las cuentas profesionales</li>
+                  <li>Autoriza los permisos de mensajería</li>
+                </ul>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

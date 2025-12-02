@@ -1,10 +1,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Lock } from 'lucide-react';
 import { Channel } from '../types';
 import { GreenApiConnect } from './green-api/GreenApiConnect';
 import { useAuth } from '@/hooks/useAuth';
+import { ChannelPermissions } from '@/lib/channelPermissions';
+import { Profile } from '@/components/dashboard/profile/types';
+import { canConnectChannel } from '@/lib/channelPermissions';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface WhatsAppChannelProps {
   channels: Channel[];
@@ -12,11 +16,15 @@ interface WhatsAppChannelProps {
   onConnect: () => void;
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
+  permissions?: ChannelPermissions | null;
+  profile?: Profile | null;
 }
 
 export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   channels,
-  onDisconnect
+  onDisconnect,
+  permissions,
+  profile
 }) => {
   const { user } = useAuth();
 
@@ -28,16 +36,35 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
     window.location.reload();
   };
 
+  // Check permissions
+  const connectionCheck = profile ? canConnectChannel(profile, 'whatsapp', greenApiChannels.length) : { allowed: true };
+
   return (
     <div className="space-y-4">
       {!isConnected ? (
         <div className="space-y-4">
-          {/* Green API Connection - No branding */}
-          {user && (
-            <GreenApiConnect
-              userId={user.id}
-              onSuccess={handleGreenApiSuccess}
-            />
+          {!connectionCheck.allowed ? (
+            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
+              <Lock className="h-4 w-4 text-red-600" />
+              <AlertDescription className="ml-2">
+                {connectionCheck.reason}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto ml-2 text-red-800 underline font-semibold"
+                  onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+                >
+                  Mejorar Plan
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : (
+            /* Green API Connection - No branding */
+            user && (
+              <GreenApiConnect
+                userId={user.id}
+                onSuccess={handleGreenApiSuccess}
+              />
+            )
           )}
         </div>
       ) : (

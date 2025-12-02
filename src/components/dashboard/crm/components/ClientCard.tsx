@@ -23,7 +23,8 @@ import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
 export const ClientCard: React.FC<ClientCardProps> = ({
   client,
   onEdit,
-  onStatusChange
+  onStatusChange,
+  crmLevel = 'complete' // Default to complete to avoid breaking existing usage if not passed
 }) => {
   const getSourceIcon = (source?: string) => {
     switch (source) {
@@ -157,6 +158,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
             <Select
               value={client.status}
               onValueChange={(value) => onStatusChange(client.id, value)}
+              disabled={crmLevel === 'basic' || crmLevel === 'none'}
             >
               <SelectTrigger className="w-full sm:w-28 lg:w-32 h-8">
                 <SelectValue />

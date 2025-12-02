@@ -1,8 +1,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Facebook } from 'lucide-react';
+import { Facebook, Lock } from 'lucide-react';
 import { Channel, FacebookConfig } from '../types';
+import { ChannelPermissions } from '@/lib/channelPermissions';
+import { Profile } from '@/components/dashboard/profile/types';
+import { canConnectChannel } from '@/lib/channelPermissions';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FacebookChannelProps {
   channels: Channel[];
@@ -10,6 +14,8 @@ interface FacebookChannelProps {
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
   onTestWebhook: (channelId: string) => void;
+  permissions?: ChannelPermissions | null;
+  profile?: Profile | null;
 }
 
 export const FacebookChannel: React.FC<FacebookChannelProps> = ({
@@ -17,31 +23,54 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
   onConnect,
   onReconnect,
   onDisconnect,
-  onTestWebhook
+  onTestWebhook,
+  permissions,
+  profile
 }) => {
   const facebookChannels = channels.filter(c => c.channel_type === 'facebook');
   const isConnected = facebookChannels.length > 0;
+
+  // Check permissions
+  const connectionCheck = profile ? canConnectChannel(profile, 'facebook', facebookChannels.length) : { allowed: true };
 
   return (
     <div className="space-y-4">
       {!isConnected ? (
         <div className="text-center space-y-4">
-          <Button
-            onClick={onConnect}
-            className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
-          >
-            <Facebook className="h-4 w-4 mr-2" />
-            Conectar con Facebook
-          </Button>
+          {!connectionCheck.allowed ? (
+            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 text-left">
+              <Lock className="h-4 w-4 text-red-600" />
+              <AlertDescription className="ml-2">
+                {connectionCheck.reason}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto ml-2 text-red-800 underline font-semibold"
+                  onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+                >
+                  Mejorar Plan
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <Button
+                onClick={onConnect}
+                className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
+              >
+                <Facebook className="h-4 w-4 mr-2" />
+                Conectar con Facebook
+              </Button>
 
-          <div className="bg-blue-50 p-3 rounded-lg border">
-            <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
-            <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-              <li>Inicia sesión con tu cuenta de Facebook</li>
-              <li>Selecciona las páginas que quieres conectar</li>
-              <li>Autoriza los permisos necesarios</li>
-            </ul>
-          </div>
+              <div className="bg-blue-50 p-3 rounded-lg border">
+                <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
+                <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                  <li>Inicia sesión con tu cuenta de Facebook</li>
+                  <li>Selecciona las páginas que quieres conectar</li>
+                  <li>Autoriza los permisos necesarios</li>
+                </ul>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

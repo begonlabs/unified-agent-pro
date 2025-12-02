@@ -497,6 +497,28 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       }
 
     } else {
+      // Check client limit before creating new client
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('clients_limit, is_trial')
+        .eq('user_id', channel.user_id)
+        .single();
+
+      if (profile && !profile.is_trial) {
+        const { count } = await supabase
+          .from('crm_clients')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', channel.user_id);
+
+        const currentCount = count || 0;
+        const limit = profile.clients_limit || 0;
+
+        if (currentCount >= limit) {
+          console.log(`❌ Client limit reached (${currentCount}/${limit}). Skipping new client creation.`);
+          return;
+        }
+      }
+
       // Create new client
       const clientData: any = {
         user_id: channel.user_id,

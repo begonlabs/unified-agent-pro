@@ -86,6 +86,42 @@ serve(async (req) => {
       )
     }
 
+    // Check message limits
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('messages_sent_this_month, messages_limit, is_trial, payment_status')
+      .eq('user_id', user_id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      // Don't block if profile fetch fails, but log it
+    } else if (profile) {
+      // Check limits
+      if (!profile.is_trial && profile.payment_status === 'active') {
+        const sent = profile.messages_sent_this_month || 0;
+        const limit = profile.messages_limit || 0;
+
+        if (sent >= limit) {
+          return new Response(
+            JSON.stringify({
+              error: 'Message limit reached',
+              details: `You have sent ${sent} of ${limit} messages this month.`
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else if (!profile.is_trial && profile.payment_status !== 'active') {
+        return new Response(
+          JSON.stringify({
+            error: 'Subscription inactive',
+            details: 'Your subscription is not active.'
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Determine channel type from conversation
     const channelType = conversation.channel || 'facebook';
 
@@ -332,6 +368,18 @@ serve(async (req) => {
         status: 'open'
       })
       .eq('id', conversation_id)
+
+    // Increment message count
+    if (profile) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })
+        .eq('user_id', user_id);
+
+      if (updateError) {
+        console.error('Error updating message count:', updateError);
+      }
+    }
 
     return new Response(
       JSON.stringify({

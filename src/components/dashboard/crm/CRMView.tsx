@@ -16,6 +16,10 @@ import { ClientCard } from './components/ClientCard';
 import { ClientList } from './components/ClientList';
 import { EditClientDialog } from './components/EditClientDialog';
 import { ViewMode } from './types';
+import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
+import { getCRMLevel, canCreateClient } from '@/lib/channelPermissions';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Lock } from 'lucide-react';
 
 const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   console.log('CRMView: Component is rendering!');
@@ -41,6 +45,11 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   // View mode state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
+  // Profile and Permissions
+  const { profile } = useProfile(currentUser);
+  const crmLevel = profile ? getCRMLevel(profile) : 'basic';
+  const clientCheck = profile ? canCreateClient(profile, clients.length) : { allowed: true };
+
   // Calcular estadísticas
   const clientStats = CRMService.calculateStats(clients);
 
@@ -61,6 +70,24 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Page Header con estadísticas */}
       <ClientStats stats={clientStats} />
+
+      {/* Plan Limits Warning */}
+      {!clientCheck.allowed && (
+        <div className="px-3 sm:px-6 mt-4">
+          <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
+            <Lock className="h-4 w-4 text-red-600" />
+            <AlertDescription className="ml-2 flex items-center gap-2">
+              <span>{clientCheck.reason || "Has alcanzado el límite de clientes de tu plan."}</span>
+              <button
+                className="underline font-semibold hover:text-red-900"
+                onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+              >
+                Mejorar Plan
+              </button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 p-3 sm:p-6">
@@ -119,6 +146,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                         client={client}
                         onEdit={openEditDialog}
                         onStatusChange={updateClientStatus}
+                        crmLevel={crmLevel}
                       />
                     ))}
                   </div>
@@ -129,6 +157,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                       onEdit={openEditDialog}
                       onStatusChange={updateClientStatus}
                       onDelete={deleteClient}
+                      crmLevel={crmLevel}
                     />
                   </div>
                 )

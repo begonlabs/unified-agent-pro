@@ -22,6 +22,7 @@ interface ClientListProps {
     onEdit: (client: Client) => void;
     onStatusChange: (clientId: string, status: string) => void;
     onDelete: (clientId: string) => void;
+    crmLevel?: 'none' | 'basic' | 'complete';
 }
 
 // Helper function to translate status labels
@@ -50,7 +51,8 @@ export const ClientList: React.FC<ClientListProps> = ({
     clients,
     onEdit,
     onStatusChange,
-    onDelete
+    onDelete,
+    crmLevel = 'complete' // Default to complete
 }) => {
     const getSourceIcon = (source?: string) => {
         switch (source) {
@@ -163,6 +165,7 @@ export const ClientList: React.FC<ClientListProps> = ({
                                     <Select
                                         value={client.status}
                                         onValueChange={(value) => onStatusChange(client.id, value)}
+                                        disabled={crmLevel === 'basic' || crmLevel === 'none'}
                                     >
                                         <SelectTrigger className="w-28 h-8 text-xs">
                                             <SelectValue />

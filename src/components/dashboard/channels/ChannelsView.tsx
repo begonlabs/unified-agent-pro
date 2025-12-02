@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, AlertCircle, Smartphone } from 'lucide-react';
+import { Settings, AlertCircle, Smartphone, Lock, ArrowUpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ChannelsViewProps, InstagramConfig } from './types';
@@ -16,6 +16,9 @@ import { FacebookChannel } from './components/FacebookChannel';
 import { InstagramChannel } from './components/InstagramChannel';
 import { ChannelStatus } from './components/ChannelStatus';
 import { Phone, Facebook, Instagram } from 'lucide-react';
+import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
+import { getChannelPermissions, getPermissionsDescription } from '@/lib/channelPermissions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   const { toast } = useToast();
@@ -23,6 +26,10 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
   // Usar el usuario de auth si no se pasa como prop
   const currentUser = user || authUser;
+
+  // Obtener perfil y permisos
+  const { profile } = useProfile(currentUser);
+  const permissions = profile ? getChannelPermissions(profile) : null;
 
   // Hooks principales
   const { channels, setChannels, loading, fetchChannels, getChannelStatus } = useChannels(currentUser);
@@ -275,6 +282,44 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         </div>
       </div>
 
+      {/* Plan Limits Banner */}
+      {profile && permissions && (
+        <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-blue-100 rounded-full">
+              <Lock className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <AlertTitle className="text-blue-800 font-semibold flex items-center gap-2">
+                Tu Plan: {profile.plan_type === 'free' ? 'Trial Gratuito' : profile.plan_type.charAt(0).toUpperCase() + profile.plan_type.slice(1)}
+                {profile.is_trial && <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">Prueba</span>}
+              </AlertTitle>
+              <AlertDescription className="text-blue-700 mt-1">
+                <p className="mb-2">{getPermissionsDescription(profile)}</p>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  <span className={`px-2 py-1 rounded-md ${channels.length >= permissions.maxChannels && permissions.maxChannels !== -1 ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                    Canales totales: {channels.length} / {permissions.maxChannels === -1 ? 'Ilimitados' : permissions.maxChannels}
+                  </span>
+                  {permissions.maxWhatsappChannels !== -1 && (
+                    <span className={`px-2 py-1 rounded-md ${channels.filter(c => c.channel_type === 'whatsapp').length >= permissions.maxWhatsappChannels ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                      WhatsApp: {channels.filter(c => c.channel_type === 'whatsapp').length} / {permissions.maxWhatsappChannels}
+                    </span>
+                  )}
+                </div>
+              </AlertDescription>
+            </div>
+            <Button
+              variant="outline"
+              className="hidden sm:flex border-blue-300 text-blue-700 hover:bg-blue-100"
+              onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+            >
+              <ArrowUpCircle className="mr-2 h-4 w-4" />
+              Mejorar Plan
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       {/* Channel Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* WhatsApp */}
@@ -291,6 +336,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             onConnect={handleWhatsAppLogin}
             onReconnect={handleWhatsAppLogin}
             onDisconnect={handleDisconnect}
+            permissions={permissions}
+            profile={profile}
           />
         </ChannelCard>
 
@@ -308,6 +355,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             onReconnect={handleFacebookLogin}
             onDisconnect={handleDisconnect}
             onTestWebhook={handleTestWebhook}
+            permissions={permissions}
+            profile={profile}
           />
         </ChannelCard>
 
@@ -330,6 +379,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             verificationPolling={verificationPolling}
             onGenerateVerificationCode={generateInstagramVerificationCode}
             onCopyCode={handleCopyCode}
+            permissions={permissions}
+            profile={profile}
           />
         </ChannelCard>
       </div>

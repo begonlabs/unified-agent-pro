@@ -50,6 +50,7 @@ export interface ClientCardProps {
   client: Client;
   onEdit: (client: Client) => void;
   onStatusChange: (clientId: string, status: string) => void;
+  crmLevel?: 'none' | 'basic' | 'complete';
 }
 
 export interface ClientFiltersProps {
@@ -87,6 +88,8 @@ export interface ClientListProps {
   clients: Client[];
   onEdit: (client: Client) => void;
   onStatusChange: (clientId: string, status: string) => void;
+  onDelete: (clientId: string) => void;
+  crmLevel?: 'none' | 'basic' | 'complete';
 }
 
 export type { User };
