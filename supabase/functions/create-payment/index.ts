@@ -30,7 +30,8 @@ interface DLocalGoPaymentRequest {
 const PLAN_PRICES = {
     basico: 49,
     avanzado: 139,
-    pro: 399,
+    pro: 299,
+    empresarial: 399,
 }
 
 const DLOCALGO_API_KEY = config.DLOCALGO_API_KEY
