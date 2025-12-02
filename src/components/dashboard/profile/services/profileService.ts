@@ -106,7 +106,7 @@ export class ProfileService {
           '3 canales (1 FB + 1 IG + 1 WhatsApp)',
           '10,000 mensajes/mes',
           '200 clientes',
-          'Sin CRM',
+          'CRM básico',
           'Sin estadísticas',
           'Soporte bajo y normal'
         ],

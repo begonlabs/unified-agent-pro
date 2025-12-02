@@ -177,11 +177,12 @@ export const canCreateClient = (
         return { allowed: true };
     }
 
-    // Plan básico no tiene CRM
-    if (profile.plan_type === 'basico') {
+    // Plan básico tiene CRM básico, así que permitimos acceso
+    // Solo bloqueamos si el plan no tiene CRM (que no debería pasar con los planes actuales)
+    if (getCRMLevel(profile) === 'none') {
         return {
             allowed: false,
-            reason: 'El CRM no está disponible en el plan Básico. Actualiza a un plan superior.',
+            reason: 'El CRM no está disponible en tu plan actual.',
         };
     }
 
