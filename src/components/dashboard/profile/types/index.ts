@@ -18,6 +18,14 @@ export interface Profile {
   trial_end_date?: string;
   is_trial?: boolean;
   payment_status?: 'trial' | 'pending' | 'active' | 'expired' | 'cancelled';
+  // Plan restriction fields
+  messages_sent_this_month?: number;
+  messages_limit?: number;
+  clients_limit?: number;
+  last_message_reset_date?: string;
+  has_statistics?: boolean;
+  crm_level?: 'none' | 'basic' | 'complete';
+  support_levels?: string[];
 }
 
 export interface ProfileFormData {

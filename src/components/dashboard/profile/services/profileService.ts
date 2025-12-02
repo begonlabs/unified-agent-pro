@@ -87,10 +87,10 @@ export class ProfileService {
         description: 'Prueba de 7 días',
         features: [
           '7 días de prueba',
-          'Facebook e Instagram',
+          'Máx. 1 Facebook + 1 Instagram',
           'Sin WhatsApp',
-          'IA básica',
-          'Soporte por email'
+          'CRM básico',
+          'Soporte bajo y normal'
         ],
         current: currentPlanType === 'free',
         icon: Star,
@@ -101,13 +101,14 @@ export class ProfileService {
       {
         name: 'Básico',
         price: '$49',
-        description: 'Perfecto para comenzar',
+        description: 'Ideal para pequeños negocios',
         features: [
-          '1 canal de WhatsApp',
-          'Facebook e Instagram',
-          '1,000 mensajes/mes',
-          'IA básica',
-          'Soporte por email'
+          '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+          '10,000 mensajes/mes',
+          '200 clientes',
+          'Sin CRM',
+          'Sin estadísticas',
+          'Soporte bajo y normal'
         ],
         current: currentPlanType === 'basico',
         icon: Zap,
@@ -117,14 +118,14 @@ export class ProfileService {
       {
         name: 'Avanzado',
         price: '$139',
-        description: 'Para empresas en crecimiento',
+        description: 'Para empresas medianas',
         features: [
-          '3 canales de WhatsApp',
-          'Facebook e Instagram',
-          '5,000 mensajes/mes',
-          'IA avanzada',
-          'Soporte prioritario',
-          'Análisis detallados'
+          '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+          '30,000 mensajes/mes',
+          '600 clientes',
+          'CRM completo',
+          'Estadísticas',
+          'Soporte bajo y normal'
         ],
         current: currentPlanType === 'avanzado',
         icon: Zap,
@@ -133,20 +134,38 @@ export class ProfileService {
       },
       {
         name: 'Pro',
-        price: '$399',
-        description: 'Solución completa',
+        price: '$299',
+        description: 'Pensado para empresas con alta intensidad',
         features: [
-          'Canales ilimitados',
-          'Mensajes ilimitados',
-          'IA personalizada',
-          'Soporte 24/7',
-          'API completa',
-          'Integraciones avanzadas'
+          '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+          '70,000 mensajes/mes',
+          '2,000 clientes',
+          'CRM completo',
+          'Estadísticas',
+          'Soporte: Bajo, Normal, Alta, Urgente'
         ],
         current: currentPlanType === 'pro',
         icon: Crown,
         color: 'text-amber-500',
         bgColor: 'bg-amber-50'
+      },
+      {
+        name: 'Empresarial',
+        price: '$399',
+        description: 'Solución completa para empresas',
+        features: [
+          '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+          '100,000 mensajes/mes',
+          '3,000 clientes',
+          'CRM completo',
+          'Estadísticas',
+          'Soporte: Bajo, Normal, Alta, Urgente',
+          'Chat en vivo (próximamente)'
+        ],
+        current: currentPlanType === 'empresarial',
+        icon: Crown,
+        color: 'text-emerald-500',
+        bgColor: 'bg-emerald-50'
       }
     ];
   }
@@ -160,6 +179,7 @@ export class ProfileService {
       case 'basico': return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'avanzado': return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'pro': return 'bg-amber-100 text-amber-800 border-amber-300';
+      case 'empresarial': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   }
@@ -173,6 +193,7 @@ export class ProfileService {
       case 'basico': return Zap;
       case 'avanzado': return Zap;
       case 'pro': return Crown;
+      case 'empresarial': return Crown;
       default: return Star;
     }
   }

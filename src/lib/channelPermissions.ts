@@ -15,11 +15,11 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
     // Si está en trial
     if (profile.is_trial) {
         return {
-            whatsapp: false,
+            whatsapp: false, // NO WhatsApp en trial
             facebook: true,
             instagram: true,
             maxWhatsappChannels: 0,
-            maxChannels: 2,
+            maxChannels: 2, // Máximo 1 FB + 1 IG
         };
     }
 
@@ -34,31 +34,19 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
         };
     }
 
-    // Según plan de pago
+    // Todos los planes de pago tienen los mismos límites de canales
+    // Máximo 1 canal de cada tipo: 1 FB + 1 IG + 1 WhatsApp
     switch (profile.plan_type) {
         case 'basico':
-            return {
-                whatsapp: true,
-                facebook: true,
-                instagram: true,
-                maxWhatsappChannels: 1,
-                maxChannels: 3,
-            };
         case 'avanzado':
-            return {
-                whatsapp: true,
-                facebook: true,
-                instagram: true,
-                maxWhatsappChannels: 3,
-                maxChannels: 6,
-            };
         case 'pro':
+        case 'empresarial':
             return {
                 whatsapp: true,
                 facebook: true,
                 instagram: true,
-                maxWhatsappChannels: -1, // ilimitado
-                maxChannels: -1, // ilimitado
+                maxWhatsappChannels: 1, // Máximo 1 WhatsApp
+                maxChannels: 3, // Máximo 1 FB + 1 IG + 1 WhatsApp
             };
         default:
             return {
@@ -144,4 +132,107 @@ export const getPermissionsDescription = (profile: Profile): string => {
     if (permissions.instagram) parts.push('Instagram');
 
     return parts.join(', ');
+};
+
+/**
+ * Verifica si el usuario puede enviar mensajes
+ */
+export const canSendMessage = (profile: Profile): { allowed: boolean; reason?: string } => {
+    // Trial tiene mensajes ilimitados
+    if (profile.is_trial) {
+        return { allowed: true };
+    }
+
+    // Verificar si tiene plan activo
+    if (profile.payment_status !== 'active') {
+        return {
+            allowed: false,
+            reason: 'Tu plan no está activo. Actualiza tu suscripción para enviar mensajes.',
+        };
+    }
+
+    // Verificar límite de mensajes
+    const messagesSent = profile.messages_sent_this_month || 0;
+    const messagesLimit = profile.messages_limit || 0;
+
+    if (messagesSent >= messagesLimit) {
+        return {
+            allowed: false,
+            reason: `Has alcanzado el límite de ${messagesLimit} mensajes este mes. Actualiza tu plan.`,
+        };
+    }
+
+    return { allowed: true };
+};
+
+/**
+ * Verifica si el usuario puede crear un nuevo cliente en el CRM
+ */
+export const canCreateClient = (
+    profile: Profile,
+    currentClientCount: number = 0
+): { allowed: boolean; reason?: string } => {
+    // Trial tiene clientes ilimitados
+    if (profile.is_trial) {
+        return { allowed: true };
+    }
+
+    // Plan básico no tiene CRM
+    if (profile.plan_type === 'basico') {
+        return {
+            allowed: false,
+            reason: 'El CRM no está disponible en el plan Básico. Actualiza a un plan superior.',
+        };
+    }
+
+    // Verificar si tiene plan activo
+    if (profile.payment_status !== 'active') {
+        return {
+            allowed: false,
+            reason: 'Tu plan no está activo. Actualiza tu suscripción para usar el CRM.',
+        };
+    }
+
+    // Verificar límite de clientes
+    const clientsLimit = profile.clients_limit || 0;
+
+    if (currentClientCount >= clientsLimit) {
+        return {
+            allowed: false,
+            reason: `Has alcanzado el límite de ${clientsLimit} clientes. Actualiza tu plan.`,
+        };
+    }
+
+    return { allowed: true };
+};
+
+/**
+ * Obtiene el nivel de CRM del usuario
+ */
+export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => {
+    return profile.crm_level || 'none';
+};
+
+/**
+ * Verifica si el usuario tiene acceso a estadísticas
+ */
+export const hasStatisticsAccess = (profile: Profile): boolean => {
+    return profile.has_statistics || false;
+};
+
+/**
+ * Obtiene el porcentaje de uso de mensajes
+ */
+export const getMessageUsagePercentage = (profile: Profile): number => {
+    const sent = profile.messages_sent_this_month || 0;
+    const limit = profile.messages_limit || 1;
+    return Math.min(Math.round((sent / limit) * 100), 100);
+};
+
+/**
+ * Obtiene el porcentaje de uso de clientes CRM
+ */
+export const getClientUsagePercentage = (profile: Profile, currentCount: number): number => {
+    const limit = profile.clients_limit || 1;
+    return Math.min(Math.round((currentCount / limit) * 100), 100);
 };
