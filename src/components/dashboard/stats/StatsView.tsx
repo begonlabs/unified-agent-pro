@@ -83,7 +83,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
             <Button
               size="lg"
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
-              onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
             >
               <Lock className="h-4 w-4 mr-2" />
               Actualizar Plan para Ver Estadísticas

@@ -80,7 +80,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
               <span>{clientCheck.reason || "Has alcanzado el límite de clientes de tu plan."}</span>
               <button
                 className="underline font-semibold hover:text-red-900"
-                onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+                onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
               >
                 Mejorar Plan
               </button>

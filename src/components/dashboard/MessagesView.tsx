@@ -590,7 +590,7 @@ const MessagesView = () => {
               variant="link"
               size="sm"
               className="h-auto p-0 text-xs text-blue-600"
-              onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
             >
               Mejorar Plan
             </Button>

@@ -311,7 +311,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             <Button
               variant="outline"
               className="hidden sm:flex border-blue-300 text-blue-700 hover:bg-blue-100"
-              onClick={() => window.location.href = '/dashboard/profile?tab=subscription'}
+              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
             >
               <ArrowUpCircle className="mr-2 h-4 w-4" />
               Mejorar Plan
