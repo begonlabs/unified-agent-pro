@@ -113,7 +113,7 @@ serve(async (req) => {
             },
             order_id: orderId,
             notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
-            callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
+            callback_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
         }
 
 
