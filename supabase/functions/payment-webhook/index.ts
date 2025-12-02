@@ -27,6 +27,9 @@ interface DLocalGoWebhook {
 
 const SUPABASE_URL = config.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = config.SUPABASE_SERVICE_ROLE_KEY
+const DLOCALGO_API_KEY = config.DLOCALGO_API_KEY
+const DLOCALGO_SECRET_KEY = config.DLOCALGO_SECRET_KEY
+const DLOCALGO_API_URL = config.DLOCALGO_API_URL
 
 serve(async (req) => {
     // Handle CORS preflight requests
@@ -38,17 +41,47 @@ serve(async (req) => {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
         // Parse webhook payload
-        const webhook: DLocalGoWebhook = await req.json()
+        const webhookPayload = await req.json()
 
-        console.log('Received dLocalGo webhook:', webhook)
+        console.log('Received dLocalGo webhook:', webhookPayload)
 
-        // Validate webhook type
-        if (!webhook.type || !webhook.data) {
-            throw new Error('Invalid webhook payload')
+        // dLocalGo sends different payload formats
+        // Sometimes just { payment_id: "DP-123" }, sometimes full payload
+        let dlocalgoPaymentId: string
+        let paymentData: any
+
+        if (webhookPayload.payment_id) {
+            // Simple format: just payment_id
+            dlocalgoPaymentId = webhookPayload.payment_id
+
+            // Fetch payment details from dLocalGo API
+            console.log('Fetching payment details from dLocalGo API:', dlocalgoPaymentId)
+
+            const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+            const authHeader = `Basic ${btoa(authString)}`
+
+            const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments/${dlocalgoPaymentId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': authHeader,
+                },
+            })
+
+            if (!dlocalgoResponse.ok) {
+                const errorText = await dlocalgoResponse.text()
+                console.error('dLocalGo API error:', errorText)
+                throw new Error(`Failed to fetch payment details: ${errorText}`)
+            }
+
+            paymentData = await dlocalgoResponse.json()
+            console.log('Fetched payment data:', paymentData)
+        } else if (webhookPayload.type && webhookPayload.data) {
+            // Full format: { type: "...", data: { ... } }
+            paymentData = webhookPayload.data
+            dlocalgoPaymentId = paymentData.id
+        } else {
+            throw new Error('Invalid webhook payload format')
         }
-
-        const paymentData = webhook.data
-        const dlocalgoPaymentId = paymentData.id
 
         // Find payment record
         const { data: payment, error: paymentError } = await supabase
