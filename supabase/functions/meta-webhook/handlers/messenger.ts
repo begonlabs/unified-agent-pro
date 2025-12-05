@@ -858,15 +858,24 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
               console.log('✅ Respuesta de IA enviada y guardada exitosamente');
 
               // Increment message count for AI response
-              if (profile) {
-                const { error: updateError } = await supabase
-                  .from('profiles')
-                  .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })
-                  .eq('user_id', conversation.user_id);
+              // Increment message count for AI response using RPC
+              const { error: rpcError } = await supabase.rpc('increment_message_usage', {
+                user_id_param: conversation.user_id
+              });
 
-                if (updateError) {
-                  console.error('Error updating message count:', updateError);
+              if (rpcError) {
+                console.error('❌ Error incrementing message count via RPC:', rpcError);
+                // Fallback to manual update if RPC fails
+                if (profile) {
+                  const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })
+                    .eq('user_id', conversation.user_id);
+
+                  if (updateError) console.error('❌ Error in fallback update:', updateError);
                 }
+              } else {
+                console.log('✅ Message count incremented via RPC');
               }
             }
           }
