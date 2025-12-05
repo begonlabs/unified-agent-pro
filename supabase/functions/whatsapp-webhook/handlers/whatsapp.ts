@@ -578,14 +578,31 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
 
             if (rpcError) {
               console.error('❌ Error incrementing message count via RPC:', rpcError);
-              // Fallback to manual update if RPC fails
-              if (profile) {
-                const { error: updateError } = await supabase
-                  .from('profiles')
-                  .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })
-                  .eq('user_id', conversation.user_id);
 
-                if (updateError) console.error('❌ Error in fallback update:', updateError);
+              // Fallback: Fetch fresh profile and update manually
+              try {
+                const { data: freshProfile } = await supabase
+                  .from('profiles')
+                  .select('messages_sent_this_month')
+                  .eq('user_id', conversation.user_id)
+                  .single();
+
+                if (freshProfile) {
+                  const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ messages_sent_this_month: (freshProfile.messages_sent_this_month || 0) + 1 })
+                    .eq('user_id', conversation.user_id);
+
+                  if (updateError) {
+                    console.error('❌ Error in fallback update:', updateError);
+                  } else {
+                    console.log('✅ Message count incremented via fallback manual update');
+                  }
+                } else {
+                  console.error('❌ Could not fetch profile for fallback update');
+                }
+              } catch (fallbackError) {
+                console.error('❌ Critical error in fallback update logic:', fallbackError);
               }
             } else {
               console.log('✅ Message count incremented via RPC');
