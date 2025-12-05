@@ -123,6 +123,21 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium flex items-center gap-1">
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
+                Email de Contacto *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={profileData.email}
+                onChange={(e) => onProfileDataChange({ ...profileData, email: e.target.value })}
+                disabled={!editingProfile}
+                className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
+                placeholder="contacto@empresa.com"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="firstName" className="text-sm font-medium flex items-center gap-1">
                 <Building className="h-3 w-3 sm:h-4 sm:w-4" />
                 Nombre *
@@ -148,21 +163,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 disabled={!editingProfile}
                 className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
                 placeholder="Tu apellido"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium flex items-center gap-1">
-                <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
-                Email de Contacto *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={profileData.email}
-                onChange={(e) => onProfileDataChange({ ...profileData, email: e.target.value })}
-                disabled={!editingProfile}
-                className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
-                placeholder="contacto@empresa.com"
               />
             </div>
           </div>
