@@ -15,10 +15,11 @@ import {
   AuthLoadingState
 } from './components';
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
-import { hasStatisticsAccess } from '@/lib/channelPermissions';
-import { Lock, BarChart3 } from 'lucide-react';
+import { hasStatisticsAccess, getMessageUsagePercentage } from '@/lib/channelPermissions';
+import { Lock, BarChart3, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
   // Get user from auth if not provided as prop
@@ -109,6 +110,38 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
 
       {/* KPI Cards */}
       {!loading && <StatsKPIs stats={stats} />}
+
+      {/* Plan Usage Card */}
+      {profile && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <Bot className="h-5 w-5 text-purple-600" />
+              Consumo de Plan
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Mensajes IA Enviados</span>
+                  <span className="text-sm text-gray-500">
+                    {profile.messages_sent_this_month} / {profile.messages_limit}
+                  </span>
+                </div>
+                <Progress
+                  value={getMessageUsagePercentage(profile)}
+                  className="h-2"
+                  indicatorClassName={getMessageUsagePercentage(profile) >= 90 ? 'bg-amber-500' : 'bg-purple-600'}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Se renueva el {new Date(profile.subscription_end || new Date()).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts Row 1 */}
       {!loading && (

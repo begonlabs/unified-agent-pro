@@ -562,45 +562,39 @@ const MessagesView = () => {
   };
 
   // Render message limit warning
-  const renderMessageLimitWarning = () => {
+  // Render message usage
+  const renderMessageUsage = () => {
     if (!profile) return null;
 
-    // Show warning if usage is high (> 80%) or if limit reached
-    if (usagePercentage >= 80 || !messageCheck.allowed) {
-      return (
-        <div className="px-3 py-2 bg-yellow-50 border-t border-yellow-100">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-yellow-800 flex items-center gap-1">
-              {messageCheck.allowed ? (
-                <>
-                  <AlertTriangle className="h-3 w-3" />
-                  Uso de mensajes: {profile.messages_sent_this_month} / {profile.messages_limit}
-                </>
-              ) : (
-                <>
-                  <Lock className="h-3 w-3 text-red-600" />
-                  <span className="text-red-700">Límite alcanzado: IA Pausada</span>
-                </>
-              )}
-            </span>
-            <Button
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs text-blue-600"
-              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
-            >
-              Mejorar Plan
-            </Button>
-          </div>
-          <Progress
-            value={Math.min(usagePercentage, 100)}
-            className={`h-1.5 ${!messageCheck.allowed ? 'bg-red-100' : 'bg-yellow-100'}`}
-            indicatorClassName={!messageCheck.allowed ? 'bg-red-500' : usagePercentage >= 90 ? 'bg-red-500' : 'bg-yellow-500'}
-          />
+    return (
+      <div className="px-3 py-2 bg-gray-50 border-t border-gray-200">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+            <Bot className="h-3 w-3 text-purple-600" />
+            Uso IA: {profile.messages_sent_this_month} / {profile.messages_limit}
+          </span>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-blue-600"
+            onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+          >
+            Mejorar
+          </Button>
         </div>
-      );
-    }
-    return null;
+        <Progress
+          value={Math.min(usagePercentage, 100)}
+          className={`h-1.5 ${!messageCheck.allowed ? 'bg-red-100' : 'bg-gray-200'}`}
+          indicatorClassName={!messageCheck.allowed ? 'bg-red-500' : usagePercentage >= 90 ? 'bg-amber-500' : 'bg-purple-600'}
+        />
+        {!messageCheck.allowed && (
+          <p className="text-[10px] text-red-600 mt-1 font-medium flex items-center gap-1">
+            <Lock className="h-3 w-3" />
+            Límite alcanzado: IA Pausada
+          </p>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -781,6 +775,7 @@ const MessagesView = () => {
               )}
             </div>
           </div>
+          {renderMessageUsage()}
         </div>
 
         {/* Mobile Chat Area - Tipo WhatsApp */}
