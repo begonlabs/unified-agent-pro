@@ -131,193 +131,193 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                 </div>
               </div>
 
-            </div>
 
-            <div className="mt-6 mb-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-purple-600" />
-                  Consumo de Mensajes IA
-                </span>
-                <span className="text-sm text-gray-500">
-                  {profile.messages_sent_this_month} / {profile.messages_limit}
-                </span>
-              </div>
-              <Progress
-                value={getMessageUsagePercentage(profile)}
-                className="h-2"
-                indicatorClassName={getMessageUsagePercentage(profile) >= 90 ? 'bg-amber-500' : 'bg-purple-600'}
-              />
-            </div>
 
-            <Separator className="my-4" />
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Estado:</span>
-                <p className="font-medium">
-                  {profile.is_trial ? 'Período de Prueba' : profile.is_active ? 'Activo' : 'Inactivo'}
-                </p>
-              </div>
-              <div>
-                <span className="text-gray-500">Inicio:</span>
-                <p className="font-medium">{ProfileService.formatDate(profile.subscription_start)}</p>
-              </div>
-              {profile.is_trial && profile.trial_end_date ? (
-                <div>
-                  <span className="text-gray-500">Fin de prueba:</span>
-                  <p className="font-medium">{ProfileService.formatDate(profile.trial_end_date)}</p>
+              <div className="mt-6 mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-purple-600" />
+                    Consumo de Mensajes IA
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {profile.messages_sent_this_month} / {profile.messages_limit}
+                  </span>
                 </div>
-              ) : profile.subscription_end && (
-                <>
+                <Progress
+                  value={getMessageUsagePercentage(profile)}
+                  className="h-2"
+                  indicatorClassName={getMessageUsagePercentage(profile) >= 90 ? 'bg-amber-500' : 'bg-purple-600'}
+                />
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Estado:</span>
+                  <p className="font-medium">
+                    {profile.is_trial ? 'Período de Prueba' : profile.is_active ? 'Activo' : 'Inactivo'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Inicio:</span>
+                  <p className="font-medium">{ProfileService.formatDate(profile.subscription_start)}</p>
+                </div>
+                {profile.is_trial && profile.trial_end_date ? (
                   <div>
-                    <span className="text-gray-500">Próxima renovación:</span>
-                    <p className="font-medium">{ProfileService.formatDate(profile.subscription_end)}</p>
+                    <span className="text-gray-500">Fin de prueba:</span>
+                    <p className="font-medium">{ProfileService.formatDate(profile.trial_end_date)}</p>
                   </div>
-                  <div>
-                    <span className="text-gray-500">Auto-renovación:</span>
-                    <p className="font-medium text-green-600">Activada</p>
-                  </div>
-                </>
-              )}
+                ) : profile.subscription_end && (
+                  <>
+                    <div>
+                      <span className="text-gray-500">Próxima renovación:</span>
+                      <p className="font-medium">{ProfileService.formatDate(profile.subscription_end)}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Auto-renovación:</span>
+                      <p className="font-medium text-green-600">Activada</p>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
 
-      {/* Cambiar Plan */ }
-  <Card>
-    <CardHeader className="p-4 sm:p-6">
-      <CardTitle className="text-lg sm:text-xl">Cambiar Plan</CardTitle>
-      <CardDescription className="text-sm sm:text-base">
-        Elige el plan que mejor se adapte a las necesidades de tu empresa
-      </CardDescription>
-    </CardHeader>
-    <CardContent className="p-4 sm:p-6 pt-0">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {plans.map((plan) => {
-          const Icon = plan.icon;
-          return (
-            <Card
-              key={plan.name}
-              className={`relative transition-all duration-200 ${plan.current
-                ? 'ring-2 ring-blue-500 shadow-lg'
-                : 'hover:shadow-md hover:scale-105'
-                }`}
-            >
-              {plan.current && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-blue-500 text-white border-blue-600">
-                    Plan Actual
-                  </Badge>
-                </div>
-              )}
-
-              <CardHeader className="text-center p-4 sm:p-6">
-                <div className={`mx-auto p-2 sm:p-3 rounded-full ${plan.bgColor} border mb-2`}>
-                  <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${plan.color}`} />
-                </div>
-                <CardTitle className="text-lg sm:text-xl">{plan.name}</CardTitle>
-                <div className="text-2xl sm:text-3xl font-bold">
-                  {plan.price}
-                  <span className="text-xs sm:text-sm font-normal text-gray-500">/mes</span>
-                </div>
-                <CardDescription className="text-sm sm:text-base">{plan.description}</CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="pt-4">
-                  {plan.current ? (
-                    <Button variant="outline" className="w-full" disabled>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Plan Actual
-                    </Button>
-                  ) : plan.isTrial ? (
-                    <Button variant="outline" className="w-full" disabled>
-                      Plan de Prueba
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      variant={plan.name === 'Pro' ? 'default' : 'outline'}
-                      onClick={() => handleUpgrade(plan)}
-                    >
-                      Cambiar a {plan.name}
-                    </Button>
+      {/* Cambiar Plan */}
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Cambiar Plan</CardTitle>
+          <CardDescription className="text-sm sm:text-base">
+            Elige el plan que mejor se adapte a las necesidades de tu empresa
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {plans.map((plan) => {
+              const Icon = plan.icon;
+              return (
+                <Card
+                  key={plan.name}
+                  className={`relative transition-all duration-200 ${plan.current
+                    ? 'ring-2 ring-blue-500 shadow-lg'
+                    : 'hover:shadow-md hover:scale-105'
+                    }`}
+                >
+                  {plan.current && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-blue-500 text-white border-blue-600">
+                        Plan Actual
+                      </Badge>
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+
+                  <CardHeader className="text-center p-4 sm:p-6">
+                    <div className={`mx-auto p-2 sm:p-3 rounded-full ${plan.bgColor} border mb-2`}>
+                      <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${plan.color}`} />
+                    </div>
+                    <CardTitle className="text-lg sm:text-xl">{plan.name}</CardTitle>
+                    <div className="text-2xl sm:text-3xl font-bold">
+                      {plan.price}
+                      <span className="text-xs sm:text-sm font-normal text-gray-500">/mes</span>
+                    </div>
+                    <CardDescription className="text-sm sm:text-base">{plan.description}</CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    <ul className="space-y-3">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="pt-4">
+                      {plan.current ? (
+                        <Button variant="outline" className="w-full" disabled>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Plan Actual
+                        </Button>
+                      ) : plan.isTrial ? (
+                        <Button variant="outline" className="w-full" disabled>
+                          Plan de Prueba
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          variant={plan.name === 'Pro' ? 'default' : 'outline'}
+                          onClick={() => handleUpgrade(plan)}
+                        >
+                          Cambiar a {plan.name}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Historial de Facturación */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Historial de Facturación
+          </CardTitle>
+          <CardDescription>
+            Revisa tus pagos y facturas anteriores
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <CreditCard className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay historial de pagos</h3>
+            <p className="text-gray-500 mb-4">
+              Las facturas y recibos aparecerán aquí una vez que realices tu primer pago.
+            </p>
+            <Button variant="outline" size="sm">
+              <Globe className="h-4 w-4 mr-2" />
+              Ver métodos de pago
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payment Modal */}
+      {
+        selectedPlan && (() => {
+          // Normalize plan name to match expected types
+          const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' => {
+            const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (normalized === 'basico') return 'basico';
+            if (normalized === 'avanzado') return 'avanzado';
+            if (normalized === 'pro') return 'pro';
+            return 'basico'; // fallback
+          };
+
+          return (
+            <PaymentModal
+              open={paymentModalOpen}
+              onOpenChange={setPaymentModalOpen}
+              planName={selectedPlan.name}
+              planPrice={selectedPlan.price}
+              planType={normalizePlanType(selectedPlan.name)}
+              planFeatures={selectedPlan.features}
+              planIcon={selectedPlan.icon}
+              planColor={selectedPlan.bgColor}
+            />
           );
-        })}
-      </div>
-    </CardContent>
-  </Card>
-
-  {/* Historial de Facturación */ }
-  <Card>
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <CreditCard className="h-5 w-5" />
-        Historial de Facturación
-      </CardTitle>
-      <CardDescription>
-        Revisa tus pagos y facturas anteriores
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="text-center py-12">
-        <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <CreditCard className="h-8 w-8 text-gray-400" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay historial de pagos</h3>
-        <p className="text-gray-500 mb-4">
-          Las facturas y recibos aparecerán aquí una vez que realices tu primer pago.
-        </p>
-        <Button variant="outline" size="sm">
-          <Globe className="h-4 w-4 mr-2" />
-          Ver métodos de pago
-        </Button>
-      </div>
-    </CardContent>
-  </Card>
-
-  {/* Payment Modal */ }
-  {
-    selectedPlan && (() => {
-      // Normalize plan name to match expected types
-      const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' => {
-        const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (normalized === 'basico') return 'basico';
-        if (normalized === 'avanzado') return 'avanzado';
-        if (normalized === 'pro') return 'pro';
-        return 'basico'; // fallback
-      };
-
-      return (
-        <PaymentModal
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
-          planName={selectedPlan.name}
-          planPrice={selectedPlan.price}
-          planType={normalizePlanType(selectedPlan.name)}
-          planFeatures={selectedPlan.features}
-          planIcon={selectedPlan.icon}
-          planColor={selectedPlan.bgColor}
-        />
-      );
-    })()
-  }
+        })()
+      }
     </TabsContent >
   );
 };
