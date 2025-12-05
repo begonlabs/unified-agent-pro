@@ -1,4 +1,3 @@
-```
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -24,16 +23,16 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   // Nuevo sistema de persistencia de vistas
   const [currentView, setCurrentView] = useViewFromUrlOrPersisted('messages');
   const { refreshGlobalData, refreshViewData } = useDataRefresh();
   const { detectViewChange } = useViewChangeDetector();
 
-  console.log('Dashboard state:', { 
-    user: user?.email, 
-    loading, 
-    currentView, 
+  console.log('Dashboard state:', {
+    user: user?.email,
+    loading,
+    currentView,
     isPersisted: !!localStorage.getItem('dashboard-current-view')
   });
 
@@ -63,9 +62,9 @@ const Dashboard = () => {
   // 🔄 Detectar cambios de vista y refrescar datos específicos
   useEffect(() => {
     const hasViewChanged = detectViewChange(currentView);
-    
+
     if (hasViewChanged && user?.id) {
-      console.log(`Vista cambiada, refrescando datos para: ${ currentView } `);
+      console.log(`Vista cambiada, refrescando datos para: ${currentView}`);
       refreshViewData(currentView);
     }
   }, [currentView, detectViewChange, refreshViewData, user?.id]);
@@ -78,7 +77,7 @@ const Dashboard = () => {
           const profile = await ProfileService.fetchProfile(user.id);
           if (profile) {
             const isProfileIncomplete = !profile.first_name || !profile.last_name;
-            
+
             // If profile is incomplete and we are not already on the profile view
             if (isProfileIncomplete && currentView !== 'profile') {
               console.log('⚠️ Profile incomplete, redirecting to profile view');
@@ -108,30 +107,30 @@ const Dashboard = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const successParam = urlParams.get('success');
-    
+
     if (successParam === 'true') {
       const pageId = urlParams.get('page_id');
       const pageName = urlParams.get('page_name');
       const businessName = urlParams.get('business_name');
       const phoneNumber = urlParams.get('phone_number');
       const channel = urlParams.get('channel');
-      
+
       // Mostrar notificación de éxito según el tipo de canal
       if (channel === 'whatsapp' && businessName) {
         toast({
           title: "WhatsApp conectado exitosamente",
-          description: `Empresa: ${ businessName }${ phoneNumber ? ` - ${phoneNumber}` : '' } `,
+          description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
         });
       } else if (pageId && pageName && channel) {
         toast({
-          title: "Conexión exitosa", 
-          description: `${ channel === 'facebook' ? 'Facebook' : 'Canal' } conectado: ${ pageName } `,
+          title: "Conexión exitosa",
+          description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} conectado: ${pageName}`,
         });
       }
-      
+
       // Limpiar parámetros URL después de mostrar notificación
       setTimeout(() => {
-        const newUrl = window.location.pathname + (window.location.search.includes('view=') ? `? view = ${ currentView } ` : '');
+        const newUrl = window.location.pathname + (window.location.search.includes('view=') ? `?view=${currentView}` : '');
         window.history.replaceState({}, '', newUrl);
       }, 2000);
     }
@@ -148,11 +147,11 @@ const Dashboard = () => {
         title: "Cerrando sesión...",
         description: "Redirigiendo...",
       });
-      
+
       // Usar logout robusto
       const { robustSignOut } = await import('@/lib/utils');
       await robustSignOut();
-      
+
     } catch (error: unknown) {
       console.error('Error during sign out:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al cerrar sesión';
@@ -161,7 +160,7 @@ const Dashboard = () => {
         description: "Redirigiendo de todas formas...",
         variant: "destructive",
       });
-      
+
       // Forzar redirección incluso si hay error
       setTimeout(() => {
         window.location.href = '/auth';
@@ -201,8 +200,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar responsive */}
-      <ResponsiveSidebar 
-        currentView={currentView} 
+      <ResponsiveSidebar
+        currentView={currentView}
         setCurrentView={handleViewChange}
         onSignOut={handleSignOut}
         user={user}
