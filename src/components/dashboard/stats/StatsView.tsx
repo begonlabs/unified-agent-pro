@@ -15,7 +15,7 @@ import {
   AuthLoadingState
 } from './components';
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
-import { hasStatisticsAccess, getMessageUsagePercentage } from '@/lib/channelPermissions';
+import { hasStatisticsAccess, getMessageUsagePercentage, PLAN_LIMITS } from '@/lib/channelPermissions';
 import { Lock, BarChart3, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,7 +126,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Mensajes IA Enviados</span>
                   <span className="text-sm text-gray-500">
-                    {profile.messages_sent_this_month} / {profile.messages_limit}
+                    {profile.messages_sent_this_month || 0} / {profile.messages_limit ?? PLAN_LIMITS[profile.plan_type]?.messages ?? 0}
                   </span>
                 </div>
                 <Progress

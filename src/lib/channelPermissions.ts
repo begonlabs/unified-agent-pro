@@ -8,6 +8,14 @@ export interface ChannelPermissions {
     maxChannels: number;
 }
 
+export const PLAN_LIMITS: Record<string, { messages: number; clients: number }> = {
+    free: { messages: 0, clients: 0 },
+    basico: { messages: 10000, clients: 200 },
+    avanzado: { messages: 30000, clients: 600 },
+    pro: { messages: 70000, clients: 2000 },
+    empresarial: { messages: 100000, clients: 3000 }
+};
+
 /**
  * Obtiene los permisos de canales según el plan del usuario
  */
@@ -167,7 +175,8 @@ export const canSendMessage = (profile: Profile): { allowed: boolean; reason?: s
 
     // Verificar límite de mensajes
     const messagesSent = profile.messages_sent_this_month || 0;
-    const messagesLimit = profile.messages_limit || 0;
+    // Usar el límite del perfil o el defecto del plan
+    const messagesLimit = profile.messages_limit ?? PLAN_LIMITS[profile.plan_type]?.messages ?? 0;
 
     if (messagesSent >= messagesLimit) {
         return {
@@ -209,7 +218,7 @@ export const canCreateClient = (
     }
 
     // Verificar límite de clientes
-    const clientsLimit = profile.clients_limit || 0;
+    const clientsLimit = profile.clients_limit ?? PLAN_LIMITS[profile.plan_type]?.clients ?? 0;
 
     if (currentClientCount >= clientsLimit) {
         return {
@@ -246,14 +255,18 @@ export const hasStatisticsAccess = (profile: Profile): boolean => {
  */
 export const getMessageUsagePercentage = (profile: Profile): number => {
     const sent = profile.messages_sent_this_month || 0;
-    const limit = profile.messages_limit || 1;
-    return Math.min(Math.round((sent / limit) * 100), 100);
+    const limit = profile.messages_limit ?? PLAN_LIMITS[profile.plan_type]?.messages ?? 1;
+    // Evitar división por cero
+    const safeLimit = limit === 0 ? 1 : limit;
+    return Math.min(Math.round((sent / safeLimit) * 100), 100);
 };
 
 /**
  * Obtiene el porcentaje de uso de clientes CRM
  */
 export const getClientUsagePercentage = (profile: Profile, currentCount: number): number => {
-    const limit = profile.clients_limit || 1;
-    return Math.min(Math.round((currentCount / limit) * 100), 100);
+    const limit = profile.clients_limit ?? PLAN_LIMITS[profile.plan_type]?.clients ?? 1;
+    // Evitar división por cero
+    const safeLimit = limit === 0 ? 1 : limit;
+    return Math.min(Math.round((currentCount / safeLimit) * 100), 100);
 };

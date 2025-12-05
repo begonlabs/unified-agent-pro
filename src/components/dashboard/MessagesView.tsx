@@ -40,7 +40,12 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { NotificationService } from '@/components/notifications';
 import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
-import { canSendMessage, getMessageUsagePercentage } from '@/lib/channelPermissions';
+import {
+  getChannelPermissions,
+  canSendMessage,
+  getMessageUsagePercentage,
+  PLAN_LIMITS
+} from '@/lib/channelPermissions';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -566,12 +571,14 @@ const MessagesView = () => {
   const renderMessageUsage = () => {
     if (!profile) return null;
 
+    const effectiveLimit = profile.messages_limit ?? PLAN_LIMITS[profile.plan_type]?.messages ?? 0;
+
     return (
       <div className="px-3 py-2 bg-gray-50 border-t border-gray-200">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
             <Bot className="h-3 w-3 text-purple-600" />
-            Uso IA: {profile.messages_sent_this_month} / {profile.messages_limit}
+            Uso IA: {profile.messages_sent_this_month || 0} / {effectiveLimit}
           </span>
           <Button
             variant="link"

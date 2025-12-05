@@ -17,7 +17,7 @@ import { Profile, Plan } from '../types';
 import { ProfileService } from '../services/profileService';
 import { PaymentModal } from './PaymentModal';
 import { Progress } from '@/components/ui/progress';
-import { getMessageUsagePercentage } from '@/lib/channelPermissions';
+import { getMessageUsagePercentage, PLAN_LIMITS } from '@/lib/channelPermissions';
 
 interface SubscriptionTabProps {
   profile: Profile;
@@ -140,7 +140,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({ profile }) => 
                     Consumo de Mensajes IA
                   </span>
                   <span className="text-sm text-gray-500">
-                    {profile.messages_sent_this_month} / {profile.messages_limit}
+                    {profile.messages_sent_this_month || 0} / {profile.messages_limit ?? PLAN_LIMITS[profile.plan_type]?.messages ?? 0}
                   </span>
                 </div>
                 <Progress
