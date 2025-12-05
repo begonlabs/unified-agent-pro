@@ -61,6 +61,7 @@ export interface ClientFiltersProps {
   filteredClientsCount: number;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  crmLevel?: 'none' | 'basic' | 'complete';
 }
 
 export interface ClientStatsProps {

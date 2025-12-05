@@ -114,6 +114,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
               filteredClientsCount={filteredClients.length}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
+              crmLevel={crmLevel}
             />
           </CardHeader>
 

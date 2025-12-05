@@ -11,9 +11,13 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
   onExportCSV,
   onExportExcel,
   filteredClientsCount,
+  onExportExcel,
+  filteredClientsCount,
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  crmLevel = 'basic' // Default to basic if not provided
 }) => {
+  const isAdvancedCRM = crmLevel === 'complete';
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
       <div className="flex-1 relative">
@@ -53,49 +57,55 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
           </SelectContent>
         </Select>
 
-        {/* View mode toggle */}
-        <div className="flex gap-1 border rounded-md p-1">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewModeChange('grid')}
-            className="h-7 px-2"
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewModeChange('list')}
-            className="h-7 px-2"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* View mode toggle - Only for Advanced CRM */}
+        {isAdvancedCRM && (
+          <div className="flex gap-1 border rounded-md p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('grid')}
+              className="h-7 px-2"
+              title="Vista en cuadrícula"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('list')}
+              className="h-7 px-2"
+              title="Vista en lista"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
-        {/* Botón de exportación */}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExportCSV}
-            disabled={filteredClientsCount === 0}
-            className="h-8 text-xs sm:text-sm border-[#3a0caa] text-[#3a0caa] hover:bg-[#3a0caa] hover:text-white"
-          >
-            <Download className="h-3 w-3 mr-1" />
-            CSV
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExportExcel}
-            disabled={filteredClientsCount === 0}
-            className="h-8 text-xs sm:text-sm border-[#710db2] text-[#710db2] hover:bg-[#710db2] hover:text-white"
-          >
-            <Download className="h-3 w-3 mr-1" />
-            Excel
-          </Button>
-        </div>
+        {/* Botón de exportación - Only for Advanced CRM */}
+        {isAdvancedCRM && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExportCSV}
+              disabled={filteredClientsCount === 0}
+              className="h-8 text-xs sm:text-sm border-[#3a0caa] text-[#3a0caa] hover:bg-[#3a0caa] hover:text-white"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExportExcel}
+              disabled={filteredClientsCount === 0}
+              className="h-8 text-xs sm:text-sm border-[#710db2] text-[#710db2] hover:bg-[#710db2] hover:text-white"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              Excel
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
