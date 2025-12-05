@@ -594,10 +594,10 @@ const MessagesView = () => {
             value={Math.min(usagePercentage, 100)}
             className={`h-2 border border-gray-200 ${!messageCheck.allowed ? 'bg-red-50' : 'bg-gray-100'}`}
             indicatorClassName={`${!messageCheck.allowed
-                ? 'bg-red-500'
-                : usagePercentage >= 90
-                  ? 'bg-gradient-to-r from-amber-500 to-red-500'
-                  : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
+              ? 'bg-red-500'
+              : usagePercentage >= 90
+                ? 'bg-gradient-to-r from-amber-500 to-red-500'
+                : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
               } transition-all duration-1000 ease-out`}
           />
           {/* Shimmer overlay */}
@@ -886,7 +886,7 @@ const MessagesView = () => {
 
             {/* Área de mensajes con scroll independiente */}
             {/* Área de mensajes con scroll independiente */}
-            <div className="flex-1 overflow-y-auto p-3" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '400px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+            <div className="flex-1 overflow-y-auto p-3" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '600px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
               <div className="space-y-3 max-w-full">
                 {messages.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -1142,7 +1142,7 @@ const MessagesView = () => {
 
               {/* Messages con scroll independiente */}
               {/* Messages con scroll independiente */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '400px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '600px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {messages.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -1309,7 +1309,7 @@ const MessagesView = () => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '400px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+            <div className="flex-1 flex items-center justify-center" style={{ backgroundImage: 'url(/chat-background.jpg)', backgroundSize: '600px', backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
               <div className="text-center">
                 <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg max-w-md mx-auto">
                   <MessageCircle className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
