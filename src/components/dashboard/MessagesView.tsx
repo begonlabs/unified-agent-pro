@@ -992,19 +992,15 @@ const MessagesView = () => {
                         },
                         {
                           category: Categories.FLAGS,
-                          name: "Banderas"
-                        }
-                      ]}
-                    />
                   </PopoverContent>
                 </Popover>
 
                 {/* Input de texto */}
                 <div className="flex-1">
                   <Textarea
-                    placeholder={messageCheck.allowed ? "Escribe un mensaje..." : "Límite de mensajes alcanzado"}
+                    placeholder={"Escribe un mensaje..."}
                     value={newMessage}
-                    disabled={!messageCheck.allowed}
+                    disabled={false}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -1020,9 +1016,9 @@ const MessagesView = () => {
                 {/* Botón de enviar */}
                 <Button
                   onClick={sendMessage}
-                  disabled={!newMessage.trim() || isSending || !messageCheck.allowed}
+                  disabled={!newMessage.trim() || isSending}
                   size="icon"
-                  className={`h-[40px] w-[40px] rounded-full transition-all duration-200 ${isSending || !messageCheck.allowed
+                  className={`h-[40px] w-[40px] rounded-full transition-all duration-200 ${isSending
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                     }`}
@@ -1198,7 +1194,7 @@ const MessagesView = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        disabled={!messageCheck.allowed}
+                        disabled={false}
                         className="h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 flex-shrink-0"
                       >
                         <Smile className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -1258,9 +1254,9 @@ const MessagesView = () => {
                   {/* Input de texto */}
                   <div className="flex-1">
                     <Textarea
-                      placeholder={messageCheck.allowed ? "Escribe un mensaje..." : "Límite de mensajes alcanzado"}
+                      placeholder={"Escribe un mensaje..."}
                       value={newMessage}
-                      disabled={!messageCheck.allowed}
+                      disabled={false}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -1276,9 +1272,9 @@ const MessagesView = () => {
                   {/* Botón de enviar */}
                   <Button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || isSending || !messageCheck.allowed}
+                    disabled={!newMessage.trim() || isSending}
                     size="icon"
-                    className={`h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full transition-all duration-200 ${isSending || !messageCheck.allowed
+                    className={`h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] rounded-full transition-all duration-200 ${isSending
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                       }`}
