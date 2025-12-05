@@ -8,6 +8,7 @@ import { ClientFiltersProps, ViewMode } from '../types';
 export const ClientFilters: React.FC<ClientFiltersProps> = ({
   filters,
   onFiltersChange,
+  onExportCSV,
   onExportExcel,
   filteredClientsCount,
   viewMode,
