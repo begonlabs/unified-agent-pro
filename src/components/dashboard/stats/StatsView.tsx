@@ -129,11 +129,23 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
                     {profile.messages_sent_this_month || 0} / {profile.messages_limit ?? PLAN_LIMITS[profile.plan_type]?.messages ?? 0}
                   </span>
                 </div>
-                <Progress
-                  value={getMessageUsagePercentage(profile)}
-                  className="h-2"
-                  indicatorClassName={getMessageUsagePercentage(profile) >= 90 ? 'bg-amber-500' : 'bg-purple-600'}
-                />
+                <div className="relative">
+                  <Progress
+                    value={getMessageUsagePercentage(profile)}
+                    className="h-3 bg-gray-100 border border-gray-200"
+                    indicatorClassName={`${getMessageUsagePercentage(profile) >= 90
+                        ? 'bg-gradient-to-r from-amber-500 to-red-500'
+                        : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
+                      } transition-all duration-1000 ease-out`}
+                  />
+                  {/* Shimmer overlay */}
+                  <div
+                    className="absolute top-0 left-0 h-full w-full overflow-hidden rounded-full pointer-events-none"
+                    style={{ width: `${getMessageUsagePercentage(profile)}%` }}
+                  >
+                    <div className="h-full w-full animate-shimmer"></div>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Se renueva el {new Date(profile.subscription_end || new Date()).toLocaleDateString()}
                 </p>

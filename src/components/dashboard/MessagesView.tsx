@@ -589,11 +589,25 @@ const MessagesView = () => {
             Mejorar
           </Button>
         </div>
-        <Progress
-          value={Math.min(usagePercentage, 100)}
-          className={`h-1.5 ${!messageCheck.allowed ? 'bg-red-100' : 'bg-gray-200'}`}
-          indicatorClassName={!messageCheck.allowed ? 'bg-red-500' : usagePercentage >= 90 ? 'bg-amber-500' : 'bg-purple-600'}
-        />
+        <div className="relative">
+          <Progress
+            value={Math.min(usagePercentage, 100)}
+            className={`h-2 border border-gray-200 ${!messageCheck.allowed ? 'bg-red-50' : 'bg-gray-100'}`}
+            indicatorClassName={`${!messageCheck.allowed
+                ? 'bg-red-500'
+                : usagePercentage >= 90
+                  ? 'bg-gradient-to-r from-amber-500 to-red-500'
+                  : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
+              } transition-all duration-1000 ease-out`}
+          />
+          {/* Shimmer overlay */}
+          <div
+            className="absolute top-0 left-0 h-full w-full overflow-hidden rounded-full pointer-events-none"
+            style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+          >
+            <div className="h-full w-full animate-shimmer"></div>
+          </div>
+        </div>
         {!messageCheck.allowed && (
           <p className="text-[10px] text-red-600 mt-1 font-medium flex items-center gap-1">
             <Lock className="h-3 w-3" />
