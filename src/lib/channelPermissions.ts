@@ -234,7 +234,22 @@ export const canCreateClient = (
  * Obtiene el nivel de CRM del usuario
  */
 export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => {
-    return profile.crm_level || 'none';
+    // Si tiene un nivel asignado explícitamente, usarlo
+    if (profile.crm_level && profile.crm_level !== 'none') {
+        return profile.crm_level as 'none' | 'basic' | 'complete';
+    }
+
+    // Fallback basado en el plan (para usuarios existentes o errores de datos)
+    switch (profile.plan_type) {
+        case 'basico':
+            return 'basic';
+        case 'avanzado':
+        case 'pro':
+        case 'empresarial':
+            return 'complete';
+        default:
+            return 'none';
+    }
 };
 
 /**
