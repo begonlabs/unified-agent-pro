@@ -991,7 +991,10 @@ const MessagesView = () => {
                           name: "Símbolos"
                         },
                         {
-                          category: Categories.FLAGS,
+                          name: "Banderas"
+                        }
+                      ]}
+                    />
                   </PopoverContent>
                 </Popover>
 
