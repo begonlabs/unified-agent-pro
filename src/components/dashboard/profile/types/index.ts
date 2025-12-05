@@ -2,6 +2,8 @@ import { User } from '@supabase/supabase-js';
 
 export interface Profile {
   id: string;
+  first_name?: string;
+  last_name?: string;
   company_name: string;
   email: string;
   phone?: string;
@@ -29,6 +31,8 @@ export interface Profile {
 }
 
 export interface ProfileFormData {
+  first_name: string;
+  last_name: string;
   company_name: string;
   email: string;
   phone: string;

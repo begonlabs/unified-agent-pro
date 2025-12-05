@@ -29,6 +29,8 @@ export class ProfileService {
       supabase
         .from('profiles')
         .update({
+          first_name: profileData.first_name.trim(),
+          last_name: profileData.last_name.trim(),
           company_name: profileData.company_name.trim(),
           email: profileData.email.trim(),
           phone: number || null,
@@ -48,6 +50,14 @@ export class ProfileService {
 
     if (!profileData.company_name.trim()) {
       errors.company_name = 'El nombre de la empresa es obligatorio';
+    }
+
+    if (!profileData.first_name.trim()) {
+      errors.first_name = 'El nombre es obligatorio';
+    }
+
+    if (!profileData.last_name.trim()) {
+      errors.last_name = 'El apellido es obligatorio';
     }
 
     if (!profileData.email.trim()) {

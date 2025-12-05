@@ -37,7 +37,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   };
 
   // Check permissions
-  const connectionCheck = profile ? canConnectChannel(profile, 'whatsapp', greenApiChannels.length) : { allowed: true };
+  const connectionCheck = profile ? canConnectChannel(profile, 'whatsapp', greenApiChannels.length, channels.length) : { allowed: true };
 
   return (
     <div className="space-y-4">

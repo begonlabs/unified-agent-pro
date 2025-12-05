@@ -209,13 +209,10 @@ const MessagesView = () => {
 
   const sendMessage = async () => {
     // Check permissions first
+    // Check permissions first - but only warn, don't block manual messages
     if (!messageCheck.allowed) {
-      toast({
-        title: "Límite de mensajes alcanzado",
-        description: messageCheck.reason || "Has alcanzado el límite de mensajes de tu plan.",
-        variant: "destructive",
-      });
-      return;
+      // Solo mostramos toast informativo, pero permitimos enviar
+      console.log('⚠️ Límite de mensajes alcanzado, pero permitiendo envío manual');
     }
 
     if (!newMessage.trim() || !selectedConversation || !user?.id || isSending) {
@@ -582,7 +579,7 @@ const MessagesView = () => {
               ) : (
                 <>
                   <Lock className="h-3 w-3 text-red-600" />
-                  <span className="text-red-700">Límite de mensajes alcanzado</span>
+                  <span className="text-red-700">Límite alcanzado: IA Pausada</span>
                 </>
               )}
             </span>

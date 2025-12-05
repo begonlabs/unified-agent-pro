@@ -6,6 +6,8 @@ import { ProfileService } from '../services/profileService';
 export const useProfileForm = (profile: Profile | null, user: User | null, onProfileUpdate: () => void) => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState<ProfileFormData>({
+    first_name: '',
+    last_name: '',
     company_name: '',
     email: '',
     phone: '',
@@ -17,11 +19,13 @@ export const useProfileForm = (profile: Profile | null, user: User | null, onPro
   // Inicializar datos del formulario cuando el perfil cambie
   useEffect(() => {
     if (profile) {
-      const fullPhone = profile.phone_country_code && profile.phone 
+      const fullPhone = profile.phone_country_code && profile.phone
         ? `${profile.phone_country_code} ${profile.phone}`
         : profile.phone || '';
-      
+
       setProfileData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
         company_name: profile.company_name || '',
         email: profile.email || '',
         phone: fullPhone,
@@ -68,11 +72,13 @@ export const useProfileForm = (profile: Profile | null, user: User | null, onPro
   const cancelEdit = useCallback(() => {
     setEditingProfile(false);
     if (profile) {
-      const fullPhone = profile.phone_country_code && profile.phone 
+      const fullPhone = profile.phone_country_code && profile.phone
         ? `${profile.phone_country_code} ${profile.phone}`
         : profile.phone || '';
-        
+
       setProfileData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
         company_name: profile.company_name || '',
         email: profile.email || '',
         phone: fullPhone,

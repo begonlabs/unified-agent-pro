@@ -123,6 +123,34 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="firstName" className="text-sm font-medium flex items-center gap-1">
+                <Building className="h-3 w-3 sm:h-4 sm:w-4" />
+                Nombre *
+              </Label>
+              <Input
+                id="firstName"
+                value={profileData.first_name}
+                onChange={(e) => onProfileDataChange({ ...profileData, first_name: e.target.value })}
+                disabled={!editingProfile}
+                className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
+                placeholder="Tu nombre"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName" className="text-sm font-medium flex items-center gap-1">
+                <Building className="h-3 w-3 sm:h-4 sm:w-4" />
+                Apellido *
+              </Label>
+              <Input
+                id="lastName"
+                value={profileData.last_name}
+                onChange={(e) => onProfileDataChange({ ...profileData, last_name: e.target.value })}
+                disabled={!editingProfile}
+                className={`text-sm sm:text-base ${editingProfile ? 'border-blue-300 focus:border-blue-500' : ''}`}
+                placeholder="Tu apellido"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium flex items-center gap-1">
                 <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
                 Email de Contacto *

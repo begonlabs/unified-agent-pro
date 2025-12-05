@@ -1,8 +1,10 @@
-
+```
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
+import { PaymentSuccess } from "./pages/PaymentSuccess";
+import { ProfileService } from '@/components/dashboard/profile/services/profileService';
 import { useToast } from '@/hooks/use-toast';
 import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
@@ -63,10 +65,44 @@ const Dashboard = () => {
     const hasViewChanged = detectViewChange(currentView);
     
     if (hasViewChanged && user?.id) {
-      console.log(`Vista cambiada, refrescando datos para: ${currentView}`);
+      console.log(`Vista cambiada, refrescando datos para: ${ currentView } `);
       refreshViewData(currentView);
     }
   }, [currentView, detectViewChange, refreshViewData, user?.id]);
+
+  // 🔍 Check for incomplete profile and redirect
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      if (user?.id) {
+        try {
+          const profile = await ProfileService.fetchProfile(user.id);
+          if (profile) {
+            const isProfileIncomplete = !profile.first_name || !profile.last_name;
+            
+            // If profile is incomplete and we are not already on the profile view
+            if (isProfileIncomplete && currentView !== 'profile') {
+              console.log('⚠️ Profile incomplete, redirecting to profile view');
+              toast({
+                title: "Perfil incompleto",
+                description: "Por favor completa tu nombre y apellido para continuar.",
+                variant: "default",
+              });
+              setCurrentView('profile');
+              // Update URL to reflect the change
+              const newUrl = window.location.pathname + '?view=profile';
+              window.history.replaceState({}, '', newUrl);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking profile completion:', error);
+        }
+      }
+    };
+
+    if (user && !loading) {
+      checkProfileCompletion();
+    }
+  }, [user, loading, currentView, setCurrentView, toast]);
 
   // Handle success parameters for OAuth callbacks (URL params for view are handled in useViewFromUrlOrPersisted)
   useEffect(() => {
@@ -84,18 +120,18 @@ const Dashboard = () => {
       if (channel === 'whatsapp' && businessName) {
         toast({
           title: "WhatsApp conectado exitosamente",
-          description: `Empresa: ${businessName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
+          description: `Empresa: ${ businessName }${ phoneNumber ? ` - ${phoneNumber}` : '' } `,
         });
       } else if (pageId && pageName && channel) {
         toast({
           title: "Conexión exitosa", 
-          description: `${channel === 'facebook' ? 'Facebook' : 'Canal'} conectado: ${pageName}`,
+          description: `${ channel === 'facebook' ? 'Facebook' : 'Canal' } conectado: ${ pageName } `,
         });
       }
       
       // Limpiar parámetros URL después de mostrar notificación
       setTimeout(() => {
-        const newUrl = window.location.pathname + (window.location.search.includes('view=') ? `?view=${currentView}` : '');
+        const newUrl = window.location.pathname + (window.location.search.includes('view=') ? `? view = ${ currentView } ` : '');
         window.history.replaceState({}, '', newUrl);
       }, 2000);
     }

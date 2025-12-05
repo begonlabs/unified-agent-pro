@@ -87,6 +87,7 @@ serve(async (req) => {
     }
 
     // Check message limits
+    // Check message limits ONLY for IA messages
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('messages_sent_this_month, messages_limit, is_trial, payment_status')
@@ -95,9 +96,8 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
-      // Don't block if profile fetch fails, but log it
-    } else if (profile) {
-      // Check limits
+    } else if (profile && sender_type === 'ia') {
+      // Check limits only if sender is IA
       if (!profile.is_trial && profile.payment_status === 'active') {
         const sent = profile.messages_sent_this_month || 0;
         const limit = profile.messages_limit || 0;
@@ -370,7 +370,8 @@ serve(async (req) => {
       .eq('id', conversation_id)
 
     // Increment message count
-    if (profile) {
+    // Increment message count ONLY for IA messages
+    if (profile && sender_type === 'ia') {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })

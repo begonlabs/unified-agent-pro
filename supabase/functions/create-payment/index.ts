@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 interface PaymentRequest {
-    plan_type: 'basico' | 'avanzado' | 'pro'
+    plan_type: 'basico' | 'avanzado' | 'pro' | 'empresarial'
     user_id: string
 }
 
@@ -51,11 +51,20 @@ serve(async (req) => {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
         // Parse request body
-        const { plan_type, user_id }: PaymentRequest = await req.json()
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            throw new Error('Invalid JSON body');
+        }
+
+        const { plan_type, user_id }: PaymentRequest = body;
+
+        console.log('Payment request received:', { plan_type, user_id });
 
         // Validate plan type
-        if (!['basico', 'avanzado', 'pro'].includes(plan_type)) {
-            throw new Error('Invalid plan type')
+        if (!['basico', 'avanzado', 'pro', 'empresarial'].includes(plan_type)) {
+            throw new Error(`Invalid plan type: ${plan_type}`)
         }
 
         // Get user profile
@@ -66,6 +75,7 @@ serve(async (req) => {
             .single()
 
         if (profileError || !profile) {
+            console.error('Profile error:', profileError);
             throw new Error('User profile not found')
         }
 
@@ -73,6 +83,7 @@ serve(async (req) => {
         const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(user_id)
 
         if (userError || !user) {
+            console.error('User error:', userError);
             throw new Error('User not found')
         }
 
@@ -97,19 +108,25 @@ serve(async (req) => {
 
         if (paymentError) {
             console.error('Error creating payment record:', paymentError)
-            throw new Error('Failed to create payment record')
+            throw new Error('Failed to create payment record: ' + paymentError.message)
         }
 
         // Prepare dLocalGo payment request
         // Use user's country from profile, fallback to UY if not set
+        // Ensure country is 2 chars uppercase
+        let countryCode = (profile.country || 'UY').toUpperCase();
+        if (countryCode.length !== 2) {
+            countryCode = 'UY'; // Fallback if invalid
+        }
+
         const dlocalgoPayment: DLocalGoPaymentRequest = {
             amount: amount,
             currency: 'USD',
-            country: profile.country || 'UY', // Use profile country or default to Uruguay
+            country: countryCode,
             payment_method_id: 'CARD',
             payment_method_flow: 'REDIRECT',
             payer: {
-                name: profile.company_name,
+                name: profile.company_name || user.email?.split('@')[0] || 'Customer',
                 email: user.email!,
             },
             order_id: orderId,
@@ -165,12 +182,13 @@ serve(async (req) => {
                 status: 200,
             }
         )
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error in create-payment function:', error)
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message,
+                error: error.message || 'Unknown error',
+                details: error.toString()
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

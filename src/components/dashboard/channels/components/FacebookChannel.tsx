@@ -31,7 +31,7 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
   const isConnected = facebookChannels.length > 0;
 
   // Check permissions
-  const connectionCheck = profile ? canConnectChannel(profile, 'facebook', facebookChannels.length) : { allowed: true };
+  const connectionCheck = profile ? canConnectChannel(profile, 'facebook', facebookChannels.length, channels.length) : { allowed: true };
 
   return (
     <div className="space-y-4">

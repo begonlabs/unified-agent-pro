@@ -421,6 +421,28 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
         return;
       }
 
+      // Check message limits before generating response
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('messages_sent_this_month, messages_limit, is_trial, payment_status')
+        .eq('user_id', conversation.user_id)
+        .single();
+
+      if (profile) {
+        if (!profile.is_trial && profile.payment_status === 'active') {
+          const sent = profile.messages_sent_this_month || 0;
+          const limit = profile.messages_limit || 0;
+
+          if (sent >= limit) {
+            console.log('🚫 AI response blocked: Message limit reached', { sent, limit });
+            return;
+          }
+        } else if (!profile.is_trial && profile.payment_status !== 'active') {
+          console.log('🚫 AI response blocked: Subscription inactive');
+          return;
+        }
+      }
+
       const { data: recentMessages } = await supabase
         .from('messages')
         .select('id, content, sender_type, sender_name, created_at')
@@ -547,6 +569,18 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
                 // Note: NOT incrementing unread_count for IA responses
               })
               .eq('id', conversation.id);
+
+            // Increment message count for AI response
+            if (profile) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })
+                .eq('user_id', conversation.user_id);
+
+              if (updateError) {
+                console.error('Error updating message count:', updateError);
+              }
+            }
           }
         } catch (sendError) {
           console.error('❌ Error sending automatic WhatsApp message:', sendError);

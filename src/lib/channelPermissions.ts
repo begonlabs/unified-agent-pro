@@ -38,6 +38,13 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
     // Máximo 1 canal de cada tipo: 1 FB + 1 IG + 1 WhatsApp
     switch (profile.plan_type) {
         case 'basico':
+            return {
+                whatsapp: true,
+                facebook: true,
+                instagram: true,
+                maxWhatsappChannels: 1,
+                maxChannels: 1, // Plan Básico: Solo 1 canal activo en total (de cualquier tipo)
+            };
         case 'avanzado':
         case 'pro':
         case 'empresarial':
@@ -65,7 +72,8 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
 export const canConnectChannel = (
     profile: Profile,
     channelType: 'whatsapp' | 'facebook' | 'instagram',
-    currentChannelCount: number = 0
+    currentChannelCount: number = 0,
+    totalChannelCount: number = 0 // Nuevo parámetro para el conteo total
 ): { allowed: boolean; reason?: string } => {
     const permissions = getChannelPermissions(profile);
 
@@ -94,11 +102,17 @@ export const canConnectChannel = (
     }
 
     // Verificar límite total de canales
-    if (permissions.maxChannels !== -1 && currentChannelCount >= permissions.maxChannels) {
-        return {
-            allowed: false,
-            reason: `Has alcanzado el límite de ${permissions.maxChannels} canales. Actualiza tu plan.`,
-        };
+    if (permissions.maxChannels !== -1) {
+        // Usamos totalChannelCount si se proporciona, de lo contrario usamos currentChannelCount (comportamiento anterior)
+        // Pero para la restricción del plan básico necesitamos el total real
+        const countToCheck = totalChannelCount > 0 ? totalChannelCount : currentChannelCount;
+
+        if (countToCheck >= permissions.maxChannels) {
+            return {
+                allowed: false,
+                reason: `Has alcanzado el límite de ${permissions.maxChannels} canal(es) en tu plan. Desconecta un canal para conectar otro.`,
+            };
+        }
     }
 
     return { allowed: true };

@@ -42,7 +42,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   const isConnected = instagramChannels.length > 0;
 
   // Check permissions
-  const connectionCheck = profile ? canConnectChannel(profile, 'instagram', instagramChannels.length) : { allowed: true };
+  const connectionCheck = profile ? canConnectChannel(profile, 'instagram', instagramChannels.length, channels.length) : { allowed: true };
 
   return (
     <div className="space-y-4">

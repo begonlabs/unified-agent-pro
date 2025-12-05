@@ -887,6 +887,28 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           return;
         }
 
+        // Check message limits before generating response
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('messages_sent_this_month, messages_limit, is_trial, payment_status')
+          .eq('user_id', conversation.user_id)
+          .single();
+
+        if (profile) {
+          if (!profile.is_trial && profile.payment_status === 'active') {
+            const sent = profile.messages_sent_this_month || 0;
+            const limit = profile.messages_limit || 0;
+
+            if (sent >= limit) {
+              console.log('🚫 AI response blocked: Message limit reached', { sent, limit });
+              return;
+            }
+          } else if (!profile.is_trial && profile.payment_status !== 'active') {
+            console.log('🚫 AI response blocked: Subscription inactive');
+            return;
+          }
+        }
+
         const { data: recentMessages } = await supabase
           .from('messages')
           .select('id, content, sender_type, sender_name, created_at')
@@ -935,10 +957,21 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           if (aiMessageError) {
             console.error('❌ Error guardando mensaje de IA para Instagram:', aiMessageError);
             return;
+          } else {
+            console.log('✅ Respuesta de IA enviada y guardada exitosamente');
+
+            // Increment message count for AI response
+            if (profile) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ messages_sent_this_month: (profile.messages_sent_this_month || 0) + 1 })
+                .eq('user_id', conversation.user_id);
+
+              if (updateError) {
+                console.error('Error updating message count:', updateError);
+              }
+            }
           }
-
-          console.log('✅ Respuesta de IA para Instagram guardada exitosamente');
-
           // Enviar mensaje automático de IA por Instagram Messaging API
           try {
             const accessToken = channel.channel_config.access_token;
