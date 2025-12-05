@@ -212,7 +212,7 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                             return (
                                 <Card
                                     key={plan.name}
-                                    className={`relative transition-all duration-200 ${plan.current
+                                    className={`relative transition-all duration-200 h-full flex flex-col ${plan.current
                                         ? 'ring-2 ring-blue-500 shadow-lg'
                                         : 'hover:shadow-md hover:scale-105'
                                         }`}
@@ -237,7 +237,7 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                         <CardDescription className="text-sm sm:text-base">{plan.description}</CardDescription>
                                     </CardHeader>
 
-                                    <CardContent className="space-y-4">
+                                    <CardContent className="space-y-4 flex-1 flex flex-col">
                                         <ul className="space-y-3">
                                             {plan.features.map((feature, index) => (
                                                 <li key={index} className="flex items-start gap-2 text-sm">
@@ -247,7 +247,7 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                             ))}
                                         </ul>
 
-                                        <div className="pt-4">
+                                        <div className="pt-4 mt-auto">
                                             {plan.current ? (
                                                 <Button variant="outline" className="w-full" disabled>
                                                     <CheckCircle className="h-4 w-4 mr-2" />
@@ -260,7 +260,7 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                             ) : (
                                                 <Button
                                                     className="w-full"
-                                                    variant={plan.name === 'Pro' ? 'default' : 'outline'}
+                                                    variant={'outline'}
                                                     onClick={() => handleUpgrade(plan)}
                                                 >
                                                     Cambiar a {plan.name}
