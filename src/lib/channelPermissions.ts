@@ -218,6 +218,12 @@ export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => 
  * Verifica si el usuario tiene acceso a estadísticas
  */
 export const hasStatisticsAccess = (profile: Profile): boolean => {
+    // Verificar explícitamente por tipo de plan
+    const allowedPlans = ['avanzado', 'pro', 'empresarial'];
+    if (allowedPlans.includes(profile.plan_type)) {
+        return true;
+    }
+
     return profile.has_statistics || false;
 };
 
