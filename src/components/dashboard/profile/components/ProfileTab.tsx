@@ -24,6 +24,7 @@ import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { Profile, ProfileFormData } from '../types';
 import { COUNTRIES } from '../data/countries';
+import { SubscriptionContent } from './SubscriptionContent';
 
 interface ProfileTabProps {
   profile: Profile;
@@ -215,6 +216,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           )}
         </CardContent>
       </Card>
+
+      <SubscriptionContent profile={profile} />
     </TabsContent>
   );
 };

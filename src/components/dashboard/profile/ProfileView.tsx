@@ -3,14 +3,13 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
-import { 
+import {
   useProfile,
   useProfileForm,
   useNotifications,
   ProfileHeader,
   ProfileTabs,
   ProfileTab,
-  SubscriptionTab,
   NotificationsTab,
   SecurityTab,
   ChangePasswordDialog,
@@ -59,7 +58,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
           onProfileDataChange={setProfileData}
         />
 
-        <SubscriptionTab profile={profile} />
 
         <NotificationsTab
           notifications={notifications}
@@ -72,7 +70,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
         />
       </ProfileTabs>
 
-      <ChangePasswordDialog 
+      <ChangePasswordDialog
         open={changePasswordOpen}
         onOpenChange={setChangePasswordOpen}
       />
