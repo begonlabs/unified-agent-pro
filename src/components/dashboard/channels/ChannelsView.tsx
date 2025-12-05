@@ -15,7 +15,7 @@ import { WhatsAppChannel } from './components/WhatsAppChannel';
 import { FacebookChannel } from './components/FacebookChannel';
 import { InstagramChannel } from './components/InstagramChannel';
 import { ChannelStatus } from './components/ChannelStatus';
-import { Phone, Facebook, Instagram } from 'lucide-react';
+import { WhatsAppIcon, FacebookIcon, InstagramIcon } from '@/components/icons/ChannelIcons';
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
 import { getChannelPermissions, getPermissionsDescription } from '@/lib/channelPermissions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -325,8 +325,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         {/* WhatsApp */}
         <ChannelCard
           title="WhatsApp Business"
-          icon={Phone}
-          color="bg-green-600"
+          icon={WhatsAppIcon}
+          color="bg-transparent"
           connected={getChannelStatus('whatsapp')}
           description="Conecta tu WhatsApp Business"
         >
@@ -344,8 +344,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         {/* Facebook */}
         <ChannelCard
           title="Facebook Messenger"
-          icon={Facebook}
-          color="bg-blue-600"
+          icon={FacebookIcon}
+          color="bg-transparent"
           connected={getChannelStatus('facebook')}
           description="Conecta tus páginas de Facebook"
         >
@@ -363,8 +363,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         {/* Instagram */}
         <ChannelCard
           title="Instagram Direct"
-          icon={Instagram}
-          color="bg-pink-600"
+          icon={InstagramIcon}
+          color="bg-transparent"
           connected={getChannelStatus('instagram')}
           description="Conecta tus cuentas de Instagram"
         >

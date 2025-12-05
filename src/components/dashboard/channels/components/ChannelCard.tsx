@@ -4,20 +4,20 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { ChannelCardProps } from '../types';
 
-export const ChannelCard: React.FC<ChannelCardProps> = ({ 
-  title, 
-  icon: Icon, 
-  color, 
-  connected, 
+export const ChannelCard: React.FC<ChannelCardProps> = ({
+  title,
+  icon: Icon,
+  color,
+  connected,
   description,
-  children 
+  children
 }) => (
   <Card className="h-full">
     <CardHeader className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className={`p-2 sm:p-3 rounded-lg ${color}`}>
-            <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          <div className={`p-2 sm:p-3 rounded-lg ${color} flex items-center justify-center`}>
+            <Icon className="h-6 w-6 sm:h-8 sm:w-8" />
           </div>
           <div>
             <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
