@@ -928,7 +928,7 @@ const MessagesView = () => {
 
             {/* Input de mensaje estilo claro con bordes redondeados */}
             <div className="bg-white border-t border-gray-200">
-              {renderMessageLimitWarning()}
+              {renderMessageUsage()}
               <div className="p-2 flex gap-2 items-center">
                 {/* Botón de emoji */}
                 <Popover open={showEmojiPickerMobile} onOpenChange={setShowEmojiPickerMobile}>
@@ -986,6 +986,7 @@ const MessagesView = () => {
                           name: "Símbolos"
                         },
                         {
+                          category: Categories.FLAGS,
                           name: "Banderas"
                         }
                       ]}
@@ -1183,7 +1184,7 @@ const MessagesView = () => {
 
               {/* Input de mensaje estilo claro con bordes redondeados */}
               <div className="bg-white border-t border-gray-200">
-                {renderMessageLimitWarning()}
+                {renderMessageUsage()}
                 <div className="p-3 sm:p-4 flex gap-2 sm:gap-3 items-center">
                   {/* Botón de emoji */}
                   <Popover open={showEmojiPickerDesktop} onOpenChange={setShowEmojiPickerDesktop}>
