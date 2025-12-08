@@ -281,11 +281,13 @@ serve(async (req) => {
 
       const igAccountData = await igAccountResponse.json();
 
-      // Subscribe Instagram Business Account to webhooks
+      // Subscribe Facebook Page to webhooks for Instagram
+      // IMPORTANT: We subscribe the PAGE, not the Instagram account directly
+      // The page will receive Instagram events because it's linked to the IG account
       let webhookSubscribed = false;
       try {
         const webhookResponse = await fetch(
-          `https://graph.facebook.com/${graphVersion}/${igBusinessAccountId}/subscribed_apps`,
+          `https://graph.facebook.com/${graphVersion}/${selectedPage.id}/subscribed_apps`,
           {
             method: 'POST',
             headers: {
@@ -293,14 +295,15 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               access_token: pageAccessToken,
-              subscribed_fields: 'messages,messaging_postbacks,message_reactions'
+              subscribed_fields: 'messages,messaging_postbacks,message_reactions,messaging_seen'
             })
           }
         );
 
         if (webhookResponse.ok) {
+          const webhookData = await webhookResponse.json();
           webhookSubscribed = true;
-          console.log('Instagram webhook subscription successful for account:', igBusinessAccountId);
+          console.log('Instagram webhook subscription successful for page:', selectedPage.id, webhookData);
         } else {
           const errorText = await webhookResponse.text();
           console.error('Instagram webhook subscription failed:', errorText);
