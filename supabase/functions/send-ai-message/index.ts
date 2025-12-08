@@ -223,13 +223,13 @@ serve(async (req) => {
           .single();
 
         if (channels) {
-          const accessToken = channelType === 'instagram'
-            ? channels.channel_config.access_token
-            : channels.channel_config.page_access_token;
+          // For Instagram, use page_access_token and send via page ID
+          const accessToken = channels.channel_config.page_access_token;
+          const pageId = channels.channel_config.page_id;
 
           const apiUrl = channelType === 'instagram'
-            ? `https://graph.instagram.com/v23.0/me/messages`
-            : `https://graph.facebook.com/v23.0/me/messages`;
+            ? `https://graph.facebook.com/v24.0/${pageId}/messages`
+            : `https://graph.facebook.com/v24.0/me/messages`;
 
           await fetch(`${apiUrl}?access_token=${accessToken}`, {
             method: 'POST',
@@ -361,15 +361,17 @@ serve(async (req) => {
 
     } else {
       // Handle Facebook/Instagram via Meta API
-      const accessToken = channelType === 'instagram'
-        ? channel.channel_config.access_token
-        : channel.channel_config.page_access_token;
+      // IMPORTANT: Both Facebook and Instagram use page_access_token and send via page ID
+      const accessToken = channel.channel_config.page_access_token;
+      const pageId = channel.channel_config.page_id;
 
       console.log('🔑 Access token present:', !!accessToken);
+      console.log('📄 Page ID:', pageId);
 
-      const apiUrl = channelType === 'instagram'
-        ? `https://graph.instagram.com/v23.0/me/messages`
-        : `https://graph.facebook.com/v23.0/me/messages`;
+      // Both Facebook and Instagram send via the page ID endpoint
+      const apiUrl = `https://graph.facebook.com/v24.0/${pageId}/messages`;
+
+      console.log('📤 Sending to:', apiUrl);
 
       const messengerResponse = await fetch(`${apiUrl}?access_token=${accessToken}`, {
         method: 'POST',
