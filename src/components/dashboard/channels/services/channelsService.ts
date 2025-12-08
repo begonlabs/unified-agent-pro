@@ -74,12 +74,15 @@ export class ChannelsService {
         const hasUsername = Boolean(config?.username);
         const hasAccessToken = Boolean(config?.access_token);
         const hasInstagramUserId = Boolean(config?.instagram_user_id);
-        const hasBusinessAccountId = Boolean(config?.instagram_business_account_id);
-        const hasPageId = Boolean(config?.page_id);
         const isConnected = Boolean(channel.is_connected);
 
+        // Relaxed validation: page_id and business_account_id are critical but
+        // older connections or failed fetches might miss them.
+        // We mainly need username + token + logic user id
+        const hasEssentialIds = Boolean(config?.instagram_business_account_id) || Boolean(config?.page_id);
+
         return hasUsername && hasAccessToken && hasInstagramUserId &&
-          hasBusinessAccountId && hasPageId && isConnected;
+          hasEssentialIds && isConnected;
       }
 
       default:

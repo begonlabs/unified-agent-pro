@@ -315,6 +315,8 @@ serve(async (req) => {
         .select('id')
         .eq('user_id', userId)
         .eq('channel_type', 'instagram')
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       const instagramConfig = {
