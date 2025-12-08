@@ -34,7 +34,7 @@ function safeEqual(a: string, b: string): boolean {
 // Verify webhook signature for security
 async function isValidSignature(request: Request, rawBody: string): Promise<boolean> {
   const signatureHeader = request.headers.get("x-hub-signature-256");
-  
+
   if (!signatureHeader) {
     console.error('Missing signature header');
     return false;
@@ -53,15 +53,13 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
     console.error('Error parsing body for webhook type detection:', error);
   }
 
-  // Use correct app secret based on webhook type
-  const appSecret = webhookType === 'instagram' 
-    ? Deno.env.get("INSTAGRAM_BASIC_APP_SECRET") 
-    : Deno.env.get("META_APP_SECRET");
+  // IMPORTANT: Both Facebook and Instagram now use Meta Graph API, so use META_APP_SECRET for both
+  // Instagram Basic Display API is no longer used
+  const appSecret = Deno.env.get("META_APP_SECRET");
 
   if (!appSecret) {
-    console.error(`Missing app secret for ${webhookType}:`, {
+    console.error(`Missing META_APP_SECRET for ${webhookType}:`, {
       webhookType,
-      instagramSecret: !!Deno.env.get("INSTAGRAM_BASIC_APP_SECRET"),
       metaSecret: !!Deno.env.get("META_APP_SECRET")
     });
     return false;
@@ -72,7 +70,7 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
     hasSignature: !!signatureHeader,
     hasAppSecret: !!appSecret,
     bodyLength: rawBody.length,
-    secretUsed: webhookType === 'instagram' ? 'INSTAGRAM_BASIC_APP_SECRET' : 'META_APP_SECRET'
+    secretUsed: 'META_APP_SECRET (unified for both Facebook and Instagram)'
   });
 
   const key = await crypto.subtle.importKey(
@@ -83,9 +81,9 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
     ["sign"],
   );
   const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
-  
+
   const expectedSignature = `sha256=${toHex(digest)}`;
-  
+
   const isValid = safeEqual(expectedSignature, signatureHeader);
   console.log('🔐 Signature verification result:', {
     isValid,
@@ -95,7 +93,7 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
     expectedStart: expectedSignature.substring(0, 15),
     receivedStart: signatureHeader.substring(0, 15)
   });
-  
+
   return isValid;
 }
 
@@ -152,17 +150,17 @@ serve(async (req) => {
     // Process incoming webhook events
     if (req.method === 'POST') {
       const rawBody = await req.text()
-      
-              // Verify signature for security
-        console.log('🔍 Verifying webhook signature...');
-        if (!(await isValidSignature(req, rawBody))) {
-          console.error('❌ Invalid webhook signature');
-          return new Response('Unauthorized', { status: 401, headers: corsHeaders })
-        }
-        console.log('✅ Webhook signature verified successfully');
+
+      // Verify signature for security
+      console.log('🔍 Verifying webhook signature...');
+      if (!(await isValidSignature(req, rawBody))) {
+        console.error('❌ Invalid webhook signature');
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      }
+      console.log('✅ Webhook signature verified successfully');
 
       const body: WebhookEvent = JSON.parse(rawBody)
-      
+
       // Log the complete webhook payload first
       console.log('📦 Complete webhook payload:', JSON.stringify(body, null, 2));
 
@@ -171,14 +169,14 @@ serve(async (req) => {
           object: body.object,
           entry_count: body.entry.length
         });
-        
+
         for (const entry of body.entry) {
           if (entry.messaging) {
             console.log('💬 Processing messaging events:', {
               entry_id: entry.id,
               messaging_count: entry.messaging.length
             });
-            
+
             // Log all messaging events first
             entry.messaging.forEach((event, index) => {
               console.log(`📋 Event ${index + 1}/${entry.messaging.length}:`, {
@@ -192,11 +190,11 @@ serve(async (req) => {
                 recipient_id: event.recipient?.id
               });
             });
-            
+
             for (const messagingEvent of entry.messaging) {
               // Log the full event structure for debugging
               console.log('🔍 Full messaging event:', JSON.stringify(messagingEvent, null, 2));
-              
+
               // Echo messages are now processed to save outgoing agent messages
               // if (messagingEvent.message?.is_echo) {
               //   console.log('⏭️ Skipping echo message');
@@ -204,10 +202,10 @@ serve(async (req) => {
               // }
 
               // Only process events with actual content
-              const hasContent = messagingEvent.message?.text || 
-                               messagingEvent.postback?.payload || 
-                               messagingEvent.delivery?.mids?.length > 0 ||
-                               messagingEvent.read?.watermark;
+              const hasContent = messagingEvent.message?.text ||
+                messagingEvent.postback?.payload ||
+                messagingEvent.delivery?.mids?.length > 0 ||
+                messagingEvent.read?.watermark;
 
               if (!hasContent) {
                 console.log('⏭️ Skipping event without content:', {
@@ -243,17 +241,17 @@ serve(async (req) => {
           object: body.object,
           entry_count: body.entry.length
         });
-        
+
         for (const entry of body.entry) {
           if (entry.messaging) {
             console.log('💬 Processing Instagram messaging events:', {
               entry_id: entry.id,
               messaging_count: entry.messaging.length
             });
-            
+
             for (const messagingEvent of entry.messaging) {
               console.log('🔍 Full Instagram messaging event:', JSON.stringify(messagingEvent, null, 2));
-              
+
               // Only process events with actual content
               const hasContent = messagingEvent.message?.text;
 
@@ -280,20 +278,20 @@ serve(async (req) => {
           object: body.object,
           entry_count: body.entry.length
         });
-        
+
         for (const entry of body.entry) {
           if (entry.changes) {
             console.log('🔄 Processing Instagram user changes:', {
               entry_id: entry.id,
               changes_count: entry.changes.length
             });
-            
+
             for (const change of entry.changes) {
               console.log('📝 Instagram user change:', {
                 field: change.field,
                 value: change.value
               });
-              
+
               // Log the change but don't process it for now
               // This could be used for account status changes, permissions, etc.
             }
@@ -314,14 +312,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in meta-webhook function:', error)
     return new Response(
-      JSON.stringify({ 
-        ok: false, 
+      JSON.stringify({
+        ok: false,
         error: `Internal server error: ${error.message}`,
         debug: { request_url: req.url }
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
