@@ -71,20 +71,20 @@ interface Conversation {
 /**
  * Get Instagram user profile (username and profile picture)
  * @param userId - Instagram user IGSID (not business account ID)
- * @param accessToken - Instagram access token
+ * @param pageAccessToken - Page access token (not user access token)
  * @returns Promise with name and avatar_url
  */
 async function getInstagramUserProfile(
   userId: string,
-  accessToken: string
+  pageAccessToken: string
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
-    // Use 'profile_pic' field to get the profile picture URL
-    // Note: This URL expires after a few days, so we should ideally cache the image or refresh it
-    const url = `https://graph.instagram.com/${graphVersion}/${userId}?fields=username,profile_pic&access_token=${accessToken}`;
+    // IMPORTANT: Use Facebook Graph API with page token to get Instagram user info
+    // The endpoint is different from the old Instagram Basic Display API
+    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=username,profile_picture_url&access_token=${pageAccessToken}`;
 
-    console.log('🔍 Fetching Instagram profile:', { userId, graphVersion });
+    console.log('🔍 Fetching Instagram profile via Facebook Graph API:', { userId, graphVersion });
 
     const response = await fetch(url);
 
@@ -93,7 +93,8 @@ async function getInstagramUserProfile(
       console.error('❌ Error fetching Instagram profile:', {
         status: response.status,
         error: errorText,
-        userId
+        userId,
+        endpoint: 'Facebook Graph API'
       });
       // Fallback
       return {
@@ -106,7 +107,7 @@ async function getInstagramUserProfile(
     console.log('✅ Instagram profile data received:', JSON.stringify(data));
 
     const username = data.username || `Instagram User ${userId.slice(-4)}`;
-    const avatarUrl = data.profile_pic;
+    const avatarUrl = data.profile_picture_url;
 
     return {
       name: `@${username}`,
@@ -406,16 +407,16 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
 
     // Diagnostic logging for profile fetching
     console.log('🔍 Instagram profile fetch attempt:', {
-      hasToken: !!channel.channel_config.access_token,
-      tokenPreview: channel.channel_config.access_token ? `${channel.channel_config.access_token.substring(0, 10)}...` : 'MISSING',
+      hasPageToken: !!channel.channel_config.page_access_token,
+      tokenPreview: channel.channel_config.page_access_token ? `${channel.channel_config.page_access_token.substring(0, 10)}...` : 'MISSING',
       realUserId,
       channelId: channel.id
     });
 
-    // Only fetch from Instagram if we have the token
-    if (channel.channel_config.access_token) {
-      console.log('📞 Calling getInstagramUserProfile...');
-      profileInfo = await getInstagramUserProfile(realUserId, channel.channel_config.access_token);
+    // IMPORTANT: Use page_access_token to fetch Instagram user profiles
+    if (channel.channel_config.page_access_token) {
+      console.log('📞 Calling getInstagramUserProfile with page token...');
+      profileInfo = await getInstagramUserProfile(realUserId, channel.channel_config.page_access_token);
       console.log('✅ Instagram profile fetch result:', profileInfo);
     } else {
       console.warn('⚠️ Skipping Instagram profile fetch: access_token is missing from channel_config');
