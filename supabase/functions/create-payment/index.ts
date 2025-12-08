@@ -126,7 +126,7 @@ serve(async (req) => {
             payment_method_id: 'CARD',
             payment_method_flow: 'REDIRECT',
             payer: {
-                name: profile.name || user.email?.split('@')[0] || 'Customer',
+                name: '',
                 email: user.email!,
             },
             order_id: orderId,
