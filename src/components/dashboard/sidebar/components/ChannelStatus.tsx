@@ -1,5 +1,6 @@
 import React from 'react';
-import { Loader2, Phone, Facebook, Instagram } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { WhatsAppIcon, FacebookIcon, InstagramIcon } from '@/components/icons/ChannelIcons';
 import { ChannelStatus } from '../types';
 
 interface ChannelStatusProps {
@@ -19,22 +20,22 @@ export const ChannelStatusSection: React.FC<ChannelStatusProps> = ({
     {
       id: 'whatsapp',
       name: 'WhatsApp',
-      icon: Phone,
-      color: 'text-[#3a0caa]',
+      icon: WhatsAppIcon,
+      color: '',
       status: channelsStatus.whatsapp
     },
     {
       id: 'facebook',
       name: 'Facebook',
-      icon: Facebook,
-      color: 'text-[#710db2]',
+      icon: FacebookIcon,
+      color: '',
       status: channelsStatus.facebook
     },
     {
       id: 'instagram',
       name: 'Instagram',
-      icon: Instagram,
-      color: 'text-pink-600',
+      icon: InstagramIcon,
+      color: '',
       status: channelsStatus.instagram
     }
   ];
@@ -78,8 +79,8 @@ export const ChannelStatusSection: React.FC<ChannelStatusProps> = ({
                 <Icon className={`${channel.color} ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className="font-medium">{channel.name}</span>
                 <div className={`rounded-full ml-auto ${channel.status
-                    ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] animate-pulse'
-                    : 'bg-gray-400'
+                  ? 'bg-gradient-to-r from-[#3a0caa] to-[#710db2] animate-pulse'
+                  : 'bg-gray-400'
                   } ${isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'}`}></div>
               </div>
             );

@@ -9,7 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Facebook, Instagram, Phone, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { WhatsAppIcon, FacebookIcon, InstagramIcon } from '@/components/icons/ChannelIcons';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseSelect } from '@/lib/supabaseUtils';
 import type { Channel } from '@/components/dashboard/channels/types';
@@ -90,11 +91,12 @@ export const ChannelSelectorModal: React.FC<ChannelSelectorModalProps> = ({
     const getChannelIcon = (type: string) => {
         switch (type) {
             case 'facebook':
-                return <Facebook className="h-5 w-5 text-blue-600" />;
+                return <FacebookIcon className="h-5 w-5" />;
             case 'instagram':
-                return <Instagram className="h-5 w-5 text-pink-600" />;
+                return <InstagramIcon className="h-5 w-5" />;
             case 'whatsapp':
-                return <Phone className="h-5 w-5 text-green-600" />;
+            case 'whatsapp_green_api':
+                return <WhatsAppIcon className="h-5 w-5" />;
             default:
                 return null;
         }

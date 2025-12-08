@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Facebook, Instagram } from 'lucide-react';
+import { WhatsAppIcon, FacebookIcon, InstagramIcon } from '@/components/icons/ChannelIcons';
 import { ChannelStat } from '../types';
 
 interface ChannelDetailsProps {
@@ -13,9 +13,9 @@ export const ChannelDetails: React.FC<ChannelDetailsProps> = ({ channelData }) =
       <Card key={channel.name}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium">{channel.name}</CardTitle>
-          {channel.name === 'WhatsApp' && <Phone className="h-5 w-5 text-green-600" />}
-          {channel.name === 'Facebook' && <Facebook className="h-5 w-5 text-blue-600" />}
-          {channel.name === 'Instagram' && <Instagram className="h-5 w-5 text-pink-600" />}
+          {channel.name === 'WhatsApp' && <WhatsAppIcon className="h-5 w-5" />}
+          {channel.name === 'Facebook' && <FacebookIcon className="h-5 w-5" />}
+          {channel.name === 'Instagram' && <InstagramIcon className="h-5 w-5" />}
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -26,7 +26,7 @@ export const ChannelDetails: React.FC<ChannelDetailsProps> = ({ channelData }) =
             <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
               <div
                 className="h-2 rounded-full"
-                style={{ 
+                style={{
                   width: `${(channel.messages / Math.max(...channelData.map(c => c.messages))) * 100}%`,
                   backgroundColor: channel.color
                 }}
@@ -41,7 +41,7 @@ export const ChannelDetails: React.FC<ChannelDetailsProps> = ({ channelData }) =
             <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
               <div
                 className="h-2 rounded-full"
-                style={{ 
+                style={{
                   width: `${(channel.leads / Math.max(...channelData.map(c => c.leads))) * 100}%`,
                   backgroundColor: channel.color
                 }}

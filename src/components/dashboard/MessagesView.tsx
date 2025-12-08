@@ -12,10 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import EmojiPicker, { EmojiClickData, Categories } from 'emoji-picker-react';
 import {
   Search,
-  Phone,
   MessageCircle,
-  Instagram,
-  Facebook,
   Send,
   Smile,
   Plus,
@@ -29,6 +26,7 @@ import {
   Lock,
   AlertTriangle
 } from 'lucide-react';
+import { WhatsAppIcon, FacebookIcon, InstagramIcon } from '@/components/icons/ChannelIcons';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeConversations } from '@/hooks/useRealtimeConversations';
@@ -440,11 +438,11 @@ const MessagesView = () => {
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'whatsapp':
-        return <Phone className="h-4 w-4 text-green-600" />;
+        return <WhatsAppIcon className="h-4 w-4" />;
       case 'facebook':
-        return <Facebook className="h-4 w-4 text-blue-600" />;
+        return <FacebookIcon className="h-4 w-4" />;
       case 'instagram':
-        return <Instagram className="h-4 w-4 text-pink-600" />;
+        return <InstagramIcon className="h-4 w-4" />;
       default:
         return <MessageCircle className="h-4 w-4" />;
     }
