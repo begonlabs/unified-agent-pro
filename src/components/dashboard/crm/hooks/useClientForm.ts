@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Client, ClientFormData } from '../types';
 import { CRMService } from '../services/crmService';
+import { isPSID } from '@/utils/phoneNumberUtils';
 
 export const useClientForm = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -20,12 +21,18 @@ export const useClientForm = () => {
 
   const openEditDialog = (client: Client) => {
     setEditingClient(client);
-    // Check if phone already has country code (starts with +)
-    let fullPhone = client.phone || '';
 
-    // Only add country code if phone doesn't start with + and we have a country code
-    if (client.phone && !client.phone.startsWith('+') && client.phone_country_code) {
-      fullPhone = `${client.phone_country_code} ${client.phone}`;
+    // Don't show phone if it's a PSID (Facebook/Instagram identifier)
+    let fullPhone = '';
+
+    if (client.phone && !isPSID(client.phone)) {
+      // Check if phone already has country code (starts with +)
+      fullPhone = client.phone;
+
+      // Only add country code if phone doesn't start with + and we have a country code
+      if (!client.phone.startsWith('+') && client.phone_country_code) {
+        fullPhone = `${client.phone_country_code} ${client.phone}`;
+      }
     }
 
     setFormData({
