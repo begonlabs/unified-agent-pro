@@ -1,9 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Instagram, AlertCircle, Lock } from 'lucide-react';
-import { Channel, InstagramConfig, InstagramVerification } from '../types';
-import { VerificationCodeDisplay } from './VerificationCodeDisplay';
+import { Instagram, Lock } from 'lucide-react';
+import { Channel, InstagramConfig } from '../types';
 import { ChannelPermissions } from '@/lib/channelPermissions';
 import { Profile } from '@/components/dashboard/profile/types';
 import { canConnectChannel } from '@/lib/channelPermissions';
@@ -14,12 +13,6 @@ interface InstagramChannelProps {
   onConnect: () => void;
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
-  instagramNeedsVerification: (config: InstagramConfig) => boolean;
-  igVerifications: Record<string, InstagramVerification>;
-  isGeneratingCode: Record<string, boolean>;
-  verificationPolling: Record<string, NodeJS.Timeout>;
-  onGenerateVerificationCode: (channelId: string) => void;
-  onCopyCode: (code: string) => void;
   permissions?: ChannelPermissions | null;
   profile?: Profile | null;
 }
@@ -29,12 +22,6 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   onConnect,
   onReconnect,
   onDisconnect,
-  instagramNeedsVerification,
-  igVerifications,
-  isGeneratingCode,
-  verificationPolling,
-  onGenerateVerificationCode,
-  onCopyCode,
   permissions,
   profile
 }) => {
@@ -75,10 +62,13 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
               <div className="bg-pink-50 p-3 rounded-lg border">
                 <h4 className="font-medium text-pink-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
                 <ul className="text-xs text-pink-800 space-y-1 list-disc list-inside">
-                  <li>Inicia sesión con tu cuenta de Instagram</li>
-                  <li>Selecciona las cuentas profesionales</li>
-                  <li>Autoriza los permisos de mensajería</li>
+                  <li>Inicia sesión con tu cuenta de Facebook</li>
+                  <li>Selecciona la página vinculada a tu Instagram</li>
+                  <li>Autoriza los permisos necesarios</li>
                 </ul>
+                <p className="text-xs text-pink-700 mt-2 italic">
+                  Nota: Tu cuenta de Instagram debe ser profesional y estar vinculada a una página de Facebook
+                </p>
               </div>
             </>
           )}
@@ -87,10 +77,6 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
         <div className="space-y-3">
           {instagramChannels.map((channel) => {
             const config = channel.channel_config as InstagramConfig;
-            const needsVerification = instagramNeedsVerification(config);
-            const channelVerification = igVerifications[channel.id];
-            const isGenerating = isGeneratingCode[channel.id];
-
             return (
               <div key={channel.id} className="bg-pink-50 p-3 rounded-lg border border-pink-200">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
@@ -104,54 +90,15 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                     <Badge variant="default" className="bg-pink-600 text-xs">
                       En Línea
                     </Badge>
-                    {needsVerification && (
-                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
-                        Necesita Verificación
-                      </Badge>
-                    )}
                   </div>
                 </div>
-
-                {needsVerification && (
-                  <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle className="h-4 w-4 text-yellow-600" />
-                      <span className="font-medium text-yellow-800 text-sm">Verificación Requerida</span>
-                    </div>
-                    <p className="text-xs text-yellow-700 mb-2">
-                      Instagram requiere verificar la cuenta comercial para recibir mensajes correctamente.
-                    </p>
-
-                    {!channelVerification ? (
-                      <Button
-                        size="sm"
-                        onClick={() => onGenerateVerificationCode(channel.id)}
-                        disabled={isGenerating}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
-                            Generando...
-                          </>
-                        ) : (
-                          'Generar Código de Verificación'
-                        )}
-                      </Button>
-                    ) : (
-                      <VerificationCodeDisplay
-                        verification={channelVerification}
-                        onCopy={onCopyCode}
-                        isPolling={!!verificationPolling[channel.id]}
-                      />
-                    )}
-                  </div>
-                )}
 
                 <div className="text-xs text-pink-800 space-y-1">
                   <p>Usuario ID: {config?.instagram_user_id || 'N/A'}</p>
                   <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
-                  <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
+                  {config?.webhook_subscribed && (
+                    <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
+                  )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-2">
                   <Button

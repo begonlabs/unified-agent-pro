@@ -8,7 +8,6 @@ import { NotificationService } from '@/components/notifications';
 import { EmailService } from '@/services/emailService';
 import { useChannels } from './hooks/useChannels';
 import { useChannelConnections } from './hooks/useChannelConnections';
-import { useInstagramVerification } from './hooks/useInstagramVerification';
 import { useChannelActions } from './hooks/useChannelActions';
 import { ChannelCard } from './components/ChannelCard';
 import { WhatsAppChannel } from './components/WhatsAppChannel';
@@ -39,19 +38,6 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
     handleFacebookLogin,
     handleInstagramLogin
   } = useChannelConnections(currentUser);
-  const {
-    igVerifications,
-    setIgVerifications,
-    isGeneratingCode,
-    verificationPolling,
-    notificationsShown,
-    setNotificationsShown,
-    verificationNotificationsShown,
-    setVerificationNotificationsShown,
-    generateInstagramVerificationCode,
-    instagramNeedsVerification,
-    getInstagramVerificationStatus
-  } = useInstagramVerification(currentUser);
   const { handleDisconnectChannel, handleTestWebhook } = useChannelActions(currentUser);
 
   // Check for success parameters in URL
@@ -144,78 +130,14 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
     }
   }, [fetchChannels, currentUser?.id]);
 
-  // Auto-detect Instagram channels that need verification on load
-  useEffect(() => {
-    if (channels.length > 0 && currentUser) {
-      const instagramChannels = channels.filter(c => c.channel_type === 'instagram');
 
-      instagramChannels.forEach(channel => {
-        const config = channel.channel_config as InstagramConfig;
-        const needsVerification = instagramNeedsVerification(config);
-        const hasExistingVerification = igVerifications[channel.id];
-        const isConnected = getChannelStatus('instagram');
-        const notificationKey = `instagram-verification-${channel.id}`;
-
-        // Crear notificación para Instagram que necesita verificación
-        if (isConnected && needsVerification && !hasExistingVerification && !config?.verified_at && !verificationNotificationsShown.has(notificationKey)) {
-          NotificationService.createNotification(
-            currentUser.id,
-            'instagram_verification',
-            'Instagram detectado - Verificación requerida',
-            `@${config?.username} está conectado pero necesita verificación para recibir mensajes automáticamente.`,
-            {
-              priority: 'medium',
-              metadata: {
-                channel_id: channel.id,
-                username: config?.username,
-                channel_type: 'instagram'
-              },
-              action_url: '/dashboard/channels',
-              action_label: 'Verificar ahora'
-            }
-          ).catch(error => {
-            console.error('Error creating Instagram verification notification:', error);
-          });
-
-          // Mark this notification as shown to prevent loops
-          setVerificationNotificationsShown(prev => new Set(prev).add(notificationKey));
-        }
-      });
-    }
-    // Only run this effect when channels change or on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channels.length, currentUser?.id]);
 
   // Handlers para acciones de canales
   const handleDisconnect = (channelId: string) => {
     handleDisconnectChannel(channelId, channels, setChannels);
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
 
-    // Crear notificación de código copiado
-    if (currentUser?.id) {
-      NotificationService.createNotification(
-        currentUser.id,
-        'instagram_verification',
-        'Código copiado al portapapeles',
-        `Código ${code} copiado. Ahora pégalo en un mensaje de Instagram para completar la verificación.`,
-        {
-          priority: 'low',
-          metadata: {
-            verification_code: code,
-            channel_type: 'instagram',
-            action: 'code_copied'
-          },
-          action_url: '/dashboard/channels',
-          action_label: 'Ver configuración'
-        }
-      ).catch(error => {
-        console.error('Error creating copy code notification:', error);
-      });
-    }
-  };
 
   // Show loading state while auth is being checked
   if (loading) {
@@ -373,12 +295,6 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             onConnect={handleInstagramLogin}
             onReconnect={handleInstagramLogin}
             onDisconnect={handleDisconnect}
-            instagramNeedsVerification={instagramNeedsVerification}
-            igVerifications={igVerifications}
-            isGeneratingCode={isGeneratingCode}
-            verificationPolling={verificationPolling}
-            onGenerateVerificationCode={generateInstagramVerificationCode}
-            onCopyCode={handleCopyCode}
             permissions={permissions}
             profile={profile}
           />
@@ -389,7 +305,6 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
       <ChannelStatus
         channels={channels}
         getChannelStatus={getChannelStatus}
-        instagramNeedsVerification={instagramNeedsVerification}
       />
     </div>
   );

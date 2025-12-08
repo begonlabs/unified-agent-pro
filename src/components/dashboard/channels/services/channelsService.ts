@@ -5,9 +5,9 @@ import {
   WhatsAppConfig,
   FacebookConfig,
   InstagramConfig,
-  InstagramVerification,
   User
 } from '../types';
+
 
 export class ChannelsService {
   /**
@@ -74,12 +74,12 @@ export class ChannelsService {
         const hasUsername = Boolean(config?.username);
         const hasAccessToken = Boolean(config?.access_token);
         const hasInstagramUserId = Boolean(config?.instagram_user_id);
-        const hasAccountType = Boolean(config?.account_type);
+        const hasBusinessAccountId = Boolean(config?.instagram_business_account_id);
+        const hasPageId = Boolean(config?.page_id);
         const isConnected = Boolean(channel.is_connected);
-        const isTokenValid = config?.expires_at ? new Date(config.expires_at) > new Date() : false;
 
-        return hasUsername && hasAccessToken && hasInstagramUserId && hasAccountType &&
-          isConnected && isTokenValid;
+        return hasUsername && hasAccessToken && hasInstagramUserId &&
+          hasBusinessAccountId && hasPageId && isConnected;
       }
 
       default:
@@ -87,63 +87,11 @@ export class ChannelsService {
     }
   }
 
-  /**
-   * Verifica si Instagram necesita verificación
-   */
-  static instagramNeedsVerification(config: InstagramConfig): boolean {
-    return config.instagram_user_id === config.instagram_business_account_id ||
-      !config.instagram_business_account_id;
-  }
 
-  /**
-   * Genera código de verificación para Instagram
-   */
-  static async generateInstagramVerificationCode(channelId: string, user: User): Promise<InstagramVerification> {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/generate-instagram-verification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-      },
-      body: JSON.stringify({
-        channel_id: channelId
-      })
-    });
 
-    const result = await response.json();
 
-    if (!result.success) {
-      throw new Error(result.error || 'Error generando código de verificación');
-    }
 
-    return {
-      id: `${channelId}_${Date.now()}`,
-      verification_code: result.verification_code,
-      status: 'pending',
-      expires_at: result.expires_at
-    };
-  }
 
-  /**
-   * Verifica el estado de verificación de Instagram
-   */
-  static async checkVerificationStatus(channelId: string, user: User): Promise<boolean> {
-    const { data: channel } = await supabase
-      .from('communication_channels')
-      .select('channel_config, updated_at')
-      .eq('id', channelId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (channel) {
-      const config = channel.channel_config as unknown as InstagramConfig;
-      const needsVerification = this.instagramNeedsVerification(config);
-
-      return !needsVerification && Boolean(config.verified_at);
-    }
-
-    return false;
-  }
 
   /**
    * Procesa la autorización de WhatsApp
@@ -295,32 +243,31 @@ export class ChannelsService {
   }
 
   /**
-   * Construye URL de OAuth para Instagram
+   * Construye URL de OAuth para Instagram (usando Meta Graph API)
    */
   static buildInstagramOAuthUrl(user: User): string {
-    const INSTAGRAM_CLIENT_ID = import.meta.env.VITE_INSTAGRAM_BASIC_APP_ID || '1215743729877419';
+    const META_APP_ID = import.meta.env.VITE_META_APP_ID || '728339836340255';
+    const META_GRAPH_VERSION = import.meta.env.VITE_META_GRAPH_VERSION || 'v24.0';
     const EDGE_BASE_URL = import.meta.env.VITE_SUPABASE_EDGE_BASE_URL || 'https://supabase.ondai.ai';
 
-    const redirectUri = `${EDGE_BASE_URL}/functions/v1/instagram-oauth`;
-
+    const redirectUri = `${EDGE_BASE_URL}/functions/v1/meta-oauth`;
     const scope = [
-      'instagram_business_basic',
-      'instagram_business_manage_messages',
-      'instagram_business_manage_comments',
-      'instagram_business_content_publish',
-      'instagram_business_manage_insights'
+      'pages_show_list',
+      'pages_manage_metadata',
+      'pages_messaging',
+      'pages_read_engagement',
+      'instagram_basic',
+      'instagram_manage_messages',
+      'business_management',
+      'public_profile'
     ].join(',');
 
     const state = encodeURIComponent(JSON.stringify({
-      user_id: user.id
+      user_id: user.id,
+      platform: 'instagram' // Indicate we want Instagram
     }));
 
-    return `https://www.instagram.com/oauth/authorize?` +
-      `client_id=${INSTAGRAM_CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `response_type=code&` +
-      `state=${state}`;
+    return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&auth_type=rerequest`;
   }
 
   /**

@@ -64,23 +64,16 @@ export interface FacebookConfig {
 export interface InstagramConfig {
   username: string;
   instagram_user_id: string;
-  instagram_business_account_id?: string;
+  instagram_business_account_id: string;
   access_token: string;
-  account_type: string;
-  token_type: string;
-  expires_at: string;
+  page_id: string; // Facebook page ID linked to Instagram
+  page_access_token: string; // Page access token
   connected_at: string;
-  media_count?: number;
+  profile_picture_url?: string;
+  followers_count?: number;
   webhook_subscribed?: boolean;
-  verified_at?: string;
 }
 
-export interface InstagramVerification {
-  id: string;
-  verification_code: string;
-  status: 'pending' | 'completed' | 'expired';
-  expires_at: string;
-}
 
 export type ChannelConfig = WhatsAppConfig | FacebookConfig | InstagramConfig | null;
 
@@ -104,10 +97,9 @@ export interface ChannelCardProps {
 }
 
 export interface VerificationCodeDisplayProps {
-  verification: InstagramVerification;
-  onCopy: (code: string) => void;
-  isPolling?: boolean;
+  // Deprecated - no longer used
 }
+
 
 export interface WhatsAppChannelProps {
   channels: Channel[];
@@ -130,19 +122,14 @@ export interface InstagramChannelProps {
   onConnect: () => Promise<void>;
   onReconnect: () => Promise<void>;
   onDisconnect: (channelId: string) => void;
-  instagramNeedsVerification: (config: InstagramConfig) => boolean;
-  igVerifications: Record<string, InstagramVerification>;
-  isGeneratingCode: Record<string, boolean>;
-  verificationPolling: Record<string, NodeJS.Timeout>;
-  onGenerateVerificationCode: (channelId: string) => Promise<void>;
-  onCopyCode: (code: string) => void;
 }
+
 
 export interface ChannelStatusProps {
   channels: Channel[];
   getChannelStatus: (channelType: string) => boolean;
-  instagramNeedsVerification: (config: InstagramConfig) => boolean;
 }
+
 
 export interface ChannelsViewProps {
   user: User | null;

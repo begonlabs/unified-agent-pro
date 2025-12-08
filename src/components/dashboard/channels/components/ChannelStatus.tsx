@@ -6,8 +6,7 @@ import { ChannelStatusProps, InstagramConfig } from '../types';
 
 export const ChannelStatus: React.FC<ChannelStatusProps> = ({
   channels,
-  getChannelStatus,
-  instagramNeedsVerification
+  getChannelStatus
 }) => {
   return (
     <Card>
@@ -67,11 +66,6 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
                       {channel.channel_type === 'instagram' && (
                         <div className="text-gray-600">
                           @{(config as InstagramConfig)?.username}
-                          {instagramNeedsVerification(config as InstagramConfig) && (
-                            <div className="text-yellow-600 font-medium flex items-center">
-                              <AlertTriangle className="h-3 w-3 mr-1" /> Needs Verification
-                            </div>
-                          )}
                         </div>
                       )}
                       {channel.channel_type === 'facebook' && (
