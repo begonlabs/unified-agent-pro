@@ -131,10 +131,10 @@ serve(async (req) => {
             },
             order_id: orderId,
             notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
-            callback_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
+            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
             // Add fallback parameters for different dLocal integrations
-            success_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
-            back_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`
+            success_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
+            back_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`
         } as any; // Cast to any to allow extra params without changing interface definition everywhere
         // Create Basic Auth header
         const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
