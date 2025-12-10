@@ -328,8 +328,8 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               recipient: { id: recipientId },
-              message: { text: message },
-              messaging_type: 'RESPONSE'
+              message: { text: message }
+              // messaging_type: 'RESPONSE' <-- Removed, causing error #3 on Instagram
             })
           }
         )
