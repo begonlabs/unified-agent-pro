@@ -816,14 +816,20 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           }
           // Enviar mensaje automático de IA por Instagram Messaging API
           try {
-            const accessToken = channel.channel_config.access_token;
+            // IMPORTANT: Use page_access_token and page_id (same as send-ai-message function)
+            const accessToken = channel.channel_config.page_access_token;
+            const pageId = channel.channel_config.page_id;
             const igUserId = realUserId; // El ID del usuario de Instagram
 
             console.log('📤 Enviando mensaje de IA por Instagram a:', igUserId);
-            console.log('🔑 Using Instagram access token:', accessToken ? 'Present' : 'Missing');
+            console.log('🔑 Using page access token:', accessToken ? 'Present' : 'Missing');
+            console.log('📄 Using page ID:', pageId);
+
+            // Use Facebook Graph API v24.0 with page ID (not the old Instagram Graph API)
+            const apiUrl = `https://graph.facebook.com/v24.0/${pageId}/messages`;
 
             const instagramApiResponse = await fetch(
-              `https://graph.instagram.com/v23.0/me/messages?access_token=${accessToken}`,
+              `${apiUrl}?access_token=${accessToken}`,
               {
                 method: 'POST',
                 headers: {
