@@ -80,9 +80,10 @@ async function getInstagramUserProfile(
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
-    // IMPORTANT: Use 'name' and 'profile_pic' fields (same as Facebook Messenger)
-    // These fields work with page access tokens for Instagram-scoped IDs (IGSID)
-    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,profile_pic&access_token=${pageAccessToken}`;
+    // IMPORTANT: Use 'username' and 'profile_pic' fields for Instagram
+    // 'username' returns the Instagram handle (e.g., "ernesto_grz")
+    // 'profile_pic' returns the profile picture URL
+    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=username,profile_pic&access_token=${pageAccessToken}`;
 
     console.log('🔍 Fetching Instagram profile via Facebook Graph API:', { userId, graphVersion });
 
@@ -106,12 +107,12 @@ async function getInstagramUserProfile(
     const data = await response.json();
     console.log('✅ Instagram profile data received:', JSON.stringify(data));
 
-    // Use 'name' field (returns username for Instagram) and 'profile_pic' (direct URL)
-    const name = data.name || `Instagram User ${userId.slice(-4)}`;
+    // Use 'username' field (Instagram handle) and 'profile_pic' (direct URL)
+    const username = data.username || `Instagram User ${userId.slice(-4)}`;
     const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
 
     return {
-      name: name.startsWith('@') ? name : `@${name}`,
+      name: username.startsWith('@') ? username : `@${username}`,
       avatar_url: avatarUrl
     };
   } catch (error) {
