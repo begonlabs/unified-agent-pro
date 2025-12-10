@@ -239,20 +239,50 @@ serve(async (req) => {
     // Send message to Facebook/Instagram API
     // IMPORTANT: For Instagram Graph API (Business), we use graph.facebook.com
     // AND we need the Instagram Business Account ID, not 'me'
-    let apiUrl = `https://graph.facebook.com/v23.0/me/messages`; // Default for Facebook
+    let apiUrl = `https://graph.facebook.com/v21.0/me/messages`; // Default for Facebook (v21.0 stable)
 
     if (channelType === 'instagram') {
-      const igBusinessId = channel.channel_config.instagram_business_account_id;
+      let igBusinessId = channel.channel_config.instagram_business_account_id;
+
+      // Fallback: If ID is missing, try to fetch it using the Page Token
+      if (!igBusinessId && accessToken) {
+        console.log('⚠️ IG Business ID missing in config, attempting to fetch from API...');
+        try {
+          const accountResp = await fetch(
+            `https://graph.facebook.com/v21.0/me?fields=instagram_business_account&access_token=${accessToken}`
+          );
+          if (accountResp.ok) {
+            const accountData = await accountResp.json();
+            if (accountData.instagram_business_account?.id) {
+              igBusinessId = accountData.instagram_business_account.id;
+              console.log('✅ Fetched IG Business ID on the fly:', igBusinessId);
+            }
+          } else {
+            console.error('Failed to fetch account info:', await accountResp.text());
+          }
+        } catch (e) {
+          console.error('Error fetching IG Business ID:', e);
+        }
+      }
+
       if (igBusinessId) {
-        apiUrl = `https://graph.facebook.com/v23.0/${igBusinessId}/messages`;
+        apiUrl = `https://graph.facebook.com/v21.0/${igBusinessId}/messages`;
       } else {
-        // Fallback or error logging?
-        console.warn('⚠️ No Instagram Business Account ID found, defaulting to "me" (might fail)');
-        apiUrl = `https://graph.facebook.com/v23.0/me/messages`;
+        console.error('❌ CRITICAL: No Instagram Business Account ID found. Cannot send message via Graph API.');
+        // We will fail here or try 'me' knowing it will likely fail with (#3)
+        // Returning specific error to help debugging
+        return new Response(
+          JSON.stringify({
+            error: 'Configuration Error',
+            details: 'Instagram Business Account ID not found. Please reconnect the channel.'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
 
     const url = `${apiUrl}?access_token=${accessToken}`;
+    console.log('🔗 API URL:', url.replace(accessToken, '[REDACTED]'));
 
     // Intentar enviar con etiqueta HUMAN_AGENT (permite ventana de 7 días)
     let messengerResponse = await fetch(
