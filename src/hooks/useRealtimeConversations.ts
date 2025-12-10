@@ -135,23 +135,34 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     // For INSERT, we need to fetch the full conversation data (including crm_clients)
     // For UPDATE, we might receive partial data, so we should merge or refetch if critical data is missing
 
-    if (payload.eventType === 'INSERT') {
-      const newId = (payload.new as Conversation).id;
-      const newHeader = payload.new as Conversation;
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+      const recordId = (payload.new as unknown as Conversation).id;
+      const record = payload.new as unknown as Conversation;
 
       // Basic check
-      if (newHeader.user_id !== userId) return;
+      if (record.user_id !== userId) return;
 
-      console.log('✨ New conversation detected, fetching full details for:', newId);
+      console.log(`✨ Realtime ${payload.eventType} detected, fetching full details for:`, recordId);
 
-      const fullConversation = await fetchSingleConversation(newId);
+      const fullConversation = await fetchSingleConversation(recordId);
 
       if (fullConversation) {
         setConversations(prevConversations => {
-          const exists = prevConversations.some(conv => conv.id === fullConversation.id);
-          if (exists) return prevConversations;
-          console.log('➕ Adding fully populated conversation:', fullConversation.id);
-          return [fullConversation, ...prevConversations];
+          // For INSERT: Add to top if not exists
+          if (payload.eventType === 'INSERT') {
+            const exists = prevConversations.some(conv => conv.id === fullConversation.id);
+            if (exists) return prevConversations;
+            console.log('➕ Adding fully populated conversation:', fullConversation.id);
+            return [fullConversation, ...prevConversations];
+          }
+
+          // For UPDATE: Update existing item
+          console.log('🔄 Updating fully populated conversation:', fullConversation.id);
+          return prevConversations.map(conv =>
+            conv.id === fullConversation.id
+              ? { ...conv, ...fullConversation }
+              : conv
+          ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
         });
       }
       return;
@@ -159,23 +170,9 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
 
     setConversations(prevConversations => {
       switch (payload.eventType) {
-        // INSERT handled above asynchronously
+        // INSERT and UPDATE handled above asynchronously
         // case 'INSERT': ...
-
-        case 'UPDATE': {
-          const updatedConversation = payload.new as unknown as Conversation;
-
-          if (updatedConversation.user_id !== userId) {
-            return prevConversations;
-          }
-
-          console.log('🔄 Updating conversation:', updatedConversation.id);
-          return prevConversations.map(conv =>
-            conv.id === updatedConversation.id
-              ? { ...conv, ...updatedConversation }
-              : conv
-          ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
-        }
+        // case 'UPDATE': ...
 
         case 'DELETE': {
           const deletedId = payload.old?.id;
