@@ -80,9 +80,9 @@ async function getInstagramUserProfile(
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
-    // IMPORTANT: Use Facebook Graph API with page token to get Instagram user info
-    // The endpoint is different from the old Instagram Basic Display API
-    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=username,profile_picture_url&access_token=${pageAccessToken}`;
+    // IMPORTANT: Use 'name' and 'profile_pic' fields (same as Facebook Messenger)
+    // These fields work with page access tokens for Instagram-scoped IDs (IGSID)
+    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,profile_pic&access_token=${pageAccessToken}`;
 
     console.log('🔍 Fetching Instagram profile via Facebook Graph API:', { userId, graphVersion });
 
@@ -96,29 +96,30 @@ async function getInstagramUserProfile(
         userId,
         endpoint: 'Facebook Graph API'
       });
-      // Fallback
+      // Fallback with picture URL
       return {
         name: `Instagram User ${userId.slice(-4)}`,
-        avatar_url: undefined
+        avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
       };
     }
 
     const data = await response.json();
     console.log('✅ Instagram profile data received:', JSON.stringify(data));
 
-    const username = data.username || `Instagram User ${userId.slice(-4)}`;
-    const avatarUrl = data.profile_picture_url;
+    // Use 'name' field (returns username for Instagram) and 'profile_pic' (direct URL)
+    const name = data.name || `Instagram User ${userId.slice(-4)}`;
+    const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
 
     return {
-      name: `@${username}`,
+      name: name.startsWith('@') ? name : `@${name}`,
       avatar_url: avatarUrl
     };
   } catch (error) {
     console.error('❌ Error in getInstagramUserProfile:', error);
-    // Fallback on error
+    // Fallback on error with picture URL
     return {
       name: `Instagram User ${userId.slice(-4)}`,
-      avatar_url: undefined
+      avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
     };
   }
 }
