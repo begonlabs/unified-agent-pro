@@ -237,9 +237,20 @@ serve(async (req) => {
     console.log('🔑 Access token present:', !!accessToken);
 
     // Send message to Facebook/Instagram API
-    const apiUrl = channelType === 'instagram'
-      ? `https://graph.instagram.com/v23.0/me/messages`
-      : `https://graph.facebook.com/v23.0/me/messages`;
+    // IMPORTANT: For Instagram Graph API (Business), we use graph.facebook.com
+    // AND we need the Instagram Business Account ID, not 'me'
+    let apiUrl = `https://graph.facebook.com/v23.0/me/messages`; // Default for Facebook
+
+    if (channelType === 'instagram') {
+      const igBusinessId = channel.channel_config.instagram_business_account_id;
+      if (igBusinessId) {
+        apiUrl = `https://graph.facebook.com/v23.0/${igBusinessId}/messages`;
+      } else {
+        // Fallback or error logging?
+        console.warn('⚠️ No Instagram Business Account ID found, defaulting to "me" (might fail)');
+        apiUrl = `https://graph.facebook.com/v23.0/me/messages`;
+      }
+    }
 
     const url = `${apiUrl}?access_token=${accessToken}`;
 
