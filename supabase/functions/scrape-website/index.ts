@@ -43,7 +43,7 @@ serve(async (req) => {
 
         const html = await response.text();
 
-        // 2. Extract visible text using DOMParser (Better than regex)
+        // 2. Extract visible text using a better strategy
         const doc = new DOMParser().parseFromString(html, "text/html");
 
         if (!doc) {
@@ -51,35 +51,47 @@ serve(async (req) => {
         }
 
         // Remove unwanted elements
-        const scripts = doc.querySelectorAll("script, style, noscript, iframe, svg");
+        const scripts = doc.querySelectorAll("script, style, noscript, iframe, svg, header, footer, nav");
         scripts.forEach((node) => node.remove());
 
-        // Extract text from important elements to preserve structure
-        // We prioritize headers, paragraphs, lists, and table cells
-        const contentNodes = doc.querySelectorAll("body h1, body h2, body h3, body h4, body p, body li, body td, body th, body div");
-
+        // Extract text safely
         let textContent = "";
-        const seenText = new Set(); // To avoid duplicates
 
-        contentNodes.forEach((node) => {
-            const text = node.textContent.trim();
-            // Filter out empty, very short, or duplicate text
-            if (text.length > 20 && !seenText.has(text)) {
-                textContent += text + "\n";
-                seenText.add(text);
+        // Helper to check if an element is visible-ish (not precise in Deno but better than nothing)
+        // We will traverse the body and pick up text nodes
+        const walker = (node: any) => {
+            if (node.nodeType === 3) { // Text node
+                const text = node.textContent.trim();
+                // Filter out very short noise, but keep prices ($10) and short names
+                if (text.length > 1) {
+                    textContent += text + " ";
+                }
+            } else if (node.nodeType === 1) { // Element node
+                // Add newline for block elements to preserve structure
+                if (["DIV", "P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "TR", "BR"].includes(node.tagName)) {
+                    textContent += "\n";
+                }
+
+                if (node.childNodes) {
+                    node.childNodes.forEach(walker);
+                }
             }
-        });
+        };
 
-        // Fallback: if structured extraction failed (e.g. mostly divs), get body text
-        if (textContent.length < 500) {
-            console.log("Structured extraction yielded little text, falling back to body text");
-            textContent = doc.body?.textContent || "";
-            // Clean up whitespace
-            textContent = textContent.replace(/\s+/g, " ").trim();
+        if (doc.body) {
+            walker(doc.body);
         }
 
+        // Fallback
+        if (textContent.length < 100) {
+            textContent = doc.body?.textContent || "";
+        }
+
+        // Clean up whitespace: replace multiple spaces with one, but keep newlines
+        textContent = textContent.replace(/[ \t]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
+
         // Limit length
-        textContent = textContent.substring(0, 20000);
+        textContent = textContent.substring(0, 15000); // Increased slightly as we have better noise filter
 
         console.log(`Extracted ${textContent.length} characters of text`);
 
@@ -89,15 +101,16 @@ serve(async (req) => {
             throw new Error('OPENAI_API_KEY not configured');
         }
 
+        // Updated Schema for products
         const prompt = `
       Analyze the following website content and extract key business information.
-      The content is scraped from a website, so it might contain some noise. Focus on the main business details.
+      The content is scraped from a website (possibly e-commerce).
       
-      Return ONLY a JSON object with the following fields (if information is found, otherwise empty string):
+      Return ONLY a JSON object with the following fields:
       - description: A clear summary of what the business does.
-      - services: A list of services offered (bullet points).
-      - products: A list of products offered (bullet points).
-      - pricing: Any pricing information found.
+      - services: A list of services offered (as a simple string array).
+      - products: A list of detailed product objects with: { "name": "...", "price": "...", "description": "..." }. If no products found, return empty array.
+      - pricing: General pricing information if available (e.g. "Subscriptions start at $10").
       - contact: Contact details (email, phone, address).
       - about: Mission, vision, or "about us" information.
 
@@ -112,9 +125,9 @@ serve(async (req) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini', // Use a fast, capable model
+                model: 'gpt-4o-mini',
                 messages: [
-                    { role: 'system', content: 'You are a helpful assistant that extracts business information from website text. You output only valid JSON.' },
+                    { role: 'system', content: 'You are a helpful assistant that extracts business information. For products, you are precise with names and prices.' },
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.3,

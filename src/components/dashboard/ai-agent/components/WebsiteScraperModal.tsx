@@ -77,16 +77,30 @@ export const WebsiteScraperModal: React.FC<WebsiteScraperModalProps> = ({ open, 
 
             console.log('Scrape result:', data);
 
-            // Format array fields if they come as arrays (though prompt asks for strings/lists)
-            const formatField = (field: any) => Array.isArray(field) ? field.join('\n') : (field || '');
+            // Format array fields if they come as arrays
+            const formatField = (field: any) => {
+                if (Array.isArray(field)) {
+                    // Check if it's the structured products array
+                    if (field.length > 0 && typeof field[0] === 'object' && field[0] !== null && 'name' in field[0]) {
+                        return field.map((p: any) => {
+                            const price = p.price ? ` (${p.price})` : '';
+                            const desc = p.description ? `: ${p.description}` : '';
+                            return `- ${p.name}${price}${desc}`;
+                        }).join('\n');
+                    }
+                    // Simple string array
+                    return field.join('\n');
+                }
+                return field || '';
+            };
 
             setScrapedData({
-                description: formatField(data.description),
+                description: data.description || '',
                 services: formatField(data.services),
                 products: formatField(data.products),
-                pricing: formatField(data.pricing),
-                contact: formatField(data.contact),
-                about: formatField(data.about)
+                pricing: data.pricing || '', // Pricing might be free text now
+                contact: data.contact || '', // Contact object or text
+                about: data.about || ''
             });
 
             setProgress(100);
