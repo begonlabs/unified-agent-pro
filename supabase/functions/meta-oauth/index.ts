@@ -110,9 +110,33 @@ serve(async (req) => {
       )
     }
 
-    // Get user's pages with specific fields
+    // Exchange short-lived token for long-lived token (60 days)
+    console.log('🔄 Exchanging for long-lived token...')
+    const longLivedResponse = await fetch(
+      `https://graph.facebook.com/${graphVersion}/oauth/access_token?` +
+      `grant_type=fb_exchange_token&` +
+      `client_id=${appId}&` +
+      `client_secret=${appSecret}&` +
+      `fb_exchange_token=${accessToken}`
+    )
+
+    let finalAccessToken = accessToken;
+
+    if (longLivedResponse.ok) {
+      const longLivedData = await longLivedResponse.json()
+      if (longLivedData.access_token) {
+        finalAccessToken = longLivedData.access_token
+        console.log('✅ Long-lived token obtained')
+      }
+    } else {
+      console.log('⚠️ Failed to exchange for long-lived token, using short-lived one')
+      const errorText = await longLivedResponse.text()
+      console.error('Exchange error:', errorText)
+    }
+
+    // Get user's pages with specific fields using the long-lived token
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${accessToken}&fields=id,name,access_token,tasks,category`
+      `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${finalAccessToken}&fields=id,name,access_token,tasks,category`
     )
 
     if (!pagesResponse.ok) {
@@ -220,7 +244,7 @@ serve(async (req) => {
     if (platform === 'instagram') {
       // Get pages with Instagram Business Account info
       const pagesWithIgResponse = await fetch(
-        `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${accessToken}&fields=id,name,access_token,instagram_business_account`
+        `https://graph.facebook.com/${graphVersion}/me/accounts?access_token=${finalAccessToken}&fields=id,name,access_token,instagram_business_account`
       );
 
       if (!pagesWithIgResponse.ok) {
@@ -229,7 +253,7 @@ serve(async (req) => {
           JSON.stringify({
             ok: false,
             error: `Error fetching Instagram accounts: HTTP ${pagesWithIgResponse.status}: ${errorText}`,
-            debug: { access_token_present: !!accessToken }
+            debug: { access_token_present: !!finalAccessToken }
           }),
           {
             status: 400,
@@ -452,7 +476,7 @@ serve(async (req) => {
             page_id: pageId,
             page_name: pageName,
             page_access_token: pageAccessToken,
-            user_access_token: accessToken,
+            user_access_token: finalAccessToken,
             webhook_subscribed: webhookSubscribed,
             connected_at: new Date().toISOString()
           },
@@ -473,7 +497,7 @@ serve(async (req) => {
             page_id: pageId,
             page_name: pageName,
             page_access_token: pageAccessToken,
-            user_access_token: accessToken,
+            user_access_token: finalAccessToken,
             webhook_subscribed: webhookSubscribed,
             connected_at: new Date().toISOString()
           },
