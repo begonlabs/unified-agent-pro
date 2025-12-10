@@ -7,6 +7,7 @@ import { ProfileService } from '@/components/dashboard/profile/services/profileS
 import { useToast } from '@/hooks/use-toast';
 import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
+import { GlobalNotificationListener } from '@/components/dashboard/GlobalNotificationListener';
 import {
   ResponsiveSidebar,
   MessagesView,
@@ -199,6 +200,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Global Listeners */}
+      <GlobalNotificationListener user={user} currentView={currentView} />
+
       {/* Sidebar responsive */}
       <ResponsiveSidebar
         currentView={currentView}
