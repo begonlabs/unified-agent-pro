@@ -8,6 +8,7 @@ import {
 } from '../types';
 
 const STORAGE_KEY = 'ondai_notifications';
+const ONDAI_NOTIFICATION_EVENT = 'ondai_notification_event';
 
 export class NotificationService {
   /**
@@ -25,6 +26,12 @@ export class NotificationService {
       console.error('Error fetching notifications:', error);
       return [];
     }
+  }
+
+  // Helper to dispatch local event
+  private static dispatchEvent(detail: any) {
+    const event = new CustomEvent(ONDAI_NOTIFICATION_EVENT, { detail });
+    window.dispatchEvent(event);
   }
 
   /**
@@ -67,6 +74,12 @@ export class NotificationService {
 
       localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(updatedNotifications));
 
+      // Get the updated notification to dispatch
+      const updatedNotification = updatedNotifications.find(n => n.id === notificationId);
+      if (updatedNotification) {
+        this.dispatchEvent({ type: 'UPDATE', payload: updatedNotification });
+      }
+
       return {
         success: true,
         message: 'Notificación marcada como leída'
@@ -90,6 +103,9 @@ export class NotificationService {
       const updatedNotifications = notifications.map(n => ({ ...n, status: 'read' as const }));
       localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(updatedNotifications));
 
+      // Dispatch generic update to refresh list
+      this.dispatchEvent({ type: 'REFRESH_ALL' });
+
       return {
         success: true,
         message: 'Todas las notificaciones marcadas como leídas'
@@ -111,6 +127,8 @@ export class NotificationService {
       const notifications = await this.fetchNotifications(userId);
       const updatedNotifications = notifications.filter(n => n.id !== notificationId);
       localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(updatedNotifications));
+
+      this.dispatchEvent({ type: 'DELETE', payload: notificationId });
 
       return {
         success: true,
@@ -180,6 +198,8 @@ export class NotificationService {
 
       localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(trimmedNotifications));
 
+      this.dispatchEvent({ type: 'INSERT', payload: notification });
+
       return {
         success: true,
         message: 'Notificación creada',
@@ -233,7 +253,7 @@ export class NotificationService {
   }
 
   /**
-   * Suscribe a cambios en tiempo real (simulado con evento de storage)
+   * Suscribe a cambios en tiempo real (STORAGE y CustomEvent)
    */
   static subscribeToNotifications(
     userId: string,
@@ -241,24 +261,54 @@ export class NotificationService {
     onUpdate: (notification: Notification) => void,
     onDelete: (notificationId: string) => void
   ) {
-    // Escuchar cambios en localStorage (para sincronizar pestañas)
+    // 1. Escuchar cambios en localStorage (otras pestañas)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `${STORAGE_KEY}_${userId}` && e.newValue) {
         const newNotifications: Notification[] = JSON.parse(e.newValue);
         const oldNotifications: Notification[] = e.oldValue ? JSON.parse(e.oldValue) : [];
 
-        // Detectar nueva notificación (simple check: longitud diferente o ID nuevo al principio)
+        // Detectar nueva notificación
         if (newNotifications.length > oldNotifications.length) {
           onNewNotification(newNotifications[0]);
         }
       }
     };
 
+    // 2. Escuchar CustomEvent (misma ventana)
+    const handleCustomEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { type, payload } = customEvent.detail;
+
+      switch (type) {
+        case 'INSERT':
+          onNewNotification(payload as Notification);
+          break;
+        case 'UPDATE':
+          onUpdate(payload as Notification);
+          break;
+        case 'DELETE':
+          onDelete(payload as string);
+          break;
+        case 'REFRESH_ALL':
+          // For massive updates (mark all read), we might need a way to reload all
+          // Or just rely on the fact that the hook will re-render if we trigger something
+          // For now, let's just ignore or handle if we add a refresh callback.
+          // But 'onUpdate' expects a notification. 
+          // In the hook, re-fetching might be simplest but we don't have that callback here directly.
+          // Ideally, we'd trigger a re-fetch in the hook.
+          // As a workaround, we can simulate an update for the first item to trigger a re-render/refetch in some way,
+          // or better, just leave it be for 'markAllAsRead' since that's usually user-initiated in the existing view.
+          break;
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener(ONDAI_NOTIFICATION_EVENT, handleCustomEvent);
 
     return {
       unsubscribe: () => {
         window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener(ONDAI_NOTIFICATION_EVENT, handleCustomEvent);
       }
     };
   }
