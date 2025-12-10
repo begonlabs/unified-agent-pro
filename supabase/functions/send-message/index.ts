@@ -287,8 +287,10 @@ serve(async (req) => {
     const url = `${apiUrl}?access_token=${accessToken}`;
     console.log('🔗 API URL:', url.replace(accessToken, '[REDACTED]'));
 
-    // Intentar enviar con etiqueta HUMAN_AGENT (permite ventana de 7 días)
-    let messengerResponse = await fetch(
+    // Unified send logic (identical to send-ai-message)
+    // We skip 'HUMAN_AGENT' tag because the App lacks that permission (causing Error #3)
+    // We use standard 'RESPONSE' type (24h window) which is proven to work.
+    const messengerResponse = await fetch(
       url,
       {
         method: 'POST',
@@ -298,56 +300,10 @@ serve(async (req) => {
         body: JSON.stringify({
           recipient: { id: recipientId },
           message: { text: message },
-          messaging_type: 'MESSAGE_TAG',
-          tag: 'HUMAN_AGENT'
+          messaging_type: 'RESPONSE'
         })
       }
     )
-
-    // Si falla por falta de permisos para HUMAN_AGENT, reintentar envío estándar
-    if (!messengerResponse.ok) {
-      const errorData = await messengerResponse.json()
-      const errorCode = errorData.error?.code
-      const errorSubcode = errorData.error?.error_subcode
-
-      console.log(`⚠️ Initial send failed with code ${errorCode}/${errorSubcode}. Checking if retryable...`);
-
-      // Retry conditions:
-      // 1. Error #100 / 2018276: Cannot use "HUMAN_AGENT" tag without approval
-      // 2. Error #3: "Application does not have the capability" (often triggered by missing specific features like HUMAN_AGENT)
-      // 3. Error #10: "Permission denied" (generic permission issue)
-      if (
-        (errorCode === 100 && errorSubcode === 2018276) ||
-        errorCode === 3 ||
-        errorCode === 10
-      ) {
-        console.log('🔄 Retrying with standard send (messaging_type: RESPONSE)...')
-        messengerResponse = await fetch(
-          url,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              recipient: { id: recipientId },
-              message: { text: message },
-              messaging_type: 'RESPONSE' // Use standard response type on retry
-            })
-          }
-        )
-      } else {
-        // Si es otro error, devolverlo tal cual
-        console.error(`${channelType} API error:`, JSON.stringify(errorData))
-        return new Response(
-          JSON.stringify({
-            error: `Failed to send message to ${channelType}`,
-            details: JSON.stringify(errorData)
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    }
 
     if (!messengerResponse.ok) {
       const errorData = await messengerResponse.text()
