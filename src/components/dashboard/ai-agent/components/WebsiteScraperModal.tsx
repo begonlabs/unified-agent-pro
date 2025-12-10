@@ -91,6 +91,12 @@ export const WebsiteScraperModal: React.FC<WebsiteScraperModalProps> = ({ open, 
                     // Simple string array
                     return field.join('\n');
                 }
+                // Handle objects (like contact info)
+                if (typeof field === 'object' && field !== null) {
+                    return Object.entries(field)
+                        .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
+                        .join('\n');
+                }
                 return field || '';
             };
 
@@ -98,8 +104,8 @@ export const WebsiteScraperModal: React.FC<WebsiteScraperModalProps> = ({ open, 
                 description: data.description || '',
                 services: formatField(data.services),
                 products: formatField(data.products),
-                pricing: data.pricing || '', // Pricing might be free text now
-                contact: data.contact || '', // Contact object or text
+                pricing: data.pricing || '',
+                contact: formatField(data.contact),
                 about: data.about || ''
             });
 

@@ -107,12 +107,12 @@ serve(async (req) => {
       The content is scraped from a website (possibly e-commerce).
       
       Return ONLY a JSON object with the following fields:
-      - description: A clear summary of what the business does.
-      - services: A list of services offered (as a simple string array).
-      - products: A list of detailed product objects with: { "name": "...", "price": "...", "description": "..." }. If no products found, return empty array.
-      - pricing: General pricing information if available (e.g. "Subscriptions start at $10").
+      - description: A clear summary of what the business does (IN SPANISH).
+      - services: A list of services offered (as a simple string array, IN SPANISH).
+      - products: A list of detailed product objects with: { "name": "...", "price": "...", "description": "..." }. If no products found, return empty array. Translate descriptions to Spanish.
+      - pricing: General pricing information if available (e.g. "Subscriptions start at $10"). (IN SPANISH)
       - contact: Contact details (email, phone, address).
-      - about: Mission, vision, or "about us" information.
+      - about: Mission, vision, or "about us" information (IN SPANISH).
 
       Website Content:
       ${textContent}
@@ -127,7 +127,7 @@ serve(async (req) => {
             body: JSON.stringify({
                 model: 'gpt-4o-mini',
                 messages: [
-                    { role: 'system', content: 'You are a helpful assistant that extracts business information. For products, you are precise with names and prices.' },
+                    { role: 'system', content: 'You are a helpful assistant that extracts business information. For products, you are precise with names and prices. IMPORTANT: You MUST output all textual descriptions in SPANISH, regardless of the source language.' },
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.3,
