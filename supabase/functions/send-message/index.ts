@@ -307,9 +307,18 @@ serve(async (req) => {
       const errorCode = errorData.error?.code
       const errorSubcode = errorData.error?.error_subcode
 
-      // Error #100 / 2018276: No se puede agregar la etiqueta "HUMAN_AGENT" sin aprobación
-      if (errorCode === 100 && errorSubcode === 2018276) {
-        console.log('⚠️ HUMAN_AGENT tag not allowed, retrying with standard send...')
+      console.log(`⚠️ Initial send failed with code ${errorCode}/${errorSubcode}. Checking if retryable...`);
+
+      // Retry conditions:
+      // 1. Error #100 / 2018276: Cannot use "HUMAN_AGENT" tag without approval
+      // 2. Error #3: "Application does not have the capability" (often triggered by missing specific features like HUMAN_AGENT)
+      // 3. Error #10: "Permission denied" (generic permission issue)
+      if (
+        (errorCode === 100 && errorSubcode === 2018276) ||
+        errorCode === 3 ||
+        errorCode === 10
+      ) {
+        console.log('🔄 Retrying with standard send (messaging_type: RESPONSE)...')
         messengerResponse = await fetch(
           url,
           {
