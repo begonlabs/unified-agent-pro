@@ -50,6 +50,9 @@ serve(async (req) => {
     const body: SendMessageRequest = await req.json()
     const { conversation_id, message, user_id, sender_type = 'agent', sender_name } = body
 
+    console.log('🚀 SEND-MESSAGE API v4.1 (Debug Build) - Request received');
+
+
     if (!conversation_id || !message || !user_id) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
