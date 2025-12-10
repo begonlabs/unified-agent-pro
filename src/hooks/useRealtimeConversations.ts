@@ -103,29 +103,64 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     }
   }, [userId, toast]);
 
+  // Helper to fetch a single conversation with full details
+  const fetchSingleConversation = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select(`
+        *,
+        crm_clients (
+          id,
+          name,
+          email,
+          phone,
+          status,
+          avatar_url
+        )
+      `)
+      .eq('id', conversationId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching single conversation:', error);
+      return null;
+    }
+    return data;
+  };
+
   // Función para manejar cambios en tiempo real
-  const handleRealtimeChange = useCallback((payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+  const handleRealtimeChange = useCallback(async (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
     console.log('🔄 Realtime conversation change:', payload.eventType, (payload.new as Conversation)?.id);
+
+    // For INSERT, we need to fetch the full conversation data (including crm_clients)
+    // For UPDATE, we might receive partial data, so we should merge or refetch if critical data is missing
+
+    if (payload.eventType === 'INSERT') {
+      const newId = (payload.new as Conversation).id;
+      const newHeader = payload.new as Conversation;
+
+      // Basic check
+      if (newHeader.user_id !== userId) return;
+
+      console.log('✨ New conversation detected, fetching full details for:', newId);
+
+      const fullConversation = await fetchSingleConversation(newId);
+
+      if (fullConversation) {
+        setConversations(prevConversations => {
+          const exists = prevConversations.some(conv => conv.id === fullConversation.id);
+          if (exists) return prevConversations;
+          console.log('➕ Adding fully populated conversation:', fullConversation.id);
+          return [fullConversation, ...prevConversations];
+        });
+      }
+      return;
+    }
 
     setConversations(prevConversations => {
       switch (payload.eventType) {
-        case 'INSERT': {
-          const newConversation = payload.new as unknown as Conversation;
-
-          // Verificar que la conversación pertenece al usuario actual
-          if (newConversation.user_id !== userId) {
-            return prevConversations;
-          }
-
-          // Evitar duplicados
-          const exists = prevConversations.some(conv => conv.id === newConversation.id);
-          if (exists) {
-            return prevConversations;
-          }
-
-          console.log('➕ Adding new conversation:', newConversation.id);
-          return [newConversation, ...prevConversations];
-        }
+        // INSERT handled above asynchronously
+        // case 'INSERT': ...
 
         case 'UPDATE': {
           const updatedConversation = payload.new as unknown as Conversation;
