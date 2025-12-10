@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import {
   useProfile,
   useProfileForm,
@@ -21,6 +22,37 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
   const { profile, loading, fetchProfile } = useProfile(user);
   const { notifications, updateNotificationSetting } = useNotifications();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const { toast } = useToast();
+
+  // Handle successful payment redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') === 'true') {
+      toast({
+        title: "Pago completado",
+        description: "Actualizando los datos de tu plan...",
+        duration: 5000,
+      });
+
+      // Fetch immediately
+      fetchProfile();
+
+      // Fetch again after delays to allow webhook to process
+      const t1 = setTimeout(fetchProfile, 2000);
+      const t2 = setTimeout(fetchProfile, 5000);
+      const t3 = setTimeout(fetchProfile, 8000);
+
+      // Clean URL
+      const newUrl = window.location.pathname + '?tab=profile';
+      window.history.replaceState({}, '', newUrl);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [fetchProfile, toast]);
 
   const {
     editingProfile,
