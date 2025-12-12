@@ -69,6 +69,14 @@ export interface TicketTableProps {
   onTicketSelect: (ticket: SupportTicket) => void;
   onStatusUpdate: (ticketId: string, status: SupportTicket['status']) => void;
   onRefresh: () => void;
+  // Enhanced props
+  selectedTickets?: Set<string>;
+  onToggleSelect?: (ticketId: string) => void;
+  onSelectAll?: (ticketIds: string[]) => void;
+  sortConfig?: SortConfig | null;
+  onSort?: (config: SortConfig) => void;
+  onAssignToMe?: (ticketId: string) => void;
+  onPriorityUpdate?: (ticketId: string, priority: TicketPriority) => void;
 }
 
 export interface TicketChatProps {
@@ -132,6 +140,8 @@ export interface UseSupportTicketsReturn {
   loading: boolean;
   fetchTickets: () => Promise<void>;
   updateTicketStatus: (ticketId: string, status: SupportTicket['status']) => Promise<void>;
+  updateTicketPriority: (ticketId: string, priority: SupportTicket['priority']) => Promise<void>;
+  assignTicket: (ticketId: string, adminId: string) => Promise<void>;
 }
 
 export interface UseSupportMessagesReturn {
