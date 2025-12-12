@@ -12,6 +12,12 @@ export interface SupportTicket {
   message_count: number;
   last_message_at: string;
   unread_count: number;
+  // New enhanced fields
+  assigned_to?: string;
+  tags?: string[];
+  first_response_at?: string;
+  resolved_at?: string;
+  customer_satisfaction?: number;
   user_profile?: {
     company_name: string;
     email: string;
@@ -206,4 +212,46 @@ export interface ChatState {
   messages: SupportMessage[];
   loadingMessages: boolean;
   response: string;
+}
+
+// Internal note interface
+export interface InternalNote {
+  id: string;
+  ticket_id: string;
+  admin_id: string;
+  note: string;
+  created_at: string;
+}
+
+// Advanced filter interface
+export interface AdvancedFilters {
+  status: string[];
+  priority: string[];
+  assigned: string;
+  dateRange: {
+    from?: Date;
+    to?: Date;
+  };
+  search: string;
+  tags: string[];
+}
+
+// Filter preset interface
+export interface FilterPreset {
+  id: string;
+  label: string;
+  icon: string;
+  filters: Partial<AdvancedFilters>;
+}
+
+// View mode type
+export type ViewMode = 'table' | 'kanban' | 'timeline' | 'compact';
+
+// Bulk action type
+export type BulkAction = 'status' | 'priority' | 'assign' | 'close' | 'tag';
+
+// Sort configuration
+export interface SortConfig {
+  field: keyof SupportTicket;
+  direction: 'asc' | 'desc';
 }

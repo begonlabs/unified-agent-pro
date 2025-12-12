@@ -59,7 +59,7 @@ export class SupportService {
             .eq('ticket_id', ticket.id);
 
           const messageCount = messagesData?.length || 0;
-          const lastMessageAt = messagesData?.length > 0 
+          const lastMessageAt = messagesData?.length > 0
             ? messagesData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
             : ticket.created_at;
           const unreadCount = messagesData?.filter(m => m.message_type !== 'user' && !m.is_read).length || 0;
@@ -212,7 +212,7 @@ export class SupportService {
 
       const { data: updatedTicket, error } = await supabase
         .from('support_tickets')
-        .update({ 
+        .update({
           status: newStatus,
           updated_at: new Date().toISOString()
         })
@@ -223,7 +223,7 @@ export class SupportService {
       if (error) throw error;
 
       console.log('✅ Ticket status updated successfully');
-      
+
       // Map the updated ticket to our SupportTicket interface
       const mappedTicket: SupportTicket = {
         id: updatedTicket.id,
@@ -237,7 +237,7 @@ export class SupportService {
         last_message_at: updatedTicket.updated_at,
         unread_count: 0 // Will be updated by the calling component
       };
-      
+
       return {
         ticket: mappedTicket,
         success: true
@@ -401,11 +401,11 @@ export class SupportService {
     return tickets.filter(ticket => {
       const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
       const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch = searchTerm === '' ||
         ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.user_profile?.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.user_profile?.email.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       return matchesStatus && matchesPriority && matchesSearch;
     });
   }
@@ -414,4 +414,104 @@ export class SupportService {
    * Handle Supabase errors
    */
   static handleSupabaseError = handleSupabaseError;
+
+  /**
+   * Assign ticket to admin
+   */
+  static async assignTicket(ticketId: string, adminId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ assigned_to: adminId, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: handleSupabaseError(error, "Error al asignar ticket").description
+      };
+    }
+  }
+
+  /**
+   * Update ticket priority
+   */
+  static async updateTicketPriority(ticketId: string, priority: TicketPriority): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ priority, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: handleSupabaseError(error, "Error al actualizar prioridad").description
+      };
+    }
+  }
+
+  /**
+   * Bulk update ticket status
+   */
+  static async bulkUpdateStatus(ticketIds: string[], status: TicketStatus): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ status, updated_at: new Date().toISOString() })
+        .in('id', ticketIds);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: handleSupabaseError(error, "Error al actualizar tickets").description
+      };
+    }
+  }
+
+  /**
+   * Bulk update ticket priority
+   */
+  static async bulkUpdatePriority(ticketIds: string[], priority: TicketPriority): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ priority, updated_at: new Date().toISOString() })
+        .in('id', ticketIds);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: handleSupabaseError(error, "Error al actualizar prioridad").description
+      };
+    }
+  }
+
+  /**
+   * Bulk assign tickets
+   */
+  static async bulkAssignTickets(ticketIds: string[], adminId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ assigned_to: adminId, updated_at: new Date().toISOString() })
+        .in('id', ticketIds);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: handleSupabaseError(error, "Error al asignar tickets").description
+      };
+    }
+  }
 }
