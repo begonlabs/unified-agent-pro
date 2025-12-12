@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { SupportService } from '../services/supportService';
 import { UseSupportTicketsReturn, SupportTicket, TicketStatus } from '../types';
@@ -40,9 +40,9 @@ export const useSupportTickets = (): UseSupportTicketsReturn => {
 
       if (response.success) {
         // Update local state
-        setTickets(prevTickets => 
-          prevTickets.map(ticket => 
-            ticket.id === ticketId 
+        setTickets(prevTickets =>
+          prevTickets.map(ticket =>
+            ticket.id === ticketId
               ? { ...ticket, status: newStatus, updated_at: new Date().toISOString() }
               : ticket
           )
@@ -68,6 +68,11 @@ export const useSupportTickets = (): UseSupportTicketsReturn => {
       });
     }
   }, [toast]);
+
+  // Fetch tickets on mount
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   return {
     tickets,
