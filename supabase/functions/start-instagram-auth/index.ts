@@ -35,7 +35,8 @@ serve(async (req) => {
     }
 
     // Get environment variables
-    const igAppId = Deno.env.get('META_APP_IG_ID')
+    // Get environment variables - Prioritize Basic Display specific ID
+    const igAppId = Deno.env.get('INSTAGRAM_BASIC_APP_ID') || Deno.env.get('META_APP_IG_ID')
     const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
 
     if (!igAppId) {
@@ -104,13 +105,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in start-instagram-auth function:', error)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: `Internal server error: ${error.message}`,
         debug: { request_url: req.url }
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
