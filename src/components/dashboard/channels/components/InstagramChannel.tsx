@@ -27,7 +27,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   permissions,
   profile
 }) => {
-  const instagramChannels = channels.filter(c => c.channel_type === 'instagram' || c.channel_type === 'instagram_legacy');
+  const instagramChannels = (channels || []).filter(c => c.channel_type === 'instagram' || c.channel_type === 'instagram_legacy');
   const isConnected = instagramChannels.length > 0;
 
   // Check permissions

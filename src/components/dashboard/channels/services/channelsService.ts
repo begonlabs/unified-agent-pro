@@ -33,6 +33,8 @@ export class ChannelsService {
    * Verifica el estado de conexión de un canal específico
    */
   static getChannelStatus(channelType: string, channels: Channel[]): boolean {
+    if (!Array.isArray(channels)) return false;
+
     // Para WhatsApp, buscar tanto 'whatsapp' como 'whatsapp_green_api'
     let channel: Channel | undefined;
     if (channelType === 'whatsapp') {
