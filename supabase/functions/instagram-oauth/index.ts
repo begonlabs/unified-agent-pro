@@ -37,9 +37,10 @@ serve(async (req) => {
     }
 
     // Get environment variables - Use Instagram Basic Display credentials
-    const appId = Deno.env.get('META_APP_IG_ID') || Deno.env.get('INSTAGRAM_BASIC_APP_ID') // Instagram App ID
-    const appSecret = Deno.env.get('META_APP_IG_SECRET') || Deno.env.get('INSTAGRAM_BASIC_APP_SECRET') // Instagram App Secret
-    const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
+    // Get environment variables - Use Instagram Basic Display credentials, supporting VITE_ prefix
+    const appId = Deno.env.get('INSTAGRAM_BASIC_APP_ID') || Deno.env.get('VITE_INSTAGRAM_BASIC_APP_ID') || Deno.env.get('META_APP_IG_ID') || Deno.env.get('VITE_META_APP_ID')
+    const appSecret = Deno.env.get('INSTAGRAM_BASIC_APP_SECRET') || Deno.env.get('VITE_INSTAGRAM_BASIC_APP_SECRET') || Deno.env.get('META_APP_IG_SECRET') || Deno.env.get('VITE_META_APP_SECRET')
+    const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || Deno.env.get('VITE_INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v23.0'
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')

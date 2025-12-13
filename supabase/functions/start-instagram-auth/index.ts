@@ -34,10 +34,9 @@ serve(async (req) => {
       )
     }
 
-    // Get environment variables
-    // Get environment variables - Prioritize Basic Display specific ID
-    const igAppId = Deno.env.get('INSTAGRAM_BASIC_APP_ID') || Deno.env.get('META_APP_IG_ID')
-    const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
+    // Get environment variables - Prioritize Basic Display specific ID and support VITE_ prefix
+    const igAppId = Deno.env.get('INSTAGRAM_BASIC_APP_ID') || Deno.env.get('VITE_INSTAGRAM_BASIC_APP_ID') || Deno.env.get('META_APP_IG_ID') || Deno.env.get('VITE_META_APP_ID')
+    const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || Deno.env.get('VITE_INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
 
     if (!igAppId) {
       return new Response(
