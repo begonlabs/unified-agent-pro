@@ -41,6 +41,11 @@ export class ChannelsService {
       channel = channels.find(c => c.channel_type === channelType);
     }
 
+    // Special logic for Instagram legacy compatibility
+    if (channelType === 'instagram' && !channel) {
+      channel = channels.find(c => c.channel_type === 'instagram_legacy');
+    }
+
     if (!channel || !channel.channel_config) {
       return false;
     }
@@ -80,6 +85,11 @@ export class ChannelsService {
         // older connections or failed fetches might miss them.
         // We mainly need username + token + logic user id
         const hasEssentialIds = Boolean(config?.instagram_business_account_id) || Boolean(config?.page_id);
+
+        // For legacy channels, requirements are simpler (Basic Display API)
+        if (channel.channel_type === 'instagram_legacy') {
+          return hasUsername && hasAccessToken && isConnected;
+        }
 
         return hasUsername && hasAccessToken && hasInstagramUserId &&
           hasEssentialIds && isConnected;
@@ -271,6 +281,29 @@ export class ChannelsService {
     }));
 
     return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&auth_type=rerequest`;
+  }
+
+  /**
+   * Inicia el proceso de autenticación legacy de Instagram (Basic Display)
+   */
+  static async startInstagramLegacyAuth(user: User): Promise<string> {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/start-instagram-auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: user.id
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success || !result.auth_url) {
+      throw new Error(result.error || 'Error al iniciar autenticación de Instagram Legacy');
+    }
+
+    return result.auth_url;
   }
 
   /**

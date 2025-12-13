@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface InstagramChannelProps {
   channels: Channel[];
   onConnect: () => void;
+  onConnectLegacy?: () => void;
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
   permissions?: ChannelPermissions | null;
@@ -20,12 +21,13 @@ interface InstagramChannelProps {
 export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   channels,
   onConnect,
+  onConnectLegacy,
   onReconnect,
   onDisconnect,
   permissions,
   profile
 }) => {
-  const instagramChannels = channels.filter(c => c.channel_type === 'instagram');
+  const instagramChannels = channels.filter(c => c.channel_type === 'instagram' || c.channel_type === 'instagram_legacy');
   const isConnected = instagramChannels.length > 0;
 
   // Check permissions
@@ -59,6 +61,17 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                 Conectar con Instagram
               </Button>
 
+              {onConnectLegacy && (
+                <Button
+                  onClick={onConnectLegacy}
+                  variant="outline"
+                  className="w-full border-pink-200 text-pink-700 hover:bg-pink-50 hover:text-pink-800"
+                >
+                  <Instagram className="h-4 w-4 mr-2" />
+                  Conectar con Instagram (Legacy)
+                </Button>
+              )}
+
               <div className="bg-pink-50 p-3 rounded-lg border">
                 <h4 className="font-medium text-pink-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>
                 <ul className="text-xs text-pink-800 space-y-1 list-disc list-inside">
@@ -83,7 +96,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                   <div className="flex items-center gap-2">
                     <Instagram className="h-4 w-4 text-pink-600" />
                     <span className="font-medium text-pink-900 text-sm sm:text-base">
-                      @{config?.username || 'Cuenta de Instagram'}
+                      @{config?.username || 'Cuenta de Instagram'} {channel.channel_type === 'instagram_legacy' && '(Legacy)'}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-2">

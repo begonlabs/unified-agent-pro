@@ -36,7 +36,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
     isConnectingWhatsApp,
     handleWhatsAppLogin,
     handleFacebookLogin,
-    handleInstagramLogin
+    handleInstagramLogin,
+    handleInstagramLegacyLogin
   } = useChannelConnections(currentUser);
   const { handleDisconnectChannel, handleTestWebhook } = useChannelActions(currentUser);
 
@@ -293,6 +294,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           <InstagramChannel
             channels={channels}
             onConnect={handleInstagramLogin}
+            onConnectLegacy={handleInstagramLegacyLogin}
             onReconnect={handleInstagramLogin}
             onDisconnect={handleDisconnect}
             permissions={permissions}

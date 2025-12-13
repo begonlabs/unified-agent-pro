@@ -15,7 +15,7 @@ export const useChannelConnections = (user: User | null) => {
         return;
       }
 
-      window.fbAsyncInit = function() {
+      window.fbAsyncInit = function () {
         window.FB.init({
           appId: import.meta.env.VITE_META_APP_ID || '728339836340255',
           cookie: true,
@@ -26,7 +26,7 @@ export const useChannelConnections = (user: User | null) => {
       };
 
       // Load Facebook SDK
-      (function(d, s, id) {
+      (function (d, s, id) {
         const fjs = d.getElementsByTagName(s)[0] as HTMLElement;
         if (d.getElementById(id)) return;
         const js = d.createElement(s) as HTMLScriptElement; js.id = id;
@@ -46,13 +46,13 @@ export const useChannelConnections = (user: User | null) => {
 
     try {
       const result = await ChannelsService.processWhatsAppAuth(code, state, user);
-      
+
       // Notificación desactivada - se manejará en el sistema central de notificaciones
       // toast({
       //   title: "WhatsApp conectado exitosamente!",
       //   description: `Empresa: ${result.businessName} - Teléfono: ${result.phoneNumber}`,
       // });
-      
+
       return result;
     } catch (error: unknown) {
       console.error('Error processing WhatsApp authorization:', error);
@@ -72,19 +72,19 @@ export const useChannelConnections = (user: User | null) => {
 
         // Get authorization code
         let authCode = response.code || response.authResponse?.code;
-        
+
         if (!authCode) {
           // Fallback to access token if no code
           authCode = response.authResponse?.accessToken;
         }
-        
+
         if (!authCode) {
           throw new Error('No se recibió código de autorización de Facebook');
         }
-        
+
         // Send to backend
         await processWhatsAppAuth(authCode, expectedState);
-        
+
       } else if (response.status === 'not_authorized') {
         throw new Error('Usuario no autorizó la aplicación WhatsApp');
       } else {
@@ -219,6 +219,7 @@ export const useChannelConnections = (user: User | null) => {
     isConnectingWhatsApp,
     handleWhatsAppLogin,
     handleFacebookLogin,
-    handleInstagramLogin
+    handleInstagramLogin,
+    handleInstagramLegacyLogin
   };
 };

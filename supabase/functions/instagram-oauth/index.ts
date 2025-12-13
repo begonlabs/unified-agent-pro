@@ -24,14 +24,14 @@ serve(async (req) => {
 
     if (!code) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'Missing authorization code',
           debug: { request_url: req.url }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -47,7 +47,7 @@ serve(async (req) => {
     // Enhanced environment variable debugging
     console.log('🔍 Environment variables check:')
     console.log('  META_APP_IG_ID:', Deno.env.get('META_APP_IG_ID') ? '✅ Present' : '❌ Missing')
-    console.log('  INSTAGRAM_BASIC_APP_ID:', Deno.env.get('INSTAGRAM_BASIC_APP_ID') ? '✅ Present' : '❌ Missing') 
+    console.log('  INSTAGRAM_BASIC_APP_ID:', Deno.env.get('INSTAGRAM_BASIC_APP_ID') ? '✅ Present' : '❌ Missing')
     console.log('  META_APP_IG_SECRET:', Deno.env.get('META_APP_IG_SECRET') ? '✅ Present' : '❌ Missing')
     console.log('  INSTAGRAM_BASIC_APP_SECRET:', Deno.env.get('INSTAGRAM_BASIC_APP_SECRET') ? '✅ Present' : '❌ Missing')
     console.log('  Final appId used:', appId || 'UNDEFINED')
@@ -55,8 +55,8 @@ serve(async (req) => {
 
     if (!appId || !appSecret || !supabaseUrl || !supabaseServiceKey) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'Missing required environment variables',
           debug: {
             app_id_present: !!appId,
@@ -72,9 +72,9 @@ serve(async (req) => {
             }
           }
         }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -102,17 +102,17 @@ serve(async (req) => {
       const errorText = await tokenResponse.text()
       console.error('❌ Token exchange failed:', errorText)
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: `Token exchange failed: HTTP ${tokenResponse.status}: ${errorText}`,
           debug: {
             redirect_uri: redirectUri,
             graph_version: graphVersion
           }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -123,14 +123,14 @@ serve(async (req) => {
 
     if (!shortLivedToken || !igUserId) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'No access token or user ID received from Instagram',
           debug: { token_response: tokenData }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -179,44 +179,44 @@ serve(async (req) => {
     // 🔥 NEW: Get Instagram Business Account ID for messaging (Business & Creator accounts)
     let businessAccountId = null;
     const supportsMessaging = ['BUSINESS', 'MEDIA_CREATOR'].includes(userProfile.account_type);
-    
+
     if (supportsMessaging) {
       console.log(`🏢 Account type ${userProfile.account_type} supports messaging - fetching Business Account ID...`);
       try {
         // For MEDIA_CREATOR and BUSINESS accounts, the Business Account ID is typically the user ID itself
         businessAccountId = userProfile.id;
         console.log('✅ Using user ID as Business Account ID:', businessAccountId);
-        
+
         // Try to get business account info using Instagram Graph API (not Facebook Graph API)
         const businessResponse = await fetch(
           `https://graph.instagram.com/me?fields=id,username,account_type&access_token=${finalToken}`
         );
-        
+
         if (businessResponse.ok) {
           const businessData = await businessResponse.json();
           console.log('📋 Business/Creator account response:', businessData);
-          
+
           // Verify the ID
           if (businessData.id && businessData.id !== businessAccountId) {
             console.log(`⚠️ Different ID found: ${businessData.id}, using it instead`);
             businessAccountId = businessData.id;
           }
-          
+
           // Alternative approach: Check if we can access business endpoints via Facebook Pages
           try {
             const businessPagesResponse = await fetch(
               `https://graph.facebook.com/v23.0/me/accounts?access_token=${finalToken}`
             );
-            
+
             if (businessPagesResponse.ok) {
               const businessPagesData = await businessPagesResponse.json();
               console.log('📄 Business pages data:', businessPagesData);
-              
+
               // Look for Instagram business accounts in the pages
-              const instagramPages = businessPagesData.data?.filter(page => 
+              const instagramPages = businessPagesData.data?.filter(page =>
                 page.instagram_business_account?.id
               );
-              
+
               if (instagramPages && instagramPages.length > 0) {
                 const pageBusinessId = instagramPages[0].instagram_business_account.id;
                 console.log('✅ Found Instagram Business Account ID via Facebook pages:', pageBusinessId);
@@ -229,7 +229,7 @@ serve(async (req) => {
           } catch (pagesError) {
             console.log('ℹ️ Facebook pages check skipped (normal for standalone Creator accounts)');
           }
-          
+
           console.log('✅ Final Instagram Business Account ID:', businessAccountId);
         } else {
           const errorText = await businessResponse.text();
@@ -262,14 +262,14 @@ serve(async (req) => {
 
     if (!userId) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: 'User ID not found in state parameter',
           debug: { state }
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -279,7 +279,7 @@ serve(async (req) => {
       .from('communication_channels')
       .select('id')
       .eq('user_id', userId)
-      .eq('channel_type', 'instagram')
+      .eq('channel_type', 'instagram_legacy')
       .maybeSingle()
 
     // Calculate expiration date
@@ -316,7 +316,7 @@ serve(async (req) => {
         .from('communication_channels')
         .insert({
           user_id: userId,
-          channel_type: 'instagram',
+          channel_type: 'instagram_legacy',
           channel_config: {
             instagram_user_id: userProfile.id,
             instagram_business_account_id: businessAccountId, // 🔥 NEW: Business Account ID for messaging  
@@ -343,7 +343,7 @@ serve(async (req) => {
     // This is required for Meta to send webhook events to our endpoint
     if (businessAccountId && finalToken) {
       console.log('📡 Subscribing Instagram Business Account to webhook:', businessAccountId);
-      
+
       try {
         // Subscribe the Instagram Business Account to webhook events
         const subscribeResponse = await fetch(
@@ -362,7 +362,7 @@ serve(async (req) => {
         if (subscribeResponse.ok) {
           const subscribeResult = await subscribeResponse.json();
           console.log('✅ Instagram account successfully subscribed to webhook:', subscribeResult);
-          
+
           // Update channel config to mark webhook as subscribed
           const channelId = existingChannel?.id;
           if (channelId) {
@@ -372,14 +372,14 @@ serve(async (req) => {
               .select('channel_config')
               .eq('id', channelId)
               .single();
-            
+
             if (currentChannel) {
               const updatedConfig = {
                 ...currentChannel.channel_config,
                 webhook_subscribed: true,
                 webhook_subscribed_at: new Date().toISOString()
               };
-              
+
               await supabase
                 .from('communication_channels')
                 .update({ channel_config: updatedConfig })
@@ -390,7 +390,7 @@ serve(async (req) => {
           const errorText = await subscribeResponse.text();
           console.error('❌ Failed to subscribe Instagram account to webhook:', errorText);
           console.error('⚠️ This means Meta will NOT send webhook events for this account!');
-          
+
           // Try alternative subscription method (using App ID instead)
           console.log('🔄 Trying alternative subscription method with App ID...');
           const altSubscribeResponse = await fetch(
@@ -406,7 +406,7 @@ serve(async (req) => {
               })
             }
           );
-          
+
           if (altSubscribeResponse.ok) {
             const altResult = await altSubscribeResponse.json();
             console.log('✅ Alternative subscription method succeeded:', altResult);
@@ -424,8 +424,8 @@ serve(async (req) => {
     }
 
     // Redirect to frontend dashboard with success
-    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&instagram_user=${encodeURIComponent(userProfile.username)}&account_type=${userProfile.account_type}&channel=instagram&view=channels`
-    
+    const frontendCallbackUrl = `https://ondai.ai/dashboard?success=true&instagram_user=${encodeURIComponent(userProfile.username)}&account_type=${userProfile.account_type}&channel=instagram_legacy&view=channels`
+
     return new Response(
       `<!DOCTYPE html>
 <html>
@@ -480,23 +480,23 @@ serve(async (req) => {
     </script>
 </body>
 </html>`,
-      { 
+      {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' }
       }
     )
 
   } catch (error) {
     console.error('❌ Error in instagram-oauth function:', error)
     return new Response(
-      JSON.stringify({ 
-        ok: false, 
+      JSON.stringify({
+        ok: false,
         error: `Internal server error: ${error.message}`,
         debug: { request_url: req.url }
       }),
-      { 
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }

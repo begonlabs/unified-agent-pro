@@ -278,7 +278,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       .from('communication_channels')
       .select('*')
       .eq('channel_config->>instagram_business_account_id', webhookBusinessId)
-      .eq('channel_type', 'instagram')
+      .in('channel_type', ['instagram', 'instagram_legacy'])
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -295,7 +295,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         .from('communication_channels')
         .select('*')
         .eq('channel_config->>instagram_user_id', webhookBusinessId)
-        .eq('channel_type', 'instagram')
+        .in('channel_type', ['instagram', 'instagram_legacy'])
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -311,7 +311,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
         const { data: allChannels, error: allError } = await supabase
           .from('communication_channels')
           .select('id, user_id, channel_config, is_connected')
-          .eq('channel_type', 'instagram');
+          .in('channel_type', ['instagram', 'instagram_legacy']);
 
         if (allChannels && !allError) {
           console.log('🔍 All Instagram channels found:', allChannels.length);
