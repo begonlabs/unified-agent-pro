@@ -60,6 +60,10 @@ export class ProfileService {
       errors.last_name = 'El apellido es obligatorio';
     }
 
+    if (!profileData.country) {
+      errors.country = 'El país es obligatorio';
+    }
+
     if (!profileData.email.trim()) {
       errors.email = 'El email es obligatorio';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {

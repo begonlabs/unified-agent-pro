@@ -77,14 +77,14 @@ const Dashboard = () => {
         try {
           const profile = await ProfileService.fetchProfile(user.id);
           if (profile) {
-            const isProfileIncomplete = !profile.first_name || !profile.last_name;
+            const isProfileIncomplete = !profile.first_name || !profile.last_name || !profile.country;
 
             // If profile is incomplete and we are not already on the profile view
             if (isProfileIncomplete && currentView !== 'profile') {
               console.log('⚠️ Profile incomplete, redirecting to profile view');
               toast({
                 title: "Perfil incompleto",
-                description: "Por favor completa tu nombre y apellido para continuar.",
+                description: "Por favor completa tu nombre, apellido y país para continuar.",
                 variant: "default",
               });
               setCurrentView('profile');

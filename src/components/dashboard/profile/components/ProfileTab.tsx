@@ -187,7 +187,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             <div className="space-y-2">
               <Label htmlFor="country" className="text-sm font-medium flex items-center gap-1">
                 <Flag className="h-3 w-3 sm:h-4 sm:w-4" />
-                País
+                País *
               </Label>
               <Select
                 value={profileData.country}
