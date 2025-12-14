@@ -38,6 +38,8 @@ serve(async (req) => {
     const igAppId = Deno.env.get('META_APP_ID') || Deno.env.get('VITE_META_APP_ID') || Deno.env.get('INSTAGRAM_BASIC_APP_ID') || Deno.env.get('VITE_INSTAGRAM_BASIC_APP_ID') || Deno.env.get('META_APP_IG_ID')
     const redirectUri = Deno.env.get('INSTAGRAM_REDIRECT_URI') || Deno.env.get('VITE_INSTAGRAM_REDIRECT_URI') || 'https://supabase.ondai.ai/functions/v1/instagram-oauth'
 
+    console.log(`[Debug] Using Instagram App ID: ${igAppId} (Redirect: ${redirectUri})`)
+
     if (!igAppId) {
       return new Response(
         JSON.stringify({ error: 'Instagram App ID not configured' }),
