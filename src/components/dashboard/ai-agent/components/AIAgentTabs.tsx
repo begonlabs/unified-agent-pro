@@ -68,7 +68,11 @@ export const AIAgentTabs: React.FC<AIAgentTabsProps> = ({
               <TabsTrigger
                 value={tab.value}
                 onClick={() => onTabChange(tab.value)}
-                className="flex flex-col items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/20 data-[state=active]:to-[#710db2]/20 data-[state=active]:text-[#3a0caa] data-[state=active]:border-b-2 data-[state=active]:border-[#3a0caa] data-[state=active]:font-semibold min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1 transition-all"
+                className={`flex flex-col items-center justify-center min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1 transition-all
+                  ${currentTab === tab.value
+                    ? 'bg-gradient-to-r from-[#3a0caa]/20 to-[#710db2]/20 text-[#3a0caa] border-b-2 border-[#3a0caa] font-semibold'
+                    : ''
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 <span className="text-xs hidden sm:block">{tab.label}</span>
