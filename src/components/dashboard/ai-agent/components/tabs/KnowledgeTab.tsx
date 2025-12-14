@@ -164,6 +164,7 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
             </div>
           </div>
 
+          {/* FAQ section temporarily hidden
           <div className="space-y-2">
             <Label htmlFor="common-questions" className="text-sm sm:text-base">
               Preguntas Frecuentes de tus Clientes
@@ -177,6 +178,7 @@ export const KnowledgeTab: React.FC<KnowledgeTabProps> = ({
               className="text-sm sm:text-base"
             />
           </div>
+          */}
         </CardContent>
       </Card>
 
