@@ -68,7 +68,7 @@ export const AIAgentTabs: React.FC<AIAgentTabsProps> = ({
               <TabsTrigger
                 value={tab.value}
                 onClick={() => onTabChange(tab.value)}
-                className={`flex flex-col items-center justify-center min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1 transition-all rounded-lg
+                className={`flex flex-col items-center justify-center min-w-[60px] sm:min-w-[80px] p-2 sm:p-3 gap-1 transition-all rounded-xl
                   ${currentTab === tab.value
                     ? 'bg-gradient-to-r from-[#3a0caa]/20 to-[#710db2]/20 text-[#3a0caa] font-semibold'
                     : 'hover:bg-gray-100'
