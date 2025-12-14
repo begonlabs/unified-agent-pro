@@ -285,28 +285,7 @@ export class ChannelsService {
     return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?client_id=${encodeURIComponent(META_APP_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&auth_type=rerequest`;
   }
 
-  /**
-   * Inicia el proceso de autenticación legacy de Instagram (Basic Display)
-   */
-  static async startInstagramLegacyAuth(user: User): Promise<string> {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/start-instagram-auth`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: user.id
-      })
-    });
 
-    const result = await response.json();
-
-    if (!result.success || !result.auth_url) {
-      throw new Error(result.error || 'Error al iniciar autenticación de Instagram Legacy');
-    }
-
-    return result.auth_url;
-  }
 
   /**
    * Maneja errores de Supabase

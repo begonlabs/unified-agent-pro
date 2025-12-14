@@ -63,13 +63,7 @@ echo -e "${YELLOW}   → Copiando fetch-business-info...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/fetch-business-info"
 sudo cp -r supabase/functions/fetch-business-info "$FUNCTIONS_VOLUME/"
 
-echo -e "${YELLOW}   → Copiando instagram-oauth...${NC}"
-sudo rm -rf "$FUNCTIONS_VOLUME/instagram-oauth"
-sudo cp -r supabase/functions/instagram-oauth "$FUNCTIONS_VOLUME/"
 
-echo -e "${YELLOW}   → Copiando start-instagram-auth...${NC}"
-sudo rm -rf "$FUNCTIONS_VOLUME/start-instagram-auth"
-sudo cp -r supabase/functions/start-instagram-auth "$FUNCTIONS_VOLUME/"
 
 # Funciones de pago
 echo -e "${YELLOW}   → Copiando create-payment...${NC}"

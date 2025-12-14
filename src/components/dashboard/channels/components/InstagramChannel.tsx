@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface InstagramChannelProps {
   channels: Channel[];
   onConnect: () => void;
-  onConnectLegacy?: () => void;
+
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
   permissions?: ChannelPermissions | null;
@@ -21,7 +21,7 @@ interface InstagramChannelProps {
 export const InstagramChannel: React.FC<InstagramChannelProps> = ({
   channels,
   onConnect,
-  onConnectLegacy,
+
   onReconnect,
   onDisconnect,
   permissions,
@@ -61,16 +61,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                 Conectar con Instagram
               </Button>
 
-              {onConnectLegacy && (
-                <Button
-                  onClick={onConnectLegacy}
-                  variant="outline"
-                  className="w-full border-pink-200 text-pink-700 hover:bg-pink-50 hover:text-pink-800"
-                >
-                  <Instagram className="h-4 w-4 mr-2" />
-                  Conectar con Instagram (Legacy)
-                </Button>
-              )}
+
 
               <div className="bg-pink-50 p-3 rounded-lg border">
                 <h4 className="font-medium text-pink-900 text-xs sm:text-sm mb-1">Conexión automática:</h4>

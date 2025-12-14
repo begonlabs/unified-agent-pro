@@ -215,26 +215,13 @@ export const useChannelConnections = (user: User | null) => {
     }
   }, [user]);
 
-  // Instagram Legacy Login
-  const handleInstagramLegacyLogin = useCallback(async () => {
-    try {
-      if (!user) {
-        console.error('Error: Usuario no autenticado');
-        return;
-      }
 
-      const authUrl = await ChannelsService.startInstagramLegacyAuth(user);
-      window.location.href = authUrl;
-    } catch (error: unknown) {
-      console.error('Error starting Instagram Legacy auth:', error);
-    }
-  }, [user]);
 
   return {
     isConnectingWhatsApp,
     handleWhatsAppLogin,
     handleFacebookLogin,
     handleInstagramLogin,
-    handleInstagramLegacyLogin
+
   };
 };
