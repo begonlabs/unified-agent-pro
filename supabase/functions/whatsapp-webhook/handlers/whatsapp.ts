@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
+import { handleAdvisorHandoff } from '../../_shared/advisor.ts';
 
 // Interfaces for WhatsApp events
 interface WhatsAppMessage {
@@ -470,6 +471,17 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
 
       if (aiResponse.success && aiResponse.response) {
         console.log('🤖 AI response generated successfully for WhatsApp');
+
+        // Check for advisor handoff
+        if (aiResponse.advisor_triggered) {
+          await handleAdvisorHandoff({
+            supabase,
+            conversation_id: conversation.id,
+            user_id: conversation.user_id,
+            platform: 'whatsapp',
+            client_id: client.id
+          });
+        }
 
         // Generate temporary message ID
         const tempMessageId = `ai_wa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

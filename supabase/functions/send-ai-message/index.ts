@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateAIResponse, shouldAIRespond } from '../_shared/openai.ts'
+import { handleAdvisorHandoff } from '../_shared/advisor.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -284,6 +285,20 @@ serve(async (req) => {
     console.log('🧠 Generando respuesta con IA usando contexto de conversación...');
 
     const aiResponse = await generateAIResponse(message, aiConfig, messageContext);
+
+    // Check for advisor handoff
+    if (aiResponse.success && aiResponse.advisor_triggered) {
+      // Execute handoff logic in background (no await to check response faster, 
+      // but here we want to ensure it runs, so we await or use EdgeRuntime.waitUntil if available)
+      // Since we need reliability, we await it.
+      await handleAdvisorHandoff({
+        supabase,
+        conversation_id,
+        user_id,
+        platform: conversation.channel,
+        client_id: conversation.client_id
+      });
+    }
 
     if (!aiResponse.success) {
       console.error('Error generando respuesta de IA:', aiResponse.error);

@@ -4,6 +4,7 @@
 // Deno Edge Function: Facebook Messenger Event Handler
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
+import { handleAdvisorHandoff } from '../../_shared/advisor.ts';
 
 interface MessengerEvent {
   sender?: { id: string };
@@ -812,7 +813,18 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         const aiResponse = await generateAIResponse(messageText, aiConfig, conversationHistory);
 
         if (aiResponse.success && aiResponse.response) {
-          console.log('🤖 Respuesta de IA generada exitosamente');
+          console.log('🤖 Respuesta de IA generada exitosamente para Messenger');
+
+          // Check for advisor handoff
+          if (aiResponse.advisor_triggered) {
+            await handleAdvisorHandoff({
+              supabase,
+              conversation_id: conversation.id,
+              user_id: conversation.user_id,
+              platform: 'facebook',
+              client_id: client.id
+            });
+          }
 
           //  fix 4: Enviar primero y guardar el message_id real de Facebook
           const sendResult = await sendAIResponseToFacebook(aiResponse.response, recipientId, senderId);

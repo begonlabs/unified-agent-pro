@@ -38,6 +38,7 @@ interface AIResponse {
   response?: string;
   confidence_score?: number;
   error?: string;
+  advisor_triggered?: boolean;
 }
 
 interface Message {
@@ -370,10 +371,32 @@ Responde a este mensaje siguiendo las instrucciones del system prompt y mantenie
       await new Promise(resolve => setTimeout(resolve, processingTime * 1000));
     }
 
+    // Check if advisor message was triggered
+    let advisorTriggered = false;
+    if (aiConfig.advisor_enabled && aiConfig.advisor_message) {
+      // Comparison logic: check if the response is essentially the advisor message
+      // We normalize strings to avoid issues with whitespace or minor variations
+      const normalizedResponse = aiResponse.toLowerCase().trim();
+      const normalizedAdvisorMsg = aiConfig.advisor_message.toLowerCase().trim();
+
+      // Check for similarity or containment
+      if (normalizedResponse.includes(normalizedAdvisorMsg) ||
+        normalizedAdvisorMsg.includes(normalizedResponse) ||
+        normalizedResponse.length < normalizedAdvisorMsg.length + 20 && normalizedResponse.length > normalizedAdvisorMsg.length - 20) {
+
+        // Double check: if it contains "human" or "asesor" and is short, it's likely the handoff
+        if (normalizedResponse.includes('human') || normalizedResponse.includes('asesor') || normalizedResponse === normalizedAdvisorMsg) {
+          advisorTriggered = true;
+          console.log('👤 Advisor handoff triggered by AI response');
+        }
+      }
+    }
+
     return {
       success: true,
       response: aiResponse,
-      confidence_score: 0.9
+      confidence_score: 0.9,
+      advisor_triggered: advisorTriggered,
     };
 
   } catch (error) {

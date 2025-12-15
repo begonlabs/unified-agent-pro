@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
+import { handleAdvisorHandoff } from '../../_shared/advisor.ts';
 
 // interface for Instagram event
 interface InstagramEvent {
@@ -754,6 +755,17 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
 
         if (aiResponse.success && aiResponse.response) {
           console.log('🤖 Respuesta de IA generada exitosamente para Instagram');
+
+          // Check for advisor handoff
+          if (aiResponse.advisor_triggered) {
+            await handleAdvisorHandoff({
+              supabase,
+              conversation_id: conversation.id,
+              user_id: conversation.user_id,
+              platform: 'instagram',
+              client_id: client.id
+            });
+          }
 
           const { error: aiMessageError } = await supabase
             .from('messages')
