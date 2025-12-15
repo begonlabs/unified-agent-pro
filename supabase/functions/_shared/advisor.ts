@@ -47,7 +47,7 @@ export async function handleAdvisorHandoff({
         // 2. Update Client Status/Badge
         // Check current tags first to avoid duplicates
         const { data: clientData, error: clientFetchError } = await supabase
-            .from('clients')
+            .from('crm_clients')
             .select('tags, status')
             .eq('id', targetClientId)
             .single();
@@ -60,7 +60,7 @@ export async function handleAdvisorHandoff({
                 const newTags = [...currentTags, 'Asesor Requerido'];
 
                 const { error: updateError } = await supabase
-                    .from('clients')
+                    .from('crm_clients')
                     .update({
                         tags: newTags,
                         // Optional: Update status if needed, but tags are safer to avoid disrupting flow
