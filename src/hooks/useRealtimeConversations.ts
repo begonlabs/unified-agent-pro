@@ -75,7 +75,8 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
             email,
             phone,
             status,
-            avatar_url
+            avatar_url,
+            tags
           )
         `)
         .eq('user_id', userId)
@@ -115,7 +116,8 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
           email,
           phone,
           status,
-          avatar_url
+          avatar_url,
+          tags
         )
       `)
       .eq('id', conversationId)

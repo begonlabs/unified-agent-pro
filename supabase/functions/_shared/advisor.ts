@@ -173,6 +173,18 @@ export async function handleAdvisorHandoff({
             console.log('⚠️ No email found for user (permissions issue?), skipping email notification');
         }
 
+        // 5. Pause AI for this conversation so human can take over
+        const { error: pauseError } = await supabase
+            .from('conversations')
+            .update({ ai_enabled: false })
+            .eq('id', conversation_id);
+
+        if (pauseError) {
+            console.error('Error pausing AI for conversation:', pauseError);
+        } else {
+            console.log('⏸️ AI paused for conversation to allow human interaction');
+        }
+
     } catch (error) {
         console.error('Critical error in handleAdvisorHandoff:', error);
     }

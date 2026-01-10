@@ -760,6 +760,12 @@ const MessagesView = () => {
                               >
                                 {(conversation.unread_count || 0) > 0 ? 'Nuevo' : 'Leído'}
                               </Badge>
+                              {/* Advisor Badge */}
+                              {conversation.crm_clients?.tags?.includes('Asesor Requerido') && (
+                                <Badge variant="destructive" className="text-[10px] h-5 px-1.5 animate-pulse bg-red-600 hover:bg-red-700">
+                                  Asesor Requerido
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {getChannelIcon(conversation.channel)}
