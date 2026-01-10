@@ -100,12 +100,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-lg">Plan {planName}</h3>
-                                    <p className="text-sm text-gray-500">Pago único</p>
+                                    <p className="text-sm text-gray-500">Suscripción Mensual</p>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <div className="text-2xl font-bold">{planPrice}</div>
-                                <div className="text-xs text-gray-500">USD</div>
+                                <div className="text-xs text-gray-500">USD / mes</div>
                             </div>
                         </div>
 

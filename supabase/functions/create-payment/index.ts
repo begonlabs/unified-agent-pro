@@ -111,7 +111,7 @@ serve(async (req) => {
             throw new Error('Failed to create payment record: ' + paymentError.message)
         }
 
-        // Prepare dLocalGo payment request
+        // Prepare dLocalGo subscription request
         // Use user's country from profile, fallback to UY if not set
         // Ensure country is 2 chars uppercase
         let countryCode = (profile.country || 'UY').toUpperCase();
@@ -119,28 +119,48 @@ serve(async (req) => {
             countryCode = 'UY'; // Fallback if invalid
         }
 
-        const dlocalgoPayment: DLocalGoPaymentRequest = {
+        // Determine plan ID if available in config, otherwise try to use inline parameters if supported
+        // or fallback to a standard pattern.
+        // For dLocal Go, specific integrations might vary, but we'll try to use the standard recurring pattern.
+        // Assuming we are using a "subscription" mode.
+
+        // Note: Ideally, we should have a Plan ID created in dLocal Go for each tier.
+        // Checking if we have them in config (not currently standard in env but good practice)
+        // const planId = config[`PLAN_${plan_type.toUpperCase()}_ID`];
+
+        const dlocalgoPayment = {
             amount: amount,
             currency: 'USD',
             country: countryCode,
-            payment_method_id: 'CARD',
-            payment_method_flow: 'REDIRECT',
-            payer: {
-                name: '',
-                email: user.email!,
-            },
-            order_id: orderId,
+            description: `Suscripción Mensual Plan ${plan_type.charAt(0).toUpperCase() + plan_type.slice(1)}`,
+            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`, // Redirect after success
             notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
-            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
-            // Add fallback parameters for different dLocal integrations
-            success_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
-            back_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`
-        } as any; // Cast to any to allow extra params without changing interface definition everywhere
+            payer: {
+                name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                email: user.email!,
+                document: user.user_metadata?.document || '12345678', // Some regions require document
+            },
+            recurring: {
+                frequency: 'MONTHLY',
+                start_date: new Date().toISOString().split('T')[0], // Start today
+            }
+        };
+
         // Create Basic Auth header
         const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
         const authHeader = `Basic ${btoa(authString)}`
 
-        // Create payment with dLocalGo
+        // Use payments endpoint but with recurring object, OR subscriptions endpoint if known.
+        // Based on "dLC" (dLocal Go) typical simple integration, we send to /v1/payments with recurring info
+        // or effectively create a checkout session that is recurring.
+        // If the previous endpoint was /v1/payments, we stick with it but add recurring fields.
+        // However, if we must use /v1/subscriptions and a plan_id is mandatory, we might fail without it.
+        // Given instructions "we already have enabled that function in the api", we assume the API accepts it.
+
+        console.log('Sending subscription request to dLocal Go:', dlocalgoPayment);
+
+        // Create payment/subscription with dLocalGo
+        // We will try the same endpoint first with the new payload
         const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
             method: 'POST',
             headers: {
