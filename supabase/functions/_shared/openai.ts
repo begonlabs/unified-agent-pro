@@ -44,7 +44,7 @@ interface AIResponse {
 interface Message {
   id: string;
   content: string;
-  sender_type: 'user' | 'ia';
+  sender_type: 'user' | 'ia' | 'agent';
   sender_name: string;
   created_at: string;
   metadata?: Record<string, unknown>;
@@ -235,7 +235,13 @@ INFORMACIÓN ACTUAL:
   if (conversationHistory.length > 0) {
     systemPrompt += `\n\nCONTEXTO DE CONVERSACIÓN (${conversationHistory.length} mensajes previos):`;
     conversationHistory.forEach((msg) => {
-      const role = msg.sender_type === 'user' ? 'Cliente' : 'Asistente';
+      let role = 'Asistente';
+      if (msg.sender_type === 'user') {
+        role = 'Cliente';
+      } else if (msg.sender_type === 'agent') {
+        role = 'Agente Humano';
+      }
+
       systemPrompt += `\n${role}: ${msg.content}`;
     });
   } else {
@@ -259,7 +265,8 @@ INFORMACIÓN ACTUAL:
 10. NO inventes información que no esté en tu base de conocimiento
 11. NUNCA contradices información que ya proporcionaste en mensajes anteriores de esta conversación
 12. ASESOR HUMANO: Si el cliente solicita hablar con un humano, o si no puedes resolver su consulta, usa EXACTAMENTE el mensaje de asesor configurado
-13. Detecta señales de frustración del cliente y ofrece derivación al asesor cuando sea apropiado`;
+13. Detecta señales de frustración del cliente y ofrece derivación al asesor cuando sea apropiado
+14. RECUPERACIÓN: Si ves mensajes de "Agente Humano" en el historial reciente, asume que la intervención humana ya resolvió el problema anterior. NO repitas el mensaje de asesor inmediatamente; intenta procesar la nueva consulta del cliente con normalidad.`;
 
   return systemPrompt;
 }
