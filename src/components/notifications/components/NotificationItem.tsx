@@ -96,8 +96,12 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   };
 
   const getPriorityBadge = () => {
-    if (notification.priority === 'urgent') {
-      return <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Urgente</Badge>;
+    if (notification.priority === 'urgent' || notification.priority === 'high') {
+      return (
+        <Badge variant="destructive" className="text-[10px] h-5 px-1.5 animate-pulse bg-red-600 hover:bg-red-700">
+          URGENTE
+        </Badge>
+      );
     }
     return null;
   };

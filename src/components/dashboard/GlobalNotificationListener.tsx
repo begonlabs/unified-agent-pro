@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useRealtimeConversations } from '@/hooks/useRealtimeConversations';
+import { useAdvisorNotifications } from '@/hooks/useAdvisorNotifications';
 import { NotificationService } from '@/components/notifications';
 
 interface GlobalNotificationListenerProps {
@@ -12,6 +13,9 @@ export const GlobalNotificationListener: React.FC<GlobalNotificationListenerProp
     user,
     currentView
 }) => {
+    // Escuchar notificaciones de asesor (Toasts de alta prioridad)
+    useAdvisorNotifications();
+
     const { conversations } = useRealtimeConversations(user?.id || null);
 
     // Store the last message timestamp for each conversation to detect changes

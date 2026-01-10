@@ -131,6 +131,11 @@ export const ClientList: React.FC<ClientListProps> = ({
                                     >
                                         {getStatusLabel(client.status, client.custom_status)}
                                     </Badge>
+                                    {client.tags?.includes('Asesor Requerido') && (
+                                        <Badge variant="destructive" className="text-xs bg-red-600 hover:bg-red-700 animate-pulse">
+                                            Asesor Requerido
+                                        </Badge>
+                                    )}
                                 </div>
                             </TableCell>
                             <TableCell>

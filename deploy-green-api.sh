@@ -63,6 +63,10 @@ echo -e "${YELLOW}   → Copiando fetch-business-info...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/fetch-business-info"
 sudo cp -r supabase/functions/fetch-business-info "$FUNCTIONS_VOLUME/"
 
+echo -e "${YELLOW}   → Copiando send-email...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/send-email"
+sudo cp -r supabase/functions/send-email "$FUNCTIONS_VOLUME/"
+
 
 
 # Funciones de pago

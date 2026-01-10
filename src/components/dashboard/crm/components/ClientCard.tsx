@@ -86,6 +86,11 @@ export const ClientCard: React.FC<ClientCardProps> = ({
                   >
                     {getStatusLabel(client.status, client.custom_status)}
                   </Badge>
+                  {client.tags?.includes('Asesor Requerido') && (
+                    <Badge variant="destructive" className="text-xs bg-red-600 hover:bg-red-700 animate-pulse">
+                      Asesor Requerido
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
