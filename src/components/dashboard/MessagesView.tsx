@@ -425,6 +425,26 @@ const MessagesView = () => {
       // Refrescar conversaciones para mostrar el nuevo estado
       refreshConversations();
 
+      // Si se activa la IA, quitar el tag de "Asesor Requerido"
+      if (aiEnabled && conversation && conversation.crm_clients) {
+        const client = conversation.crm_clients;
+        if (client.tags && client.tags.includes('Asesor Requerido')) {
+          console.log('🧹 Limpiando tag de Asesor Requerido para cliente:', client.id);
+          const newTags = client.tags.filter(t => t !== 'Asesor Requerido');
+
+          const { error: tagError } = await supabase
+            .from('crm_clients')
+            .update({ tags: newTags })
+            .eq('id', client.id);
+
+          if (tagError) {
+            console.error('Error removing Advisor tag:', tagError);
+          } else {
+            console.log('✅ Tag Asesor Requerido eliminado');
+          }
+        }
+      }
+
     } catch (error: unknown) {
       console.error('Error toggling AI:', error);
       toast({
