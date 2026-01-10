@@ -1,4 +1,3 @@
-```
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -154,27 +153,24 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                 <CardContent>
                     {/* Trial Warning */}
                     {profile.is_trial && trialInfo && (
-                        <Alert className={`mb - 4 ${
-    trialInfo.hasExpired
-    ? 'border-red-500 bg-red-50'
-    : trialInfo.isExpiringSoon
-        ? 'border-amber-500 bg-amber-50'
-        : 'border-blue-500 bg-blue-50'
-} `}>
-                            <AlertTriangle className={`h - 4 w - 4 ${
-    trialInfo.hasExpired
-    ? 'text-red-600'
-    : trialInfo.isExpiringSoon
-        ? 'text-amber-600'
-        : 'text-blue-600'
-} `} />
-                            <AlertDescription className={`${
-    trialInfo.hasExpired
-    ? 'text-red-800'
-    : trialInfo.isExpiringSoon
-        ? 'text-amber-800'
-        : 'text-blue-800'
-} `}>
+                        <Alert className={`mb-4 ${trialInfo.hasExpired
+                            ? 'border-red-500 bg-red-50'
+                            : trialInfo.isExpiringSoon
+                                ? 'border-amber-500 bg-amber-50'
+                                : 'border-blue-500 bg-blue-50'
+                            }`}>
+                            <AlertTriangle className={`h-4 w-4 ${trialInfo.hasExpired
+                                ? 'text-red-600'
+                                : trialInfo.isExpiringSoon
+                                    ? 'text-amber-600'
+                                    : 'text-blue-600'
+                                }`} />
+                            <AlertDescription className={`${trialInfo.hasExpired
+                                ? 'text-red-800'
+                                : trialInfo.isExpiringSoon
+                                    ? 'text-amber-800'
+                                    : 'text-blue-800'
+                                }`}>
                                 {trialInfo.hasExpired ? (
                                     <span>
                                         <strong>Tu período de prueba ha expirado.</strong> Actualiza a un plan de pago para seguir usando todas las funcionalidades.
@@ -189,11 +185,11 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                     )}
 
                     <div className="relative overflow-hidden">
-                        <div className={`p - 6 rounded - xl border - 2 ${ currentPlan?.bgColor } ${ ProfileService.getPlanColor(profile.plan_type) } border - opacity - 50`}>
+                        <div className={`p-6 rounded-xl border-2 ${currentPlan?.bgColor} ${ProfileService.getPlanColor(profile.plan_type)} border-opacity-50`}>
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className={`p - 3 rounded - lg ${ currentPlan?.bgColor } border`}>
-                                        <PlanIcon className={`h - 6 w - 6 ${ currentPlan?.color } `} />
+                                    <div className={`p-3 rounded-lg ${currentPlan?.bgColor} border`}>
+                                        <PlanIcon className={`h-6 w-6 ${currentPlan?.color}`} />
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
@@ -220,8 +216,6 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                 </div>
                             </div>
 
-
-
                             <div className="mt-6 mb-2">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -236,16 +230,15 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                     <Progress
                                         value={getMessageUsagePercentage(profile)}
                                         className="h-3 bg-gray-100 border border-gray-200"
-                                        indicatorClassName={`${
-    getMessageUsagePercentage(profile) >= 90
-    ? 'bg-gradient-to-r from-amber-500 to-red-500'
-    : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
-} transition - all duration - 1000 ease - out`}
+                                        indicatorClassName={`${getMessageUsagePercentage(profile) >= 90
+                                            ? 'bg-gradient-to-r from-amber-500 to-red-500'
+                                            : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
+                                            } transition-all duration-1000 ease-out`}
                                     />
                                     {/* Shimmer overlay */}
                                     <div
                                         className="absolute top-0 left-0 h-full w-full overflow-hidden rounded-full pointer-events-none"
-                                        style={{ width: `${ getMessageUsagePercentage(profile) }% ` }}
+                                        style={{ width: `${getMessageUsagePercentage(profile)}%` }}
                                     >
                                         <div className="h-full w-full animate-shimmer"></div>
                                     </div>
@@ -314,11 +307,10 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                             return (
                                 <Card
                                     key={plan.name}
-                                    className={`relative transition - all duration - 200 h - full flex flex - col ${
-    plan.current
-    ? 'ring-2 ring-blue-500 shadow-lg'
-    : 'hover:shadow-md hover:scale-105'
-} `}
+                                    className={`relative transition-all duration-200 h-full flex flex-col ${plan.current
+                                        ? 'ring-2 ring-blue-500 shadow-lg'
+                                        : 'hover:shadow-md hover:scale-105'
+                                        }`}
                                 >
                                     {plan.current && (
                                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -329,8 +321,8 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                     )}
 
                                     <CardHeader className="text-center p-4 sm:p-6">
-                                        <div className={`mx - auto p - 2 sm: p - 3 rounded - full ${ plan.bgColor } border mb - 2`}>
-                                            <Icon className={`h - 5 w - 5 sm: h - 6 sm: w - 6 ${ plan.color } `} />
+                                        <div className={`mx-auto p-2 sm:p-3 rounded-full ${plan.bgColor} border mb-2`}>
+                                            <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${plan.color}`} />
                                         </div>
                                         <CardTitle className="text-lg sm:text-xl">{plan.name}</CardTitle>
                                         <div className="text-2xl sm:text-3xl font-bold">
@@ -455,7 +447,6 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                             <p className="text-gray-500 mb-4">
                                 Las facturas y recibos aparecerán aquí una vez que realices tu primer pago.
                             </p>
-                            {/* "Ver métodos de pago" button removed as requested */}
                         </div>
                     )}
                 </CardContent>
@@ -515,4 +506,3 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
         </div >
     );
 };
-```
