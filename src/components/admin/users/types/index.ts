@@ -107,7 +107,7 @@ export interface DeleteClientResponse {
 }
 
 // Utility types
-export type PlanType = 'free' | 'premium' | 'enterprise';
+export type PlanType = 'free' | 'basico' | 'avanzado' | 'pro' | 'empresarial';
 export type RoleType = 'admin' | 'moderator' | 'user';
 export type ClientStatus = 'active' | 'inactive';
 

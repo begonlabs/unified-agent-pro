@@ -79,7 +79,7 @@ export class ClientManagementService {
       // Update is_active status using service role
       const { error: updateError } = await supabaseAdmin
         .from('profiles')
-        .update({ 
+        .update({
           is_active: !currentStatus,
           updated_at: new Date().toISOString()
         })
@@ -121,16 +121,25 @@ export class ClientManagementService {
       }
 
       // Update profile using service role
+      // Also set payment_status to 'active' if a paid plan is assigned manually
+      const updateData: any = {
+        company_name: formData.company_name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone?.trim() || null,
+        plan_type: formData.plan_type,
+        is_active: formData.is_active,
+        updated_at: new Date().toISOString()
+      };
+
+      // If it's a paid plan, ensure payment_status is 'active' so they can use the platform
+      if (formData.plan_type !== 'free') {
+        updateData.payment_status = 'active';
+        updateData.is_trial = false;
+      }
+
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({
-          company_name: formData.company_name.trim(),
-          email: formData.email.trim(),
-          phone: formData.phone?.trim() || null,
-          plan_type: formData.plan_type,
-          is_active: formData.is_active,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', clientId);
 
       if (profileError) throw profileError;
@@ -218,11 +227,32 @@ export class ClientManagementService {
    */
   static getPlanBadgeColor: BadgeColorFunction = (plan: string) => {
     const colors = {
-      free: 'bg-gray-100 text-gray-800',
-      premium: 'bg-blue-100 text-blue-800',
-      enterprise: 'bg-purple-100 text-purple-800'
+      free: 'bg-gray-100 text-gray-800 border-gray-300',
+      basico: 'bg-blue-100 text-blue-800 border-blue-300',
+      avanzado: 'bg-purple-100 text-purple-800 border-purple-300',
+      pro: 'bg-amber-100 text-amber-800 border-amber-300',
+      empresarial: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      // Fallbacks for legacy values
+      premium: 'bg-purple-100 text-purple-800 border-purple-300',
+      enterprise: 'bg-emerald-100 text-emerald-800 border-emerald-300'
     };
-    return colors[plan as keyof typeof colors] || colors.free;
+    return colors[plan.toLowerCase() as keyof typeof colors] || colors.free;
+  };
+
+  /**
+   * Get pretty plan label
+   */
+  static getPlanLabel = (plan: string): string => {
+    const labels: Record<string, string> = {
+      free: 'Gratuito',
+      basico: 'Básico',
+      avanzado: 'Avanzado',
+      pro: 'Pro',
+      empresarial: 'Empresarial',
+      enterprise: 'Empresarial',
+      premium: 'Avanzado'
+    };
+    return labels[plan.toLowerCase() as keyof typeof labels] || plan.toUpperCase();
   };
 
   /**
@@ -306,9 +336,11 @@ export class ClientManagementService {
    */
   static getPlanTypes(): { value: PlanType; label: string }[] {
     return [
-      { value: 'free', label: 'Free' },
-      { value: 'premium', label: 'Premium' },
-      { value: 'enterprise', label: 'Enterprise' }
+      { value: 'free', label: 'Gratuito' },
+      { value: 'basico', label: 'Básico' },
+      { value: 'avanzado', label: 'Avanzado' },
+      { value: 'pro', label: 'Pro' },
+      { value: 'empresarial', label: 'Empresarial' }
     ];
   }
 

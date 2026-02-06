@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import ResponsiveTable from '@/components/ui/responsive-table';
-import { 
-  Edit, 
-  Trash2, 
+import {
+  Edit,
+  Trash2,
   UserCheck,
   Calendar,
   Mail,
@@ -118,7 +118,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({
               label: 'Plan',
               render: (value) => (
                 <Badge className={ClientManagementService.getPlanBadgeColor(String(value || ''))}>
-                  {String(value || '').toUpperCase()}
+                  {ClientManagementService.getPlanLabel(String(value || ''))}
                 </Badge>
               )
             },
