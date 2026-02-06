@@ -12,13 +12,15 @@ const ClientStats: React.FC<ClientStatsProps> = () => {
   const { clients, loading, fetchClientStats } = useClientStats();
   const { selectedClient, isModalOpen, openClientDetails, closeClientDetails } = useClientDetails();
 
-  // Load client stats on mount
-  useEffect(() => {
-    fetchClientStats();
-  }, [fetchClientStats]);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">Estadísticas por Clientes</h2>
+        <p className="text-muted-foreground font-medium">
+          Monitoriza el rendimiento individual y la actividad de cada empresa en la plataforma.
+        </p>
+      </div>
+
       <ClientStatsTable
         clients={clients}
         loading={loading}

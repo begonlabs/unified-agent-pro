@@ -19,115 +19,110 @@ export class ClientStatsService {
    */
   static async fetchClientStats(): Promise<FetchClientStatsResponse> {
     try {
-      console.log('📊 Fetching client statistics...');
+      console.log('📊 Fetching client statistics (optimized)...');
 
-      // Get all user profiles
-      const { data: profiles, error: profilesError } = await supabaseSelect(
-        supabase
-          .from('profiles')
-          .select('*')
-          .order('company_name')
-      );
+      // 1. Attempt using optimized RPC first
+      try {
+        const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_admin_clients_stats');
+
+        if (!rpcError && rpcData) {
+          console.log('✅ Fetched admin stats via RPC');
+          const clients: ClientWithStats[] = rpcData.map((item: any) => ({
+            id: item.user_id,
+            user_id: item.user_id,
+            company_name: item.company_name,
+            email: item.email,
+            plan_type: item.plan_type || 'free',
+            is_active: item.is_active,
+            stats: {
+              whatsapp_messages: Number(item.channel_messages?.whatsapp || 0),
+              facebook_messages: Number(item.channel_messages?.facebook || 0),
+              instagram_messages: Number(item.channel_messages?.instagram || 0),
+              whatsapp_leads: Number(item.channel_leads?.whatsapp || 0),
+              facebook_leads: Number(item.channel_leads?.facebook || 0),
+              instagram_leads: Number(item.channel_leads?.instagram || 0),
+              total_messages: Number(item.total_messages || 0),
+              total_leads: Number(item.total_leads || 0),
+              total_conversations: Number(item.total_conversations || 0),
+              response_rate: Number(item.response_rate || 0)
+            }
+          }));
+          return { clients, success: true };
+        }
+      } catch (e) {
+        console.warn('⚠️ RPC optimization not available, falling back...');
+      }
+
+      // 2. Fallback: Manual but optimized aggregation
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('company_name');
 
       if (profilesError) throw profilesError;
 
-      // Get statistics for each client
-      const clientsWithStats: ClientWithStats[] = [];
+      // Parallel fetching for performance
+      const [convResult, leadResult] = await Promise.all([
+        supabase.from('conversations').select('user_id, channel'),
+        supabase.from('crm_clients').select('user_id, source')
+      ]);
 
-      for (const profile of profiles || []) {
-        // Get user conversations
-        const { data: conversations, error: conversationsError } = await supabaseSelect(
-          supabase
-            .from('conversations')
-            .select('id, channel, created_at')
-            .eq('user_id', profile.user_id)
-        );
+      const conversations = convResult.data || [];
+      const crmClients = leadResult.data || [];
+      const userStatsMap: Record<string, ClientStats> = {};
 
-        if (conversationsError) {
-          continue;
-        }
-
-        // Get messages by channel
-        const channelStats: ChannelStats = {
-          whatsapp: { messages: 0, leads: 0 },
-          facebook: { messages: 0, leads: 0 },
-          instagram: { messages: 0, leads: 0 }
+      // Initialize mapping
+      profiles?.forEach(p => {
+        userStatsMap[p.user_id] = {
+          whatsapp_messages: 0,
+          facebook_messages: 0,
+          instagram_messages: 0,
+          whatsapp_leads: 0,
+          facebook_leads: 0,
+          instagram_leads: 0,
+          total_messages: 0,
+          total_leads: 0,
+          total_conversations: 0,
+          response_rate: 0
         };
+      });
 
-        // Get messages for each conversation
-        for (const conversation of conversations || []) {
-          const { data: messages, error: messagesError } = await supabaseSelect(
-            supabase
-              .from('messages')
-              .select('sender_type, created_at')
-              .eq('conversation_id', conversation.id)
-          );
+      // Simple aggregation for conversations
+      conversations.forEach((c: any) => {
+        if (userStatsMap[c.user_id]) userStatsMap[c.user_id].total_conversations++;
+      });
 
-          if (messagesError) {
-            continue;
-          }
-
-          const channel = conversation.channel as keyof ChannelStats;
-          if (channelStats[channel]) {
-            channelStats[channel].messages += messages?.length || 0;
-          }
+      // Simple aggregation for leads
+      crmClients.forEach((c: any) => {
+        if (userStatsMap[c.user_id]) {
+          const rawSource = (c.source || 'whatsapp').toLowerCase();
+          if (rawSource.startsWith('whatsapp')) userStatsMap[c.user_id].whatsapp_leads++;
+          else if (rawSource.startsWith('facebook')) userStatsMap[c.user_id].facebook_leads++;
+          else if (rawSource.startsWith('instagram')) userStatsMap[c.user_id].instagram_leads++;
         }
+      });
 
-        // Get leads (CRM clients) by channel
-        const { data: crmClients, error: crmError } = await supabaseSelect(
-          supabase
-            .from('crm_clients')
-            .select('source, created_at')
-            .eq('user_id', profile.user_id)
-        );
+      const clientsWithStats: ClientWithStats[] = (profiles || []).map(profile => {
+        const stats = userStatsMap[profile.user_id];
+        stats.total_leads = stats.whatsapp_leads + stats.facebook_leads + stats.instagram_leads;
+        // Total messages is hard to get without N queries or the RPC, so it'll remain 0 or limited in fallback
+        stats.total_messages = 0;
+        stats.response_rate = 0;
 
-        if (!crmError) {
-          // Count leads by channel
-          for (const client of crmClients || []) {
-            const source = client.source as keyof ChannelStats;
-            if (channelStats[source]) {
-              channelStats[source].leads += 1;
-            }
-          }
-        }
-
-        // Calculate total statistics
-        const totalMessages = channelStats.whatsapp.messages + channelStats.facebook.messages + channelStats.instagram.messages;
-        const totalLeads = channelStats.whatsapp.leads + channelStats.facebook.leads + channelStats.instagram.leads;
-        const totalConversations = conversations?.length || 0;
-        
-        // Calculate response rate (simplified)
-        const responseRate = totalMessages > 0 ? Math.round((totalMessages / totalConversations) * 100) / 100 : 0;
-
-        clientsWithStats.push({
+        return {
           ...profile,
-          stats: {
-            whatsapp_messages: channelStats.whatsapp.messages,
-            facebook_messages: channelStats.facebook.messages,
-            instagram_messages: channelStats.instagram.messages,
-            whatsapp_leads: channelStats.whatsapp.leads,
-            facebook_leads: channelStats.facebook.leads,
-            instagram_leads: channelStats.instagram.leads,
-            total_messages: totalMessages,
-            total_leads: totalLeads,
-            total_conversations: totalConversations,
-            response_rate: responseRate
-          }
-        });
-      }
+          stats
+        };
+      });
 
-      console.log('✅ Client statistics fetched:', clientsWithStats.length);
-      return {
-        clients: clientsWithStats,
-        success: true
-      };
+      return { clients: clientsWithStats, success: true };
 
     } catch (error: unknown) {
-      console.error('❌ Error fetching client statistics:', error);
+      console.error('❌ Error in ClientStatsService:', error);
       return {
         clients: [],
         success: false,
-        error: handleSupabaseError(error, "Error al cargar estadísticas de clientes").description
+        error: handleSupabaseError(error, "Error al cargar estadísticas").description
       };
     }
   }
@@ -136,12 +131,16 @@ export class ClientStatsService {
    * Get plan badge color class
    */
   static getPlanBadgeColor: BadgeColorFunction = (plan: string) => {
-    const colors = {
-      free: 'bg-gray-100 text-gray-800',
-      premium: 'bg-blue-100 text-blue-800',
-      enterprise: 'bg-purple-100 text-purple-800'
+    const colors: Record<string, string> = {
+      free: 'bg-slate-100 text-slate-800 border-slate-200',
+      basico: 'bg-blue-100 text-blue-800 border-blue-200',
+      avanzado: 'bg-purple-100 text-purple-800 border-purple-200',
+      pro: 'bg-amber-100 text-amber-800 border-amber-200',
+      empresarial: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      premium: 'bg-purple-100 text-purple-800 border-purple-200',
+      enterprise: 'bg-emerald-100 text-emerald-800 border-emerald-200'
     };
-    return colors[plan as keyof typeof colors] || colors.free;
+    return colors[plan.toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
 
   /**
@@ -150,13 +149,13 @@ export class ClientStatsService {
   static getChannelIcon: ChannelIconFunction = (channel: string) => {
     switch (channel) {
       case 'whatsapp':
-        return React.createElement(MessageCircle, { className: "h-3 w-3 text-green-500" });
+        return React.createElement(MessageCircle, { className: "h-3.5 w-3.5 text-emerald-500" });
       case 'facebook':
-        return React.createElement(Facebook, { className: "h-3 w-3 text-blue-500" });
+        return React.createElement(Facebook, { className: "h-3.5 w-3.5 text-blue-600" });
       case 'instagram':
-        return React.createElement(Instagram, { className: "h-3 w-3 text-pink-500" });
+        return React.createElement(Instagram, { className: "h-3.5 w-3.5 text-pink-600" });
       default:
-        return React.createElement(User, { className: "h-3 w-3 text-gray-500" });
+        return React.createElement(User, { className: "h-3.5 w-3.5 text-slate-400" });
     }
   };
 
@@ -164,6 +163,8 @@ export class ClientStatsService {
    * Format number with locale
    */
   static formatNumber(value: number): string {
+    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
     return value.toLocaleString();
   }
 
@@ -171,7 +172,7 @@ export class ClientStatsService {
    * Format response rate
    */
   static formatResponseRate(rate: number): string {
-    return rate.toFixed(2);
+    return rate.toFixed(1);
   }
 
   /**
@@ -189,77 +190,32 @@ export class ClientStatsService {
   /**
    * Get plan display name
    */
-  static getPlanDisplayName(plan: PlanType): string {
-    const names = {
-      free: 'Free',
-      premium: 'Premium',
-      enterprise: 'Enterprise'
+  static getPlanDisplayName(plan: string): string {
+    const names: Record<string, string> = {
+      free: 'Gratuito',
+      basico: 'Básico',
+      avanzado: 'Avanzado',
+      pro: 'Pro',
+      empresarial: 'Empresarial',
+      premium: 'Avanzado',
+      enterprise: 'Empresarial'
     };
-    return names[plan];
+    return names[plan.toLowerCase()] || plan;
   }
 
   /**
-   * Calculate channel performance score
-   */
-  static calculateChannelPerformance(stats: ClientStats, channel: ChannelType): number {
-    const channelMessages = channel === 'whatsapp' ? stats.whatsapp_messages :
-                           channel === 'facebook' ? stats.facebook_messages :
-                           stats.instagram_messages;
-    
-    const channelLeads = channel === 'whatsapp' ? stats.whatsapp_leads :
-                         channel === 'facebook' ? stats.facebook_leads :
-                         stats.instagram_leads;
-
-    // Simple performance score: messages + leads * 2
-    return channelMessages + (channelLeads * 2);
-  }
-
-  /**
-   * Get top performing channel
+   * Top performing channel calculation
    */
   static getTopChannel(stats: ClientStats): ChannelType {
-    const whatsappScore = this.calculateChannelPerformance(stats, 'whatsapp');
-    const facebookScore = this.calculateChannelPerformance(stats, 'facebook');
-    const instagramScore = this.calculateChannelPerformance(stats, 'instagram');
-
-    if (whatsappScore >= facebookScore && whatsappScore >= instagramScore) {
-      return 'whatsapp';
-    } else if (facebookScore >= instagramScore) {
-      return 'facebook';
-    } else {
-      return 'instagram';
-    }
-  }
-
-  /**
-   * Validate client stats data
-   */
-  static validateClientStats(client: unknown): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    if (!client || typeof client !== 'object') {
-      errors.push('Client data must be an object');
-      return { isValid: false, errors };
-    }
-
-    const c = client as Record<string, unknown>;
-
-    if (!c.id || typeof c.id !== 'string') {
-      errors.push('Client ID is required');
-    }
-
-    if (!c.company_name || typeof c.company_name !== 'string') {
-      errors.push('Company name is required');
-    }
-
-    if (!c.stats || typeof c.stats !== 'object') {
-      errors.push('Client stats are required');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
+    const scores = {
+      whatsapp: (stats.whatsapp_messages * 0.5) + (stats.whatsapp_leads * 5),
+      facebook: (stats.facebook_messages * 0.5) + (stats.facebook_leads * 5),
+      instagram: (stats.instagram_messages * 0.5) + (stats.instagram_leads * 5)
     };
+
+    if (scores.whatsapp >= scores.facebook && scores.whatsapp >= scores.instagram) return 'whatsapp';
+    if (scores.facebook >= scores.instagram) return 'facebook';
+    return 'instagram';
   }
 
   /**

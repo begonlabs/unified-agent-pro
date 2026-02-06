@@ -81,7 +81,7 @@ export interface FetchClientStatsResponse {
 
 // Utility types
 export type ChannelType = 'whatsapp' | 'facebook' | 'instagram';
-export type PlanType = 'free' | 'premium' | 'enterprise';
+export type PlanType = 'free' | 'basico' | 'avanzado' | 'pro' | 'empresarial' | 'premium' | 'enterprise';
 
 // Badge color functions
 export type BadgeColorFunction = (value: string) => string;
