@@ -488,7 +488,8 @@ const MessagesView = () => {
       conv.channel.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' ||
       (filterStatus === 'unread' && (conv.unread_count || 0) > 0) ||
-      (filterStatus === 'read' && (conv.unread_count || 0) === 0);
+      (filterStatus === 'read' && (conv.unread_count || 0) === 0) ||
+      (filterStatus === 'advisor' && conv.crm_clients?.tags?.includes('Asesor Requerido'));
     const matchesChannel = filterChannel === 'all' || conv.channel === filterChannel;
 
     return matchesSearch && matchesStatus && matchesChannel;
@@ -677,6 +678,7 @@ const MessagesView = () => {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="unread">Nuevo</SelectItem>
                   <SelectItem value="read">Leído</SelectItem>
+                  <SelectItem value="advisor">Asesor</SelectItem>
                 </SelectContent>
               </Select>
 
