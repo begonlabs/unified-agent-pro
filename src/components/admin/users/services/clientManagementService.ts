@@ -11,6 +11,7 @@ import {
   RoleType,
   BadgeColorFunction
 } from '../types';
+import { PLAN_LIMITS } from '@/lib/channelPermissions';
 
 export class ClientManagementService {
   // Predefined roles until roles table is created in Supabase
@@ -130,6 +131,20 @@ export class ClientManagementService {
         is_active: formData.is_active,
         updated_at: new Date().toISOString()
       };
+
+      // Set limits based on the assigned plan
+      const limits = PLAN_LIMITS[formData.plan_type] || PLAN_LIMITS.free;
+      updateData.messages_limit = limits.messages;
+      updateData.clients_limit = limits.clients;
+
+      // Set extra permissions based on plan
+      updateData.has_statistics = ['avanzado', 'pro', 'empresarial'].includes(formData.plan_type);
+
+      if (formData.plan_type === 'free' || formData.plan_type === 'basico') {
+        updateData.crm_level = 'basic';
+      } else {
+        updateData.crm_level = 'complete';
+      }
 
       // If it's a paid plan, ensure payment_status is 'active' so they can use the platform
       if (formData.plan_type !== 'free') {
