@@ -1,11 +1,19 @@
 // General Stats Module - Types
 
+export interface DailyStats {
+  date: string;
+  messages: number;
+  leads: number;
+}
+
 // General statistics data interface
 export interface GeneralStatsData {
   total_clients: number;
   free_clients: number;
-  premium_clients: number;
-  enterprise_clients: number;
+  basico_clients: number;
+  avanzado_clients: number;
+  pro_clients: number;
+  empresarial_clients: number;
   total_messages_platform: number;
   total_leads_platform: number;
   whatsapp_messages: number;
@@ -17,15 +25,21 @@ export interface GeneralStatsData {
   total_conversations: number;
   active_clients: number;
   inactive_clients: number;
+  daily_activity?: DailyStats[];
 }
 
 // Plan counts interface
 export interface PlanCounts {
   free: number;
-  premium: number;
-  enterprise: number;
+  basico: number;
+  avanzado: number;
+  pro: number;
+  empresarial: number;
   active: number;
   inactive: number;
+  // Legacy support
+  premium: number;
+  enterprise: number;
 }
 
 // Channel statistics interface
@@ -85,7 +99,7 @@ export interface FetchGeneralStatsResponse {
 }
 
 // Utility types
-export type PlanType = 'free' | 'premium' | 'enterprise';
+export type PlanType = 'free' | 'basico' | 'avanzado' | 'pro' | 'empresarial' | 'premium' | 'enterprise';
 export type ChannelType = 'whatsapp' | 'facebook' | 'instagram';
 
 // Icon color functions

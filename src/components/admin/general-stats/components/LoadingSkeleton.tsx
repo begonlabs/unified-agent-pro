@@ -7,7 +7,7 @@ export const LoadingSkeleton: React.FC = () => {
   const skeletonCount = GeneralStatsService.getLoadingSkeletonCount();
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
       {[...Array(skeletonCount)].map((_, i) => (
         <Card key={i}>
           <CardContent className="flex items-center justify-center h-32">
