@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { QrCode, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { QrCode, CheckCircle, Loader2, RefreshCw, MessageSquare, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,8 +38,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         }
     }, [initialIdInstance, initialApiToken]);
     const { toast } = useToast();
-    const qrRefreshInterval = useRef<NodeJS.Timeout | null>(null);
-    const statusCheckInterval = useRef<NodeJS.Timeout | null>(null);
+    const qrRefreshInterval = useRef<any>(null);
+    const statusCheckInterval = useRef<any>(null);
 
     useEffect(() => {
         return () => {
@@ -48,6 +48,57 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
         };
     }, []);
+
+    const provisionInstance = async () => {
+        setLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            // Call our Edge Function
+            // @ts-ignore
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const response = await fetch(`${supabaseUrl}/functions/v1/create-green-api-instance`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    plan_type: 'manual_provision'
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                toast({
+                    title: "¡Éxito!",
+                    description: "Se ha asignado una nueva instancia automáticamente.",
+                });
+
+                // Actualizamos las credenciales localmente para que el componente las use
+                if (result.idInstance) {
+                    setIdInstance(result.idInstance);
+                    // Nota: En un escenario real, el apiToken vendría en el resultado de la función.
+                    // Si no viene, el usuario tendrá la instancia vinculada y solo deberá refrescar.
+                }
+
+                // Recargar página para asegurar que el estado sea el correcto
+                window.location.reload();
+            } else {
+                throw new Error(result.error || "Error desconocido al crear instancia");
+            }
+        } catch (error: any) {
+            console.error('Error provisioning instance:', error);
+            toast({
+                title: "Error de aprovisionamiento",
+                description: error.message || "No pudimos crear tu instancia. Verifica tu saldo de partner.",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const getQRCode = async () => {
         if (!idInstance || !apiToken) {
@@ -195,39 +246,84 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     };
 
     return (
-        <div className="space-y-4">
-            {status === 'disconnected' && (
-                <>
-                    <div className="text-center space-y-4">
+        <Card className="border-green-100 shadow-sm overflow-hidden">
+            <CardHeader className="bg-green-50 pb-4">
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                    <MessageSquare className="h-5 w-5" />
+                    Conectar WhatsApp (Green API)
+                </CardTitle>
+                <CardDescription className="text-green-700">
+                    Sincroniza tu cuenta de WhatsApp para empezar a usar el agente IA.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                {!initialIdInstance && (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
+                        <h4 className="font-semibold text-blue-900 mb-1">Aprovisionamiento Automático</h4>
+                        <p className="text-sm text-blue-800 mb-4">
+                            Como tienes un plan activo, puedes generar tu instancia oficial de WhatsApp con un solo clic.
+                        </p>
                         <Button
-                            onClick={getQRCode}
+                            onClick={provisionInstance}
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-[#3a0caa] to-[#710db2] hover:from-[#270a59] hover:to-[#2b0a63] text-white"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                         >
                             {loading ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Generando QR...
-                                </>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             ) : (
-                                <>
-                                    <QrCode className="h-4 w-4 mr-2" />
-                                    Generar Código QR
-                                </>
+                                <PlusCircle className="h-4 w-4 mr-2" />
                             )}
+                            Generar mi Instancia WhatsApp
                         </Button>
+                    </div>
+                )}
 
-                        <div className="bg-blue-50 p-3 rounded-lg border">
-                            <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión mediante QR:</h4>
-                            <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                                <li>Genera el código QR con el botón</li>
-                                <li>Escanea el código con tu celular</li>
-                                <li>Instancia: {idInstance}</li>
-                            </ul>
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">ID de Instancia</label>
+                            <Input
+                                placeholder="Ejem: 1101821234"
+                                value={idInstance}
+                                onChange={(e) => setIdInstance(e.target.value)}
+                                disabled={loading || !!initialIdInstance}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Token de Instancia</label>
+                            <Input
+                                placeholder="Ejem: d5f1e...456"
+                                value={apiToken}
+                                onChange={(e) => setApiToken(e.target.value)}
+                                disabled={loading || !!initialApiToken}
+                            />
                         </div>
                     </div>
-                </>
-            )}
+
+                    {!initialIdInstance && (
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={getQRCode}
+                                disabled={loading}
+                                variant="outline"
+                                className="flex-1"
+                            >
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Probar Conexión Manual"}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                {status === 'disconnected' && (
+                    <div className="bg-blue-50 p-3 rounded-lg border">
+                        <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión mediante QR:</h4>
+                        <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                            <li>Genera el código QR con el botón</li>
+                            <li>Escanea el código con tu celular</li>
+                            <li>Instancia: {idInstance}</li>
+                        </ul>
+                    </div>
+                )}
+            </CardContent>
 
             {status === 'waiting' && qrCode && (
                 <Card className="p-6">
@@ -269,6 +365,6 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     </div>
                 </Card>
             )}
-        </div>
+        </Card>
     );
 };

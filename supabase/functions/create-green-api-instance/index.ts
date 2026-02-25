@@ -16,11 +16,15 @@ serve(async (req) => {
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
         const partnerToken = Deno.env.get('GREEN_API_PARTNER_TOKEN')
 
-        if (!partnerToken) {
-            throw new Error('GREEN_API_PARTNER_TOKEN is not configured')
+        // Create a Supabase client with the Service Role Key for administrative tasks
+        const supabase = createClient(supabaseUrl!, supabaseServiceKey!)
+
+        // Check for authorization (could be Service Role from webhook or User Session from frontend)
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader) {
+            throw new Error('No authorization header')
         }
 
-        const supabase = createClient(supabaseUrl!, supabaseServiceKey!)
         const { user_id, plan_type } = await req.json()
 
         if (!user_id) {
