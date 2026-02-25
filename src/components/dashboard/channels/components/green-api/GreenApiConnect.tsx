@@ -25,8 +25,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     initialIdInstance,
     initialApiToken
 }) => {
-    const [idInstance, setIdInstance] = useState(initialIdInstance || '7107392654');
-    const [apiToken, setApiToken] = useState(initialApiToken || 'b1027b1fd5ba4266bb291adbb9e72c63309b3ed04bd640b692');
+    const [idInstance, setIdInstance] = useState(initialIdInstance || '');
+    const [apiToken, setApiToken] = useState(initialApiToken || '');
     const [apiUrl, setApiUrl] = useState(initialIdInstance ? (String(initialIdInstance).startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com') : 'https://7107.api.green-api.com');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
