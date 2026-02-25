@@ -226,6 +226,31 @@ serve(async (req) => {
             }
 
             console.log('Plan activated successfully for user:', payment.user_id)
+
+            // Auto-provision Green API instance
+            try {
+                console.log('Auto-provisioning Green API instance...')
+                const functionResponse = await fetch(`${SUPABASE_URL}/functions/v1/create-green-api-instance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: payment.user_id,
+                        plan_type: payment.plan_type
+                    })
+                })
+
+                if (functionResponse.ok) {
+                    console.log('✅ Green API instance provisioned automatically')
+                } else {
+                    const errorText = await functionResponse.text()
+                    console.error('❌ Failed to auto-provision Green API instance:', errorText)
+                }
+            } catch (provisionError) {
+                console.error('❌ Error during auto-provisioning:', provisionError)
+            }
         }
 
         return new Response(

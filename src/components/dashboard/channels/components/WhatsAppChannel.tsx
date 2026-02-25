@@ -29,7 +29,8 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   const { user } = useAuth();
 
   const greenApiChannels = channels.filter(c => c.channel_type === 'whatsapp_green_api');
-  const isConnected = greenApiChannels.length > 0;
+  const isConnected = greenApiChannels.some(c => c.is_connected);
+  const unconnectedInstance = greenApiChannels.find(c => !c.is_connected);
 
   const handleGreenApiSuccess = () => {
     // Refresh the page to show the connected channel
@@ -41,35 +42,63 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
 
   return (
     <div className="space-y-4">
-      {!isConnected ? (
+      {/* Case 1: No instance and no connection allowed (Upgrade required) */}
+      {!isConnected && !unconnectedInstance && !connectionCheck.allowed && (
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
+          <Lock className="h-4 w-4 text-red-600" />
+          <AlertDescription className="ml-2">
+            {connectionCheck.reason}
+            <Button
+              variant="link"
+              className="p-0 h-auto ml-2 text-red-800 underline font-semibold"
+              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+            >
+              Mejorar Plan
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Case 2: No instance but connection is allowed (Show manual connect or waiting msg) */}
+      {!isConnected && !unconnectedInstance && connectionCheck.allowed && user && (
         <div className="space-y-4">
-          {!connectionCheck.allowed ? (
-            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
-              <Lock className="h-4 w-4 text-red-600" />
-              <AlertDescription className="ml-2">
-                {connectionCheck.reason}
-                <Button
-                  variant="link"
-                  className="p-0 h-auto ml-2 text-red-800 underline font-semibold"
-                  onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
-                >
-                  Mejorar Plan
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : (
-            /* Green API Connection - No branding */
-            user && (
-              <GreenApiConnect
-                userId={user.id}
-                onSuccess={handleGreenApiSuccess}
-              />
-            )
-          )}
+          <GreenApiConnect
+            userId={user.id}
+            onSuccess={handleGreenApiSuccess}
+          />
         </div>
-      ) : (
+      )}
+
+      {/* Case 3: Instance assigned but unconnected (Show QR directly) */}
+      {!isConnected && unconnectedInstance && user && (
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+            <p className="text-sm text-blue-800 font-medium">
+              Tu instancia de WhatsApp ha sido asignada automáticamente.
+              Por favor, escanea el código QR para activarla.
+            </p>
+          </div>
+          <GreenApiConnect
+            userId={user.id}
+            onSuccess={handleGreenApiSuccess}
+            initialIdInstance={(unconnectedInstance.channel_config as any).idInstance}
+            initialApiToken={(unconnectedInstance.channel_config as any).apiTokenInstance}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-red-600 border-red-300 hover:bg-red-100 mt-4"
+            onClick={() => onDisconnect(unconnectedInstance.id)}
+          >
+            Cancelar y elegir otra instancia
+          </Button>
+        </div>
+      )}
+
+      {/* Case 4: Connected instances list */}
+      {isConnected && (
         <div className="space-y-3">
-          {greenApiChannels.map((channel) => {
+          {greenApiChannels.filter(c => c.is_connected).map((channel) => {
             const config = channel.channel_config as any;
             return (
               <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200">
@@ -77,7 +106,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <span className="font-medium text-green-900 text-sm sm:text-base">
-                      WhatsApp Business
+                      WhatsApp Business (Green API)
                     </span>
                   </div>
                   <Badge variant="default" className="bg-green-600 text-xs">

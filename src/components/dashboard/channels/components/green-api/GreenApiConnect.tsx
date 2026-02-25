@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface GreenApiConnectProps {
     userId: string;
     onSuccess: () => void;
+    initialIdInstance?: string;
+    initialApiToken?: string;
 }
 
 interface QRCodeData {
@@ -17,12 +19,24 @@ interface QRCodeData {
     type: 'qrCode';
 }
 
-export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({ userId, onSuccess }) => {
-    const [idInstance, setIdInstance] = useState('7107392654');
-    const [apiToken, setApiToken] = useState('b1027b1fd5ba4266bb291adbb9e72c63309b3ed04bd640b692');
+export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
+    userId,
+    onSuccess,
+    initialIdInstance,
+    initialApiToken
+}) => {
+    const [idInstance, setIdInstance] = useState(initialIdInstance || '7107392654');
+    const [apiToken, setApiToken] = useState(initialApiToken || 'b1027b1fd5ba4266bb291adbb9e72c63309b3ed04bd640b692');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
+
+    // Auto-generate QR if initial values are provided
+    useEffect(() => {
+        if (initialIdInstance && initialApiToken) {
+            getQRCode();
+        }
+    }, [initialIdInstance, initialApiToken]);
     const { toast } = useToast();
     const qrRefreshInterval = useRef<NodeJS.Timeout | null>(null);
     const statusCheckInterval = useRef<NodeJS.Timeout | null>(null);
