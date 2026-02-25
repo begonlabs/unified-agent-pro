@@ -122,6 +122,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             const idStr = String(idInstance);
             const host = idStr.startsWith('7700') || idStr.startsWith('7705') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
 
+            setApiUrl(host); // Sincronizar apiUrl con el host detectado
+
             console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${retryCount + 1}/6)`);
             const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
 
@@ -183,7 +185,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         if (!idInstance || !apiToken) return;
 
         try {
-            const apiUrl = `https://7107.api.green-api.com`;
+            // Usar apiUrl del estado (que ya debería estar configurada)
             const response = await fetch(`${apiUrl}/waInstance${idInstance}/qr/${apiToken}`);
 
             if (response.ok) {
@@ -201,7 +203,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         if (!idInstance || !apiToken) return;
 
         try {
-            const apiUrl = `https://7107.api.green-api.com`;
+            // Usar apiUrl del estado
             const response = await fetch(`${apiUrl}/waInstance${idInstance}/getStateInstance/${apiToken}`);
 
             if (response.ok) {
