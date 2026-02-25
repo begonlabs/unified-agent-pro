@@ -20,10 +20,10 @@ export const PLAN_LIMITS: Record<string, { messages: number; clients: number }> 
  * Obtiene los permisos de canales según el plan del usuario
  */
 export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
-    // Si está en trial
-    if (profile.is_trial) {
+    // Si está en trial (y no tiene un plan de pago asignado manualmente)
+    if (profile.is_trial && profile.plan_type === 'free') {
         return {
-            whatsapp: false, // NO WhatsApp en trial
+            whatsapp: false, // NO WhatsApp en trial gratuito
             facebook: true,
             instagram: true,
             maxWhatsappChannels: 0,
