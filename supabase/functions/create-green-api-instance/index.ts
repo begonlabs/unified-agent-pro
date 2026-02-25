@@ -14,11 +14,13 @@ serve(async (req) => {
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-        const partnerToken = Deno.env.get('GREEN_API_PARTNER_TOKEN')
+
+        // Fallback token for self-hosted instances where env injection is complex
+        const DEFAULT_PARTNER_TOKEN = "gac.b65e351592e54d99b4cefb1c4bde15cd599d5bc2b9e045"
+        const partnerToken = Deno.env.get('GREEN_API_PARTNER_TOKEN') || DEFAULT_PARTNER_TOKEN
 
         if (!partnerToken || partnerToken === 'undefined') {
-            console.error('❌ GREEN_API_PARTNER_TOKEN is not set or invalid');
-            throw new Error('El servidor no tiene configurado el token de socio de Green API.');
+            throw new Error('GREEN_API_PARTNER_TOKEN no está configurado en el servidor.');
         }
 
         // Create a Supabase client with the Service Role Key for administrative tasks
