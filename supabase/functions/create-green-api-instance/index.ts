@@ -16,6 +16,11 @@ serve(async (req) => {
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
         const partnerToken = Deno.env.get('GREEN_API_PARTNER_TOKEN')
 
+        if (!partnerToken || partnerToken === 'undefined') {
+            console.error('❌ GREEN_API_PARTNER_TOKEN is not set or invalid');
+            throw new Error('El servidor no tiene configurado el token de socio de Green API.');
+        }
+
         // Create a Supabase client with the Service Role Key for administrative tasks
         const supabase = createClient(supabaseUrl!, supabaseServiceKey!)
 
@@ -28,10 +33,10 @@ serve(async (req) => {
         const { user_id, plan_type } = await req.json()
 
         if (!user_id) {
-            throw new Error('user_id is required')
+            throw new Error('user_id is required');
         }
 
-        console.log(`🚀 Creating Green API instance for user ${user_id} (Plan: ${plan_type})`)
+        console.log(`🚀 Solicitando nueva instancia a Green API (User: ${user_id}, Plan: ${plan_type})`);
 
         // 1. Create instance via Partner API
         const createUrl = `https://api.green-api.com/partner/createInstance/${partnerToken}`
@@ -41,14 +46,12 @@ serve(async (req) => {
             body: JSON.stringify({})
         })
 
-        if (!createResponse.ok) {
-            const errorText = await createResponse.text()
-            console.error('Green API Partner Error:', errorText)
-            throw new Error(`Failed to create instance: ${errorText}`)
-        }
-
         const instanceData = await createResponse.json()
-        console.log('✅ Instance created successfully:', instanceData)
+        console.log('📡 Respuesta de Green API:', JSON.stringify(instanceData))
+
+        if (!createResponse.ok) {
+            throw new Error(`Green API Error: ${instanceData.message || createResponse.statusText}`)
+        }
 
         // The expected response from Green API createInstance partner endpoint:
         // { idInstance: "...", apiTokenInstance: "..." }

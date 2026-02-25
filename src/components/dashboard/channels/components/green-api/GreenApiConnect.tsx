@@ -246,125 +246,96 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     };
 
     return (
-        <Card className="border-green-100 shadow-sm overflow-hidden">
-            <CardHeader className="bg-green-50 pb-4">
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                    <MessageSquare className="h-5 w-5" />
-                    Conectar WhatsApp (Green API)
-                </CardTitle>
-                <CardDescription className="text-green-700">
-                    Sincroniza tu cuenta de WhatsApp para empezar a usar el agente IA.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-                {!initialIdInstance && (
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
-                        <h4 className="font-semibold text-blue-900 mb-1">Aprovisionamiento Automático</h4>
-                        <p className="text-sm text-blue-800 mb-4">
-                            Como tienes un plan activo, puedes generar tu instancia oficial de WhatsApp con un solo clic.
-                        </p>
-                        <Button
-                            onClick={provisionInstance}
-                            disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                            {loading ? (
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                                <PlusCircle className="h-4 w-4 mr-2" />
-                            )}
-                            Generar mi Instancia WhatsApp
-                        </Button>
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">ID de Instancia</label>
-                            <Input
-                                placeholder="Ejem: 1101821234"
-                                value={idInstance}
-                                onChange={(e) => setIdInstance(e.target.value)}
-                                disabled={loading || !!initialIdInstance}
-                            />
+        <div className="space-y-6">
+            {!initialIdInstance && (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100 shadow-sm">
+                    <div className="flex items-start gap-4 mb-4">
+                        <div className="bg-green-100 p-3 rounded-full">
+                            <PlusCircle className="h-6 w-6 text-green-600" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Token de Instancia</label>
-                            <Input
-                                placeholder="Ejem: d5f1e...456"
-                                value={apiToken}
-                                onChange={(e) => setApiToken(e.target.value)}
-                                disabled={loading || !!initialApiToken}
-                            />
+                        <div>
+                            <h4 className="font-bold text-green-900 text-lg">Nueva Instancia WhatsApp</h4>
+                            <p className="text-sm text-green-700 leading-relaxed">
+                                Tu plan incluye una instancia dedicada de WhatsApp Business Pro.
+                                Al activarla, podrás empezar a usar la IA inmediatamente.
+                            </p>
                         </div>
                     </div>
-
-                    {!initialIdInstance && (
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={getQRCode}
-                                disabled={loading}
-                                variant="outline"
-                                className="flex-1"
-                            >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Probar Conexión Manual"}
-                            </Button>
-                        </div>
-                    )}
+                    <Button
+                        onClick={provisionInstance}
+                        disabled={loading}
+                        className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all shadow-md group"
+                    >
+                        {loading ? (
+                            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        ) : (
+                            <CheckCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+                        )}
+                        {loading ? 'Procesando...' : 'Activar mi WhatsApp ahora'}
+                    </Button>
+                    <p className="text-[10px] text-green-600 mt-4 text-center opacity-70">
+                        * Al activar, se asignará una nueva instancia usando tu crédito de suscripción.
+                    </p>
                 </div>
-                {status === 'disconnected' && (
-                    <div className="bg-blue-50 p-3 rounded-lg border">
-                        <h4 className="font-medium text-blue-900 text-xs sm:text-sm mb-1">Conexión mediante QR:</h4>
-                        <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                            <li>Genera el código QR con el botón</li>
-                            <li>Escanea el código con tu celular</li>
-                            <li>Instancia: {idInstance}</li>
-                        </ul>
-                    </div>
-                )}
-            </CardContent>
+            )}
+
+            {initialIdInstance && status === 'disconnected' && !qrCode && (
+                <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 flex flex-col items-center text-center">
+                    <QrCode className="h-12 w-12 text-emerald-600 mb-4 animate-pulse" />
+                    <h4 className="font-bold text-emerald-900 mb-2">Generar Código QR</h4>
+                    <p className="text-sm text-emerald-700 mb-6 max-w-xs">
+                        Tu instancia está lista. Haz clic abajo para ver el código QR de conexión.
+                    </p>
+                    <Button
+                        onClick={getQRCode}
+                        disabled={loading}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Ver Código QR"}
+                    </Button>
+                </div>
+            )}
 
             {status === 'waiting' && qrCode && (
-                <Card className="p-6">
-                    <div className="flex flex-col items-center space-y-4">
-                        <h3 className="text-lg font-semibold">Escanea este código QR</h3>
-                        <div className="bg-white p-4 rounded-lg">
-                            <img
-                                src={`data:image/png;base64,${qrCode}`}
-                                alt="QR Code"
-                                className="w-64 h-64"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Esperando escaneo...
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg flex flex-col items-center">
+                    <div className="mb-4 text-center">
+                        <h4 className="font-bold text-slate-900">Escanea el Código QR</h4>
+                        <p className="text-xs text-slate-500">Abre WhatsApp en tu teléfono {`>`} Ajustes {`>`} Dispositivos vinculados</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border-2 border-emerald-500 mb-6 shadow-inner">
+                        <img
+                            src={`data:image/png;base64,${qrCode}`}
+                            alt="QR Code"
+                            className="w-64 h-64 object-contain"
+                        />
+                    </div>
+                    <div className="flex flex-col items-center gap-3 w-full">
+                        <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Esperando sincronización...
                         </div>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
+                            className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 text-[10px]"
                             onClick={refreshQR}
                         >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Refrescar QR
+                            <RefreshCw className="h-3 w-3 mr-1.5" />
+                            Actualizar código manually
                         </Button>
                     </div>
-                </Card>
+                </div>
             )}
 
             {status === 'connected' && (
-                <Card className="p-6 bg-green-50 border-green-200">
-                    <div className="flex flex-col items-center space-y-4">
-                        <CheckCircle className="h-16 w-16 text-green-600" />
-                        <h3 className="text-lg font-semibold text-green-900">
-                            ¡Conectado exitosamente!
-                        </h3>
-                        <p className="text-sm text-green-800 text-center">
-                            Tu WhatsApp está ahora conectado
-                        </p>
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-2xl shadow-xl flex flex-col items-center text-white text-center">
+                    <div className="bg-white/20 p-4 rounded-full mb-4 backdrop-blur-sm">
+                        <CheckCircle className="h-12 w-12" />
                     </div>
-                </Card>
+                    <h3 className="text-xl font-bold mb-1">¡WhatsApp Conectado!</h3>
+                    <p className="text-sm opacity-90">Ya puedes empezar a recibir y enviar mensajes.</p>
+                </div>
             )}
-        </Card>
+        </div>
     );
 };

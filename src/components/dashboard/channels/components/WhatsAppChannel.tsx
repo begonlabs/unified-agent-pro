@@ -71,27 +71,33 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
 
       {/* Case 3: Instance assigned but unconnected (Show QR directly) */}
       {!isConnected && unconnectedInstance && user && (
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="flex items-center gap-3 mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div className="bg-blue-100 p-2 rounded-full">
+              <CheckCircle className="h-5 w-5 text-blue-600" />
+            </div>
             <p className="text-sm text-blue-800 font-medium">
-              Tu instancia de WhatsApp ha sido asignada automáticamente.
-              Por favor, escanea el código QR para activarla.
+              ¡Tu línea está lista! Escanea el QR abajo para activar tu asistente IA.
             </p>
           </div>
+
           <GreenApiConnect
             userId={user.id}
             onSuccess={handleGreenApiSuccess}
             initialIdInstance={(unconnectedInstance.channel_config as any).idInstance}
             initialApiToken={(unconnectedInstance.channel_config as any).apiTokenInstance}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-red-600 border-red-300 hover:bg-red-100 mt-4"
-            onClick={() => onDisconnect(unconnectedInstance.id)}
-          >
-            Cancelar y elegir otra instancia
-          </Button>
+
+          <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors text-xs"
+              onClick={() => onDisconnect(unconnectedInstance.id)}
+            >
+              No reconozco esta instancia / Desconectar
+            </Button>
+          </div>
         </div>
       )}
 
