@@ -56,14 +56,56 @@ serve(async (req) => {
         }
 
         // The expected response from Green API createInstance partner endpoint:
-        // { idInstance: "...", apiTokenInstance: "..." }
-        const { idInstance, apiTokenInstance } = instanceData
+        // { idInstance: "...", apiTokenInstance: "...", host: "..." }
+        const { idInstance, apiTokenInstance, host } = instanceData
 
         if (!idInstance || !apiTokenInstance) {
-            throw new Error('Incomplete response from Green API')
+            throw new Error('Respuesta incompleta de Green API al crear instancia')
         }
 
-        // 2. Save instance to communication_channels
+        // Host detectado dinámicamente (ej: 7700 o 7107)
+        const apiUrl = host ? `https://${host}` : 'https://7107.api.green-api.com'
+        console.log(`📡 Usando host: ${apiUrl} para la instancia ${idInstance}`)
+
+        // 2. Configurar instancia automáticamente
+        // Esperamos un poco para que la instancia esté disponible para configuración
+        console.log('⏳ Esperando 5 segundos para configurar la instancia...')
+        await new Promise(resolve => setTimeout(resolve, 5000))
+
+        try {
+            console.log('⚙️ Configurando Webhooks y Permisos...')
+
+            // Configurar Webhook URL y habilitar notificaciones
+            const settingsUrl = `${apiUrl}/waInstance${idInstance}/setSettings/${apiTokenInstance}`
+            const settingsData = {
+                webhookUrl: "https://supabase.ondai.ai/functions/v1/green-api-webhook",
+                incomingWebhook: "yes",
+                outgoingWebhook: "yes",
+                stateWebhook: "yes",
+                incomingMessageWebhook: "yes",
+                outgoingMessageWebhook: "yes",
+                outgoingAPIMessageWebhook: "yes",
+                markIncomingMessagesReaded: "yes"
+            }
+
+            const settingsResponse = await fetch(settingsUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settingsData)
+            })
+
+            if (settingsResponse.ok) {
+                console.log('✅ Instancia configurada exitosamente')
+            } else {
+                const settingsError = await settingsResponse.text()
+                console.warn('⚠️ No se pudo configurar la instancia automáticamente:', settingsError)
+            }
+        } catch (configError) {
+            console.error('❌ Error durante la configuración de la instancia:', configError)
+            // No bloqueamos el proceso si la configuración falla, el usuario puede hacerlo manual
+        }
+
+        // 3. Save instance to communication_channels
         const { error: insertError } = await supabase
             .from('communication_channels')
             .insert({
@@ -72,11 +114,11 @@ serve(async (req) => {
                 channel_config: {
                     idInstance,
                     apiTokenInstance,
-                    apiUrl: 'https://7107.api.green-api.com',
+                    apiUrl: apiUrl,
                     connected_at: new Date().toISOString(),
                     is_automated: true
                 },
-                is_connected: false // It starts as disconnected until QR is scanned
+                is_connected: false
             })
 
         if (insertError) {
@@ -88,7 +130,8 @@ serve(async (req) => {
             JSON.stringify({
                 success: true,
                 idInstance,
-                message: 'Instance created and assigned successfully'
+                apiUrl,
+                message: 'Instancia creada, configurada y asignada exitosamente'
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

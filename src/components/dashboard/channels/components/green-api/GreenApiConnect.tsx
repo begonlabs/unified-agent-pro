@@ -27,8 +27,10 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 }) => {
     const [idInstance, setIdInstance] = useState(initialIdInstance || '7107392654');
     const [apiToken, setApiToken] = useState(initialApiToken || 'b1027b1fd5ba4266bb291adbb9e72c63309b3ed04bd640b692');
+    const [apiUrl, setApiUrl] = useState(initialIdInstance ? (initialIdInstance.startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com') : 'https://7107.api.green-api.com');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
     const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
 
     // Auto-generate QR if initial values are provided
@@ -100,7 +102,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         }
     };
 
-    const getQRCode = async () => {
+    const getQRCode = async (isRetry = false) => {
         if (!idInstance || !apiToken) {
             toast({
                 title: "Credenciales requeridas",
@@ -110,13 +112,28 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             return;
         }
 
-        setLoading(true);
+        if (!isRetry) {
+            setLoading(true);
+            setRetryCount(0);
+        }
+
         try {
-            const apiUrl = `https://7107.api.green-api.com`;
-            const response = await fetch(`${apiUrl}/waInstance${idInstance}/qr/${apiToken}`);
+            // Usar el host configurado o el autodetectado por el ID
+            const host = idInstance.startsWith('7700') || idInstance.startsWith('7705') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
+
+            console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${retryCount + 1}/6)`);
+            const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
 
             if (!response.ok) {
-                throw new Error('Failed to get QR code');
+                if (retryCount < 5) {
+                    console.log('⚠️ Fallo temporal al obtener QR, reintentando en 10s...');
+                    setTimeout(() => {
+                        setRetryCount(prev => prev + 1);
+                        getQRCode(true);
+                    }, 10000);
+                    return;
+                }
+                throw new Error('Failed to get QR code after multiple retries');
             }
 
             const data: QRCodeData = await response.json();
@@ -271,8 +288,13 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                         ) : (
                             <CheckCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
                         )}
-                        {loading ? 'Procesando...' : 'Activar mi WhatsApp ahora'}
+                        {loading ? 'Inicializando instancia...' : 'Activar mi WhatsApp ahora'}
                     </Button>
+                    {loading && (
+                        <p className="text-[11px] text-green-700 mt-2 text-center animate-pulse">
+                            Esto puede tardar hasta 45 segundos mientras Green API prepara tu línea.
+                        </p>
+                    )}
                     <p className="text-[10px] text-green-600 mt-4 text-center opacity-70">
                         * Al activar, se asignará una nueva instancia usando tu crédito de suscripción.
                     </p>
@@ -291,8 +313,18 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                         disabled={loading}
                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Ver Código QR"}
+                        {loading ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                {retryCount > 0 ? `Reintentando (${retryCount}/6)...` : "Cargando..."}
+                            </>
+                        ) : "Ver Código QR"}
                     </Button>
+                    {loading && retryCount > 0 && (
+                        <p className="text-[10px] text-emerald-600 mt-2 italic">
+                            La instancia se está despertando, reintentando automáticamente.
+                        </p>
+                    )}
                 </div>
             )}
 
