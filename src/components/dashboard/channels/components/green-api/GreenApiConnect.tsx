@@ -27,7 +27,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 }) => {
     const [idInstance, setIdInstance] = useState(initialIdInstance || '7107392654');
     const [apiToken, setApiToken] = useState(initialApiToken || 'b1027b1fd5ba4266bb291adbb9e72c63309b3ed04bd640b692');
-    const [apiUrl, setApiUrl] = useState(initialIdInstance ? (initialIdInstance.startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com') : 'https://7107.api.green-api.com');
+    const [apiUrl, setApiUrl] = useState(initialIdInstance ? (String(initialIdInstance).startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com') : 'https://7107.api.green-api.com');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -118,8 +118,9 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         }
 
         try {
-            // Usar el host configurado o el autodetectado por el ID
-            const host = idInstance.startsWith('7700') || idInstance.startsWith('7705') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
+            // Usar el host configurado o el autodetectado por el ID (asegurando que sea string)
+            const idStr = String(idInstance);
+            const host = idStr.startsWith('7700') || idStr.startsWith('7705') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
 
             console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${retryCount + 1}/6)`);
             const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
