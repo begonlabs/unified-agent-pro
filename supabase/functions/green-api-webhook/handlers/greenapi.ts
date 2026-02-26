@@ -184,18 +184,20 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
         // Find channel by idInstance
         console.log('🔍 Looking for channel with idInstance:', idInstance);
 
-        const { data: channel, error: channelError } = await supabase
+        const { data: channels, error: channelError } = await supabase
             .from('communication_channels')
             .select('*')
             .eq('channel_type', 'whatsapp_green_api')
             .eq('channel_config->>idInstance', idInstance)
             .eq('is_connected', true)
-            .single();
+            .limit(1);
 
-        if (channelError || !channel) {
+        if (channelError || !channels || channels.length === 0) {
             console.error('❌ No channel found for idInstance:', idInstance, channelError?.message);
             return;
         }
+
+        const channel = channels[0];
 
         console.log('✅ Found channel:', { id: channel.id, user_id: channel.user_id });
 

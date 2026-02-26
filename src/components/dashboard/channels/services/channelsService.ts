@@ -38,9 +38,9 @@ export class ChannelsService {
     // Para WhatsApp, buscar tanto 'whatsapp' como 'whatsapp_green_api'
     let channel: Channel | undefined;
     if (channelType === 'whatsapp') {
-      channel = channels.find(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api');
+      return channels.some(c => (c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api') && c.is_connected);
     } else {
-      channel = channels.find(c => c.channel_type === channelType);
+      return channels.some(c => c.channel_type === channelType && c.is_connected);
     }
 
     // Special logic for Instagram legacy compatibility

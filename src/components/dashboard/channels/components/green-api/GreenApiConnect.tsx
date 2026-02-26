@@ -260,22 +260,47 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 console.log('✅ Webhooks configurados exitosamente');
             }
 
-            // 2. Guardar en Supabase
-            const { error } = await supabase
-                .from('communication_channels')
-                .insert({
-                    user_id: userId,
-                    channel_type: 'whatsapp_green_api',
-                    channel_config: {
-                        idInstance,
-                        apiTokenInstance: apiToken,
-                        apiUrl: 'https://7107.api.green-api.com',
-                        connected_at: new Date().toISOString()
-                    },
-                    is_connected: true
-                });
+            // 2. Guardar en Supabase (Evitar duplicados)
+            console.log('💾 Guardando configuración en base de datos...');
 
-            if (error) throw error;
+            // Primero verificamos si ya existe una conexión para este idInstance y usuario
+            const { data: existingChannel } = await supabase
+                .from('communication_channels')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('channel_type', 'whatsapp_green_api')
+                .eq('channel_config->>idInstance', idInstance)
+                .maybeSingle();
+
+            const channelPayload = {
+                user_id: userId,
+                channel_type: 'whatsapp_green_api',
+                channel_config: {
+                    idInstance,
+                    apiTokenInstance: apiToken,
+                    apiUrl: apiUrl || 'https://7107.api.green-api.com',
+                    connected_at: new Date().toISOString()
+                },
+                is_connected: true
+            };
+
+            let saveError;
+            if (existingChannel) {
+                console.log('🔄 Actualizando canal existente:', existingChannel.id);
+                const { error } = await supabase
+                    .from('communication_channels')
+                    .update(channelPayload)
+                    .eq('id', existingChannel.id);
+                saveError = error;
+            } else {
+                console.log('🆕 Creando nuevo canal');
+                const { error } = await supabase
+                    .from('communication_channels')
+                    .insert(channelPayload);
+                saveError = error;
+            }
+
+            if (saveError) throw saveError;
 
             toast({
                 title: "¡Conectado!",
