@@ -233,6 +233,34 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
     const saveToSupabase = async () => {
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            // @ts-ignore
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+            // 1. Configurar Webhooks automáticamente
+            console.log('⚙️ Configurando Webhooks...');
+            const setupResponse = await fetch(`${supabaseUrl}/functions/v1/setup-green-api-webhooks`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    idInstance,
+                    apiTokenInstance: apiToken,
+                    apiUrl: apiUrl
+                })
+            });
+
+            const setupResult = await setupResponse.json();
+            if (!setupResult.success) {
+                console.warn('⚠️ No se pudieron configurar los webhooks automáticamente:', setupResult.error);
+                // No bloqueamos el proceso, el usuario puede intentarlo después
+            } else {
+                console.log('✅ Webhooks configurados exitosamente');
+            }
+
+            // 2. Guardar en Supabase
             const { error } = await supabase
                 .from('communication_channels')
                 .insert({
