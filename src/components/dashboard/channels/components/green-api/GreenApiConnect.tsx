@@ -14,6 +14,7 @@ interface GreenApiConnectProps {
     onSuccess: () => void;
     initialIdInstance?: string;
     initialApiToken?: string;
+    onInvalidInstance?: () => void;
 }
 
 interface QRCodeData {
@@ -25,7 +26,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     userId,
     onSuccess,
     initialIdInstance,
-    initialApiToken
+    initialApiToken,
+    onInvalidInstance
 }) => {
     const [idInstance, setIdInstance] = useState(initialIdInstance || '');
     const [apiToken, setApiToken] = useState(initialApiToken || '');
@@ -166,8 +168,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${retryCount + 1}/6)`);
             const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
 
-            if (response.status === 401) {
-                throw new Error('No autorizado. Tu instancia podría estar expirada o el token es incorrecto.');
+            if (response.status === 401 || response.status === 404) {
+                throw new Error('INSTANCIA_INVALIDA');
             }
 
             if (response.status === 466) {
@@ -217,13 +219,23 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     variant: "destructive"
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error getting QR code:', error);
-            toast({
-                title: "Error",
-                description: "No se pudo obtener el código QR",
-                variant: "destructive"
-            });
+            if (error.message === 'INSTANCIA_INVALIDA') {
+                const msg = "Esta instancia ya no existe o su token es inválido en Green API. Por favor, bórrala permanentemente para crear una nueva.";
+                toast({
+                    title: "Instancia Inválida",
+                    description: msg,
+                    variant: "destructive"
+                });
+                if (onInvalidInstance) onInvalidInstance();
+            } else {
+                toast({
+                    title: "Error",
+                    description: error.message || "No se pudo obtener el código QR",
+                    variant: "destructive"
+                });
+            }
         } finally {
             setLoading(false);
         }

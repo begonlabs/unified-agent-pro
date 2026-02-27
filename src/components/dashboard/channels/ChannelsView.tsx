@@ -41,7 +41,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   const {
     handleDisconnectChannel,
     handleTestWebhook,
-    handleHardDeleteChannel
+    handleHardDeleteChannel,
+    handleClearAllWhatsAppChannels
   } = useChannelActions(currentUser);
 
   // Check for success parameters in URL
@@ -331,10 +332,25 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
       </div>
 
       {/* Channel Status */}
-      <ChannelStatus
-        channels={channels}
-        getChannelStatus={getChannelStatus}
-      />
+      <div className="flex justify-between items-center">
+        <ChannelStatus
+          channels={channels}
+          getChannelStatus={getChannelStatus}
+          onHardDelete={handleHardDelete}
+        />
+        {channels.some(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api') && (
+          <div className="flex justify-end px-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-500 hover:text-red-700 text-[10px] font-bold"
+              onClick={() => handleClearAllWhatsAppChannels(channels, setChannels)}
+            >
+              LIMPIAR TODO WHATSAPP Y EMPEZAR DE CERO
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

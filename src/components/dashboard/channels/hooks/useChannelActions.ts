@@ -5,6 +5,7 @@ import { ChannelsService } from '../services/channelsService';
 import { NotificationService } from '@/components/notifications';
 import { EmailService } from '@/services/emailService';
 import { getGreenApiHost } from '@/utils/greenApiUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useChannelActions = (user: User | null) => {
   const { toast } = useToast();
@@ -171,6 +172,45 @@ export const useChannelActions = (user: User | null) => {
     }
   }, [user, toast]);
 
+  const handleClearAllWhatsAppChannels = useCallback(async (channels: Channel[], setChannels: (channels: Channel[]) => void) => {
+    if (!confirm("⚠️ ¿Estás SEGURO de que quieres borrar TODAS tus instancias de WhatsApp? esto limpiará tanto Green API como tu base de datos local.")) return;
+
+    try {
+      toast({
+        title: "Limpiando...",
+        description: "Borrando todas las instancias de WhatsApp registrados.",
+      });
+
+      const waChannels = channels.filter(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api');
+
+      for (const channel of waChannels) {
+        try {
+          await ChannelsService.disconnectChannel(channel.id, user, true);
+        } catch (e) {
+          console.error(`Error deleting channel ${channel.id}:`, e);
+          // If it fails (maybe already gone), we still try to delete directly from DB if it was a green api one
+          if (channel.channel_type === 'whatsapp_green_api') {
+            await supabase.from('communication_channels').delete().eq('id', channel.id);
+          }
+        }
+      }
+
+      setChannels(channels.filter(c => c.channel_type !== 'whatsapp' && c.channel_type !== 'whatsapp_green_api'));
+
+      toast({
+        title: "Limpieza completada",
+        description: "Todos los canales de WhatsApp han sido eliminados.",
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Error en la limpieza",
+        description: error.message || "No se pudieron borrar todos los canales",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
+
   // Función para probar webhook de Facebook
   const handleTestWebhook = useCallback(async (channelId: string) => {
     try {
@@ -246,6 +286,7 @@ export const useChannelActions = (user: User | null) => {
   return {
     handleDisconnectChannel,
     handleTestWebhook,
-    handleHardDeleteChannel
+    handleHardDeleteChannel,
+    handleClearAllWhatsAppChannels
   };
 };

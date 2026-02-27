@@ -2,11 +2,12 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Phone, Facebook, Instagram, CheckCircle, X, AlertTriangle } from 'lucide-react';
-import { ChannelStatusProps, InstagramConfig } from '../types';
+import { ChannelStatusProps, InstagramConfig, Channel } from '../types';
 
-export const ChannelStatus: React.FC<ChannelStatusProps> = ({
+export const ChannelStatus: React.FC<ChannelStatusProps & { onHardDelete?: (id: string) => void }> = ({
   channels,
-  getChannelStatus
+  getChannelStatus,
+  onHardDelete
 }) => {
   return (
     <Card>
@@ -79,16 +80,24 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
                             {isConnected ? <CheckCircle className="h-3 w-3 text-green-500" /> : <X className="h-3 w-3 text-red-500" />}
                           </div>
 
-                          {isWhatsApp && (
-                            <div className="flex flex-col text-[10px]">
-                              <span className="text-gray-500">ID: {instanceId}</span>
-                              {hasDuplicates && idx > 0 && (
+                          <div className="flex flex-col text-[10px]">
+                            <span className="text-gray-500">ID: {instanceId}</span>
+                            {hasDuplicates && idx > 0 && (
+                              <div className="mt-1 flex items-center justify-between">
                                 <span className="text-amber-600 flex items-center gap-1 font-medium italic">
                                   <AlertTriangle className="h-2 w-2" /> Instancia huérfana
                                 </span>
-                              )}
-                            </div>
-                          )}
+                                {onHardDelete && (
+                                  <button
+                                    onClick={() => onHardDelete(channel.id)}
+                                    className="text-red-500 hover:text-red-700 underline font-bold"
+                                  >
+                                    ELIMINAR
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
 
                           {channel.channel_type === 'instagram' && config?.username && <div className="text-gray-600">@{config.username}</div>}
                           {channel.channel_type === 'facebook' && config?.page_name && <div className="text-gray-600">{config.page_name}</div>}

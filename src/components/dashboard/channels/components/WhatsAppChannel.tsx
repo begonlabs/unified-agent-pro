@@ -112,6 +112,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
             onSuccess={handleGreenApiSuccess}
             initialIdInstance={(unconnectedInstance.channel_config as any).idInstance}
             initialApiToken={(unconnectedInstance.channel_config as any).apiTokenInstance}
+            onInvalidInstance={() => onHardDelete && onHardDelete(unconnectedInstance.id)}
           />
 
           {onHardDelete && (
