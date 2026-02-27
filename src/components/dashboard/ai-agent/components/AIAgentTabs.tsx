@@ -59,7 +59,7 @@ export const AIAgentTabs: React.FC<AIAgentTabsProps> = ({
   onTabChange
 }) => {
   return (
-    <TabsList className="flex w-full bg-white shadow-sm overflow-x-auto justify-start gap-2 p-2">
+    <TabsList className="flex h-auto w-full bg-white shadow-sm overflow-x-auto overflow-y-hidden justify-start gap-2 p-2">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         return (
