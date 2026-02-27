@@ -286,6 +286,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             onConnect={handleWhatsAppLogin}
             onReconnect={handleWhatsAppLogin}
             onDisconnect={handleDisconnect}
+            onHardDelete={handleHardDelete}
             permissions={permissions}
             profile={profile}
           />
@@ -338,6 +339,30 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           onHardDelete={handleHardDelete}
         />
       </div>
+      {/* Admin Only: Clear All Button (Hidden for regular users for safety) */}
+      {isAdmin && (
+        <div className="pt-8 border-t border-slate-100 mt-8">
+          <div className="bg-red-50/50 p-4 rounded-xl border border-red-100 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-100 p-2 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-900">Zona de Administración</p>
+                <p className="text-xs text-red-700">Estas acciones son globales y agresivas. Úsalas con precaución.</p>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="bg-red-600 hover:bg-red-700 font-bold shadow-sm"
+              onClick={() => handleClearAllWhatsApp(channels, setChannels)}
+            >
+              LIMPIAR TODO WHATSAPP
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

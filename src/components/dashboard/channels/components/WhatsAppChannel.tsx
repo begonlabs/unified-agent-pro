@@ -16,6 +16,7 @@ interface WhatsAppChannelProps {
   onConnect: () => void;
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
+  onHardDelete?: (channelId: string) => void;
   permissions?: ChannelPermissions | null;
   profile?: Profile | null;
 }
@@ -23,6 +24,7 @@ interface WhatsAppChannelProps {
 export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   channels,
   onDisconnect,
+  onHardDelete,
   permissions,
   profile
 }) => {
@@ -100,6 +102,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
           <GreenApiConnect
             userId={user.id}
             onSuccess={handleGreenApiSuccess}
+            onInvalidInstance={() => onHardDelete && onHardDelete('manual_reset')}
           />
         </div>
       )}
@@ -121,11 +124,11 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
             </div>
           </div>
 
-          <GreenApiConnect
-            userId={user.id}
-            onSuccess={handleGreenApiSuccess}
-            initialIdInstance={(unconnectedInstance.channel_config as any).idInstance}
-            initialApiToken={(unconnectedInstance.channel_config as any).apiTokenInstance}
+          userId={user.id}
+          onSuccess={handleGreenApiSuccess}
+          initialIdInstance={(unconnectedInstance.channel_config as any).idInstance}
+          initialApiToken={(unconnectedInstance.channel_config as any).apiTokenInstance}
+          onInvalidInstance={() => onHardDelete && onHardDelete(unconnectedInstance.id)}
           />
         </div>
       )}

@@ -45,6 +45,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
     const [isStarting, setIsStarting] = useState(false);
     const [startingTimeLeft, setStartingTimeLeft] = useState(120);
+    const [isInvalid, setIsInvalid] = useState(false);
 
     // Auto-generate QR if initial values are provided
     useEffect(() => {
@@ -169,6 +170,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
 
             if (response.status === 401 || response.status === 404) {
+                setIsInvalid(true);
                 throw new Error('INSTANCIA_INVALIDA');
             }
 
@@ -222,6 +224,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         } catch (error: any) {
             console.error('Error getting QR code:', error);
             if (error.message === 'INSTANCIA_INVALIDA') {
+                setIsInvalid(true);
                 const msg = "Esta instancia ya no existe o su token es inválido en Green API. Por favor, bórrala permanentemente para crear una nueva.";
                 toast({
                     title: "Instancia Inválida",
@@ -268,6 +271,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
             if (response.ok) {
                 const data = await response.json();
+                setIsInvalid(false);
 
                 console.log('Green API Status Response:', data);
 
@@ -310,6 +314,9 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 }
             } else {
                 console.error('Status check failed:', response.status);
+                if (response.status === 401 || response.status === 404) {
+                    setIsInvalid(true);
+                }
             }
         } catch (error) {
             console.error('Error checking status:', error);
@@ -451,7 +458,29 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 </div>
             )}
 
-            {initialIdInstance && status === 'disconnected' && !qrCode && !isStarting && !loading && (
+            {isInvalid && (
+                <div className="bg-red-50 p-6 rounded-xl border border-red-100 flex flex-col items-center text-center animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="bg-red-100 p-3 rounded-full mb-4">
+                        <RefreshCw className="h-6 w-6 text-red-600" />
+                    </div>
+                    <h4 className="font-bold text-red-900 mb-2 italic">Instancia "Zombie" Detectada</h4>
+                    <p className="text-sm text-red-700 mb-6 max-w-xs leading-relaxed">
+                        Esta instancia existe en nuestra base de datos pero ha sido eliminada o invalidada en Green API.
+                    </p>
+                    <Button
+                        onClick={() => onInvalidInstance && onInvalidInstance()}
+                        variant="destructive"
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg"
+                    >
+                        Limpiar registros y resetear
+                    </Button>
+                    <p className="text-[10px] text-red-500 mt-4 opacity-70">
+                        * Esto te permitirá solicitar una instancia nueva inmediatamente.
+                    </p>
+                </div>
+            )}
+
+            {initialIdInstance && status === 'disconnected' && !qrCode && !isStarting && !loading && !isInvalid && (
                 <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 flex flex-col items-center text-center">
                     <QrCode className="h-12 w-12 text-emerald-600 mb-4 animate-pulse" />
                     <h4 className="font-bold text-emerald-900 mb-2">Generar Código QR</h4>
