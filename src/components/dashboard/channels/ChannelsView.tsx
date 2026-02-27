@@ -30,7 +30,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   // Obtener perfil y permisos
   const { profile } = useProfile(currentUser);
   const permissions = profile ? getChannelPermissions(profile) : null;
-  const { isAdmin } = useAdmin();
+  const { isAdmin } = useAdmin(currentUser as any);
 
   // Hooks principales
   const { channels, setChannels, loading, fetchChannels, getChannelStatus } = useChannels(currentUser);
