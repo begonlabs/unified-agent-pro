@@ -188,7 +188,9 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     }, 10000);
                     return;
                 }
-                throw new Error('Failed to get QR code after multiple retries');
+                // Si llegamos aquí es que falló después de todos los reintentos
+                setIsInvalid(true);
+                throw new Error('No se pudo obtener el código QR tras varios intentos. Es posible que la instancia esté dañada.');
             }
 
             const data: QRCodeData = await response.json();
@@ -316,7 +318,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 }
             } else {
                 console.error('Status check failed:', response.status);
-                if (response.status === 401 || response.status === 404) {
+                // Si falla con 401, 404 o cualquier error persistente (excepto 466), marcar como sospechoso
+                if (response.status === 401 || response.status === 404 || response.status === 400) {
                     setIsInvalid(true);
                 }
             }
