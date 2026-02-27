@@ -7,6 +7,28 @@ import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
 import { handleAdvisorHandoff } from '../../_shared/advisor.ts';
 
 
+
+/**
+ * Detect the correct Green API host based on idInstance
+ */
+function getGreenApiHost(idInstance: string, providedUrl?: string): string {
+    const defaultHost = 'https://7107.api.green-api.com';
+    const altHost = 'https://7700.api.green-api.com';
+
+    // Si el ID empieza con 77, forzamos 7700 sin importar lo que venga de la DB
+    if (idInstance.startsWith('77')) {
+        return altHost;
+    }
+
+    // Si empieza con 71, forzamos 7107
+    if (idInstance.startsWith('71')) {
+        return defaultHost;
+    }
+
+    // Fallback al URL proveído o al default
+    return providedUrl || defaultHost;
+}
+
 interface GreenApiEvent {
     typeWebhook?: string;
     instanceData?: {
@@ -42,10 +64,10 @@ async function sendAIResponseViaGreenApi(
     idInstance: string,
     apiToken: string,
     hostUrl: string = 'https://7107.api.green-api.com'
-): Promise<{ success: boolean; messageId?: string }> {
+): Promise<{ success: boolean; messageId?: string; usedUrl?: string }> {
     try {
-        // Ensure hostUrl doesn't end with slash and starts with protocol
-        const baseHost = hostUrl.replace(/\/$/, '');
+        // Force correct host based on instance ID for robustness
+        const baseHost = getGreenApiHost(idInstance, hostUrl).replace(/\/$/, '');
         const apiUrl = `${baseHost}/waInstance${idInstance}/sendMessage/${apiToken}`;
 
         console.log('📤 Sending Green API message to:', `${baseHost}/waInstance${idInstance}/sendMessage/REDACTED`);
@@ -71,7 +93,8 @@ async function sendAIResponseViaGreenApi(
         console.log('✅ Message sent via Green API:', result.idMessage);
         return {
             success: true,
-            messageId: result.idMessage
+            messageId: result.idMessage,
+            usedUrl: baseHost
         };
 
     } catch (error) {
@@ -90,7 +113,7 @@ async function getContactInfo(
     hostUrl: string = 'https://7107.api.green-api.com'
 ): Promise<{ avatar: string | null; name: string | null }> {
     try {
-        const baseHost = hostUrl.replace(/\/$/, '');
+        const baseHost = getGreenApiHost(idInstance, hostUrl).replace(/\/$/, '');
         const apiUrl = `${baseHost}/waInstance${idInstance}/getContactInfo/${apiToken}`;
 
         const response = await fetch(apiUrl, {
