@@ -503,6 +503,28 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                     return;
                 }
 
+                // Check message limits before generating response
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('messages_sent_this_month, messages_limit, is_trial, payment_status')
+                    .eq('user_id', conversation.user_id)
+                    .single();
+
+                if (profile) {
+                    if (!profile.is_trial && profile.payment_status === 'active') {
+                        const sent = profile.messages_sent_this_month || 0;
+                        const limit = profile.messages_limit || 0;
+
+                        if (sent >= limit) {
+                            console.log('🚫 AI response blocked: Message limit reached', { sent, limit });
+                            return;
+                        }
+                    } else if (!profile.is_trial && profile.payment_status !== 'active') {
+                        console.log('🚫 AI response blocked: Subscription inactive');
+                        return;
+                    }
+                }
+
                 // Get conversation history
                 const { data: recentMessages } = await supabase
                     .from('messages')
@@ -579,6 +601,43 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                         console.error('❌ Error saving AI message:', aiMessageError);
                     } else {
                         console.log(sendResult.success ? '✅ AI response sent and saved successfully' : '⚠️ AI message saved but NOT sent (check logs)');
+
+                        // Increment message count for AI response using RPC
+                        if (sendResult.success) {
+                            const { error: rpcError } = await supabase.rpc('increment_message_usage', {
+                                user_id_param: conversation.user_id
+                            });
+
+                            if (rpcError) {
+                                console.error('❌ Error incrementing message count via RPC:', rpcError);
+
+                                // Fallback: Fetch fresh profile and update manually
+                                try {
+                                    const { data: freshProfile } = await supabase
+                                        .from('profiles')
+                                        .select('messages_sent_this_month')
+                                        .eq('user_id', conversation.user_id)
+                                        .single();
+
+                                    if (freshProfile) {
+                                        const { error: updateError } = await supabase
+                                            .from('profiles')
+                                            .update({ messages_sent_this_month: (freshProfile.messages_sent_this_month || 0) + 1 })
+                                            .eq('user_id', conversation.user_id);
+
+                                        if (updateError) {
+                                            console.error('❌ Error in fallback update:', updateError);
+                                        } else {
+                                            console.log('✅ Message count incremented via fallback manual update');
+                                        }
+                                    }
+                                } catch (fallbackError) {
+                                    console.error('❌ Critical error in fallback update logic:', fallbackError);
+                                }
+                            } else {
+                                console.log('✅ Message count incremented via RPC');
+                            }
+                        }
                     }
                 }
 
