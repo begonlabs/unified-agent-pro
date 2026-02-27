@@ -46,6 +46,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     const [isStarting, setIsStarting] = useState(false);
     const [startingTimeLeft, setStartingTimeLeft] = useState(120);
     const [isInvalid, setIsInvalid] = useState(false);
+    const [hasSynced, setHasSynced] = useState(false);
 
     // Auto-generate QR if initial values are provided
     useEffect(() => {
@@ -287,11 +288,12 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     // o de inicialización (nueva instancia). 
                     // Si es el chequeo inicial al montar y ya está autorizado, NO guardamos 
                     // para evitar el bucle de re-conexión tras una desconexión manual.
-                    if (status === 'waiting' || status === 'starting' || isStarting) {
-                        console.log('🔄 Guardando conexión automática tras escaneo o inicio...');
+                    if (!hasSynced && (status === 'waiting' || status === 'starting' || isStarting || status === 'disconnected')) {
+                        console.log('🔄 Sincronizando configuración y guardando conexión...');
+                        setHasSynced(true);
                         await saveToSupabase();
                     } else {
-                        console.log('ℹ️ Instancia ya autorizada, esperando confirmación manual o acción del usuario');
+                        console.log('ℹ️ Instancia ya autorizada y sincronizada');
                     }
                 } else if (data.stateInstance === 'starting') {
                     console.log('Instance is still starting...');
@@ -324,6 +326,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     };
 
     const saveToSupabase = async () => {
+        setHasSynced(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             // @ts-ignore

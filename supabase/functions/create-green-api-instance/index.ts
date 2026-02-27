@@ -106,6 +106,7 @@ serve(async (req) => {
                 projectUrl = "https://supabase.ondai.ai"
             }
             const webhookUrl = `${projectUrl.replace(/\/$/, '')}/functions/v1/green-api-webhook`
+            const settingsUrl = `${apiUrl}/waInstance${idInstance}/setSettings/${apiTokenInstance}`
 
             const settingsData = {
                 webhookUrl: webhookUrl,
