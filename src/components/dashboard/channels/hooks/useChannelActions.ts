@@ -4,6 +4,7 @@ import { User, Channel } from '../types';
 import { ChannelsService } from '../services/channelsService';
 import { NotificationService } from '@/components/notifications';
 import { EmailService } from '@/services/emailService';
+import { getGreenApiHost } from '@/utils/greenApiUtils';
 
 export const useChannelActions = (user: User | null) => {
   const { toast } = useToast();
@@ -52,7 +53,8 @@ export const useChannelActions = (user: User | null) => {
 
           if (idInstance && apiToken) {
             console.log('🔓 Logging out from Green API instance:', idInstance);
-            const logoutUrl = `https://7107.api.green-api.com/waInstance${idInstance}/logout/${apiToken}`;
+            const host = getGreenApiHost(idInstance, config?.apiUrl).replace(/\/$/, '');
+            const logoutUrl = `${host}/waInstance${idInstance}/logout/${apiToken}`;
 
             const response = await fetch(logoutUrl, {
               method: 'GET'

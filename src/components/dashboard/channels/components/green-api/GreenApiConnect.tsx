@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { QrCode, CheckCircle, Loader2, RefreshCw, MessageSquare, PlusCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { getGreenApiHost } from '@/utils/greenApiUtils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -120,7 +122,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         try {
             // Usar el host configurado o el autodetectado por el ID (asegurando que sea string)
             const idStr = String(idInstance);
-            const host = idStr.startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
+            // Host a usar (forzamos 7700 si empieza con 77, 7107 si empieza con 71)
+            const host = getGreenApiHost(idStr, apiUrl);
 
             setApiUrl(host); // Sincronizar apiUrl con el host detectado
 

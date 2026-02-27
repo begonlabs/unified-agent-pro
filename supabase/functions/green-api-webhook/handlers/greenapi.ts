@@ -5,29 +5,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateAIResponse, shouldAIRespond } from '../../_shared/openai.ts';
 import { handleAdvisorHandoff } from '../../_shared/advisor.ts';
+import { getGreenApiHost } from '../../_shared/greenapi.ts';
 
 
 
-/**
- * Detect the correct Green API host based on idInstance
- */
-function getGreenApiHost(idInstance: string, providedUrl?: string): string {
-    const defaultHost = 'https://7107.api.green-api.com';
-    const altHost = 'https://7700.api.green-api.com';
-
-    // Si el ID empieza con 77, forzamos 7700 sin importar lo que venga de la DB
-    if (idInstance.startsWith('77')) {
-        return altHost;
-    }
-
-    // Si empieza con 71, forzamos 7107
-    if (idInstance.startsWith('71')) {
-        return defaultHost;
-    }
-
-    // Fallback al URL proveído o al default
-    return providedUrl || defaultHost;
-}
 
 interface GreenApiEvent {
     typeWebhook?: string;

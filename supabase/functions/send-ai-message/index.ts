@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateAIResponse, shouldAIRespond } from '../_shared/openai.ts'
 import { handleAdvisorHandoff } from '../_shared/advisor.ts'
+import { getGreenApiHost } from '../_shared/greenapi.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -344,7 +345,9 @@ serve(async (req) => {
     if (channelType === 'whatsapp_green_api') {
       const idInstance = channel.channel_config.idInstance;
       const apiToken = channel.channel_config.apiTokenInstance;
-      const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`;
+
+      const baseHost = getGreenApiHost(String(idInstance), channel.channel_config.apiUrl).replace(/\/$/, '');
+      const apiUrl = `${baseHost}/waInstance${idInstance}/sendMessage/${apiToken}`;
 
       console.log('🔑 Green API:', { idInstance: !!idInstance, apiToken: !!apiToken });
 

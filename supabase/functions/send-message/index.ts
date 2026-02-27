@@ -4,6 +4,7 @@
 // Deno Edge Function: Send Message to Facebook Messenger
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getGreenApiHost } from '../_shared/greenapi.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -157,7 +158,8 @@ serve(async (req) => {
 
       console.log('📤 Sending WhatsApp message via Green API to:', recipientId);
 
-      const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`;
+      const baseHost = getGreenApiHost(idInstance, channel.channel_config.apiUrl).replace(/\/$/, '');
+      const apiUrl = `${baseHost}/waInstance${idInstance}/sendMessage/${apiToken}`;
 
       const whatsappResponse = await fetch(apiUrl, {
         method: 'POST',

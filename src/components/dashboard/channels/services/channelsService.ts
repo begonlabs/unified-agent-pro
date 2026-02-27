@@ -7,6 +7,7 @@ import {
   InstagramConfig,
   User
 } from '../types';
+import { getGreenApiHost } from '@/utils/greenApiUtils';
 
 
 export class ChannelsService {
@@ -152,8 +153,8 @@ export class ChannelsService {
 
       if (idInstance && apiTokenInstance) {
         try {
-          const baseUrl = apiUrl || 'https://7107.api.green-api.com';
-          const url = `${baseUrl}/waInstance${idInstance}/logout/${apiTokenInstance}`;
+          const host = getGreenApiHost(idInstance, apiUrl).replace(/\/$/, '');
+          const url = `${host}/waInstance${idInstance}/logout/${apiTokenInstance}`;
           console.log('Logging out from Green API:', url);
 
           const response = await fetch(url, { method: 'POST' });

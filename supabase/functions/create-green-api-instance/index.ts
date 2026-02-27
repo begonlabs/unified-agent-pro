@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getGreenApiHost } from '../_shared/greenapi.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -62,18 +63,7 @@ serve(async (req) => {
         if (!idInstance || !apiTokenInstance) {
             throw new Error('Respuesta incompleta de Green API al crear instancia')
         }
-
-        // Host detectado dinámicamente (ej: 7700 o 7107)
-        let apiUrl = host ? `https://${host}` : 'https://7107.api.green-api.com'
-
-        // Robustez adicional: Verificar el ID de instancia si el host no viene o es el default
-        const idStr = String(idInstance)
-        if (idStr.startsWith('77')) {
-            apiUrl = 'https://7700.api.green-api.com'
-        } else if (idStr.startsWith('71')) {
-            apiUrl = 'https://7107.api.green-api.com'
-        }
-
+        const apiUrl = getGreenApiHost(idInstance, host ? `https://${host}` : undefined).replace(/\/$/, '')
         console.log(`📡 Usando host: ${apiUrl} para la instancia ${idInstance}`)
 
         // 2. Configurar instancia automáticamente
