@@ -105,6 +105,10 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     // Iniciar polling de estado en lugar de recargar
                     setIsStarting(true);
                     setStartingTimeLeft(60);
+                    setQrCode(null);
+
+                    // Limpiar cualquier intervalo previo antes de iniciar uno nuevo
+                    if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
 
                     // Iniciar chequeo de estado inmediatamente
                     statusCheckInterval.current = setInterval(() => {
@@ -175,6 +179,10 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 setQrCode(data.message);
                 setStatus('waiting');
 
+                // Limpiar intervalos previos para evitar duplicados en memoria
+                if (qrRefreshInterval.current) clearInterval(qrRefreshInterval.current);
+                if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
+
                 // Start QR refresh interval (every 15 seconds)
                 qrRefreshInterval.current = setInterval(() => {
                     refreshQR();
@@ -185,10 +193,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     checkStatus();
                 }, 3000);
 
-                toast({
-                    title: "QR Code generado",
-                    description: "Escanea el código con tu WhatsApp",
-                });
+                console.log('✅ QR Code cargado silenciosamente');
             } else {
                 console.error('Unexpected response from Green API:', data);
                 toast({
