@@ -18,6 +18,7 @@ import { WhatsAppIcon, FacebookIcon, InstagramIcon } from '@/components/icons/Ch
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
 import { getChannelPermissions, getPermissionsDescription } from '@/lib/channelPermissions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAdmin } from '@/hooks/useAdmin';
 
 const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   const { toast } = useToast();
@@ -29,6 +30,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   // Obtener perfil y permisos
   const { profile } = useProfile(currentUser);
   const permissions = profile ? getChannelPermissions(profile) : null;
+  const { isAdmin } = useAdmin();
 
   // Hooks principales
   const { channels, setChannels, loading, fetchChannels, getChannelStatus } = useChannels(currentUser);
@@ -356,7 +358,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
               variant="destructive"
               size="sm"
               className="bg-red-600 hover:bg-red-700 font-bold shadow-sm"
-              onClick={() => handleClearAllWhatsApp(channels, setChannels)}
+              onClick={() => handleClearAllWhatsAppChannels(channels, setChannels)}
             >
               LIMPIAR TODO WHATSAPP
             </Button>
