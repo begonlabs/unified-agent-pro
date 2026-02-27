@@ -28,7 +28,26 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
 }) => {
   const { user } = useAuth();
 
-  const greenApiChannels = channels.filter(c => c.channel_type === 'whatsapp_green_api');
+  // Filtrar canales para evitar duplicados en la UI (por idInstance)
+  const greenApiChannels = React.useMemo(() => {
+    const rawChannels = channels.filter(c => c.channel_type === 'whatsapp_green_api');
+    const uniqueMap = new Map();
+
+    // El orden de created_at en channels (puesto en fetchChannels) asegura que el más nuevo 
+    // termine en el mapa si lo recorremos en orden.
+    rawChannels.forEach(c => {
+      const idInstance = (c.channel_config as any)?.idInstance;
+      if (idInstance) {
+        uniqueMap.set(String(idInstance), c);
+      } else {
+        // Si no tiene idInstance (raro), lo dejamos pasar con su ID de Supabase
+        uniqueMap.set(`no_instance_${c.id}`, c);
+      }
+    });
+
+    return Array.from(uniqueMap.values()) as Channel[];
+  }, [channels]);
+
   const isConnected = greenApiChannels.some(c => c.is_connected);
   const unconnectedInstance = greenApiChannels.find(c => !c.is_connected);
 
