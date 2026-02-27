@@ -11,15 +11,9 @@ export const useChannelActions = (user: User | null) => {
   const { toast } = useToast();
 
   // Función para desconectar un canal
-  const handleDisconnectChannel = useCallback(async (channelId: string, channels: Channel[], setChannels: (channels: Channel[]) => void) => {
+  const handleDisconnectChannel = useCallback(async (channelId: string, channels: Channel[], setChannels: (channels: Channel[]) => void): Promise<void> => {
     try {
       if (!user?.id) {
-        // Notificación desactivada - se manejará en el sistema central de notificaciones
-        // toast({
-        //   title: "Error",
-        //   description: "Debes estar autenticado",
-        //   variant: "destructive",
-        // });
         console.error('Error: Usuario no autenticado');
         return;
       }
@@ -27,12 +21,6 @@ export const useChannelActions = (user: User | null) => {
       // Confirmar desconexión
       const channel = channels.find(c => c.id === channelId);
       if (!channel) {
-        // Notificación desactivada - se manejará en el sistema central de notificaciones
-        // toast({
-        //   title: "Error",
-        //   description: "Canal no encontrado",
-        //   variant: "destructive",
-        // });
         console.error('Error: Canal no encontrado');
         return;
       }
@@ -142,8 +130,9 @@ export const useChannelActions = (user: User | null) => {
           console.error('Error creating error notification:', notificationError);
         });
       }
+      throw error; // Re-throw to allow caller to handle
     }
-  }, [user]);
+  }, [user, toast]);
 
   // Función para eliminar permanentemente un canal (Hard Delete)
   const handleHardDeleteChannel = useCallback(async (channelId: string, channels: Channel[], setChannels: (channels: Channel[]) => void) => {

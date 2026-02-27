@@ -140,12 +140,12 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
 
   // Handlers para acciones de canales
-  const handleDisconnect = (channelId: string) => {
-    handleDisconnectChannel(channelId, channels, setChannels);
+  const handleDisconnect = async (channelId: string) => {
+    await handleDisconnectChannel(channelId, channels, setChannels);
   };
 
-  const handleHardDelete = (channelId: string) => {
-    handleHardDeleteChannel(channelId, channels, setChannels);
+  const handleHardDelete = async (channelId: string) => {
+    await handleHardDeleteChannel(channelId, channels, setChannels);
   };
 
 
