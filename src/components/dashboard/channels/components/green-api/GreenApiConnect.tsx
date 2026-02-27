@@ -260,45 +260,31 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 console.log('✅ Webhooks configurados exitosamente');
             }
 
-            // 2. Guardar en Supabase (Evitar duplicados)
-            console.log('💾 Guardando configuración en base de datos...');
-
-            // Primero verificamos si ya existe una conexión para este idInstance y usuario
-            const { data: existingChannel } = await supabase
+            // 2. Limpiar duplicados previos (paso de seguridad adicional)
+            console.log('🧹 Limpiando posibles duplicados...');
+            await supabase
                 .from('communication_channels')
-                .select('id')
+                .delete()
                 .eq('user_id', userId)
                 .eq('channel_type', 'whatsapp_green_api')
-                .eq('channel_config->>idInstance', idInstance)
-                .maybeSingle();
+                .eq('channel_config->>idInstance', idInstance);
 
-            const channelPayload = {
-                user_id: userId,
-                channel_type: 'whatsapp_green_api',
-                channel_config: {
-                    idInstance,
-                    apiTokenInstance: apiToken,
-                    apiUrl: apiUrl || 'https://7107.api.green-api.com',
-                    connected_at: new Date().toISOString()
-                },
-                is_connected: true
-            };
+            // 3. Guardar en Supabase (Limpio)
+            console.log('🆕 Creando nueva conexión...');
 
-            let saveError;
-            if (existingChannel) {
-                console.log('🔄 Actualizando canal existente:', existingChannel.id);
-                const { error } = await supabase
-                    .from('communication_channels')
-                    .update(channelPayload)
-                    .eq('id', existingChannel.id);
-                saveError = error;
-            } else {
-                console.log('🆕 Creando nuevo canal');
-                const { error } = await supabase
-                    .from('communication_channels')
-                    .insert(channelPayload);
-                saveError = error;
-            }
+            const { error: saveError } = await supabase
+                .from('communication_channels')
+                .insert({
+                    user_id: userId,
+                    channel_type: 'whatsapp_green_api',
+                    channel_config: {
+                        idInstance,
+                        apiTokenInstance: apiToken,
+                        apiUrl: apiUrl || 'https://7107.api.green-api.com',
+                        connected_at: new Date().toISOString()
+                    },
+                    is_connected: true
+                });
 
             if (saveError) throw saveError;
 

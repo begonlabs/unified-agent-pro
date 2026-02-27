@@ -40,10 +40,15 @@ async function sendAIResponseViaGreenApi(
     message: string,
     chatId: string,
     idInstance: string,
-    apiToken: string
+    apiToken: string,
+    hostUrl: string = 'https://7107.api.green-api.com'
 ): Promise<{ success: boolean; messageId?: string }> {
     try {
-        const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`;
+        // Ensure hostUrl doesn't end with slash and starts with protocol
+        const baseHost = hostUrl.replace(/\/$/, '');
+        const apiUrl = `${baseHost}/waInstance${idInstance}/sendMessage/${apiToken}`;
+
+        console.log('📤 Sending Green API message to:', `${baseHost}/waInstance${idInstance}/sendMessage/REDACTED`);
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -81,10 +86,12 @@ async function sendAIResponseViaGreenApi(
 async function getContactInfo(
     chatId: string,
     idInstance: string,
-    apiToken: string
+    apiToken: string,
+    hostUrl: string = 'https://7107.api.green-api.com'
 ): Promise<{ avatar: string | null; name: string | null }> {
     try {
-        const apiUrl = `https://7107.api.green-api.com/waInstance${idInstance}/getContactInfo/${apiToken}`;
+        const baseHost = hostUrl.replace(/\/$/, '');
+        const apiUrl = `${baseHost}/waInstance${idInstance}/getContactInfo/${apiToken}`;
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -219,7 +226,8 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
             const contactInfo = await getContactInfo(
                 senderId,
                 idInstance,
-                channel.channel_config.apiTokenInstance
+                channel.channel_config.apiTokenInstance,
+                channel.channel_config.apiUrl
             );
 
             // Try all possible sources for the name
@@ -310,7 +318,8 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 const contactInfo = await getContactInfo(
                     senderId,
                     idInstance,
-                    channel.channel_config.apiTokenInstance
+                    channel.channel_config.apiTokenInstance,
+                    channel.channel_config.apiUrl
                 );
 
                 const updates: any = {};
@@ -442,20 +451,32 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 }
 
                 // Get AI config
-                const { data: aiConfig } = await supabase
+                console.log('🔍 Fetching AI config for user:', conversation.user_id);
+                const { data: aiConfig, error: aiConfigError } = await supabase
                     .from('ai_configurations')
                     .select('*')
                     .eq('user_id', conversation.user_id)
                     .limit(1)
                     .maybeSingle();
 
+                if (aiConfigError) {
+                    console.error('❌ Error fetching AI config:', aiConfigError);
+                    return;
+                }
+
                 if (!aiConfig) {
                     console.log('⚠️ No AI config found for user:', conversation.user_id);
                     return;
                 }
 
+                console.log('🤖 AI Config status:', {
+                    is_active: aiConfig.is_active,
+                    always_active: aiConfig.always_active,
+                    has_operating_hours: !!aiConfig.operating_hours
+                });
+
                 if (!shouldAIRespond(messageText, aiConfig)) {
-                    console.log('🤖 AI decides not to respond');
+                    console.log('🤖 AI decides not to respond (shouldAIRespond returned false)');
                     return;
                 }
 
@@ -506,33 +527,35 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                         aiResponse.response,
                         chatId,
                         idInstance,
-                        channel.channel_config.apiTokenInstance
+                        channel.channel_config.apiTokenInstance,
+                        channel.channel_config.apiUrl
                     );
 
-                    if (sendResult.success) {
-                        // Save AI message
-                        const { error: aiMessageError } = await supabase
-                            .from('messages')
-                            .insert({
-                                conversation_id: conversation.id,
-                                content: aiResponse.response,
-                                sender_type: 'ia',
-                                sender_name: 'IA Assistant',
-                                is_automated: true,
-                                platform_message_id: sendResult.messageId || `ai_${Date.now()}`,
-                                metadata: {
-                                    confidence_score: aiResponse.confidence_score,
-                                    ai_model: 'gpt-4o-mini',
-                                    platform: 'whatsapp_green_api',
-                                    green_api_message_id: sendResult.messageId
-                                }
-                            });
+                    // Guardar mensaje de la IA (independientemente del resultado del envío para diagnóstico)
+                    const { error: aiMessageError } = await supabase
+                        .from('messages')
+                        .insert({
+                            conversation_id: conversation.id,
+                            content: aiResponse.response,
+                            sender_type: 'ia',
+                            sender_name: 'IA Assistant',
+                            is_automated: true,
+                            platform_message_id: sendResult.messageId || `ai_${Date.now()}`,
+                            metadata: {
+                                confidence_score: aiResponse.confidence_score,
+                                ai_model: 'gpt-4o-mini',
+                                platform: 'whatsapp_green_api',
+                                green_api_message_id: sendResult.messageId,
+                                sent_successfully: sendResult.success,
+                                error: !sendResult.success ? 'Failed to send via Green API' : null,
+                                api_url: channel.channel_config.apiUrl
+                            }
+                        });
 
-                        if (aiMessageError) {
-                            console.error('❌ Error saving AI message:', aiMessageError);
-                        } else {
-                            console.log('✅ AI response sent and saved successfully');
-                        }
+                    if (aiMessageError) {
+                        console.error('❌ Error saving AI message:', aiMessageError);
+                    } else {
+                        console.log(sendResult.success ? '✅ AI response sent and saved successfully' : '⚠️ AI message saved but NOT sent (check logs)');
                     }
                 }
 

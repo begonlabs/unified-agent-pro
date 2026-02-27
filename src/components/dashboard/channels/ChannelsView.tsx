@@ -223,8 +223,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
                     Canales totales: {channels.length} / {permissions.maxChannels === -1 ? 'Ilimitados' : permissions.maxChannels}
                   </span>
                   {permissions.maxWhatsappChannels !== -1 && (
-                    <span className={`px-2 py-1 rounded-md ${channels.filter(c => c.channel_type === 'whatsapp').length >= permissions.maxWhatsappChannels ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
-                      WhatsApp: {channels.filter(c => c.channel_type === 'whatsapp').length} / {permissions.maxWhatsappChannels}
+                    <span className={`px-2 py-1 rounded-md ${channels.filter(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api').length >= permissions.maxWhatsappChannels ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                      WhatsApp: {channels.filter(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api').length} / {permissions.maxWhatsappChannels}
                     </span>
                   )}
                 </div>
