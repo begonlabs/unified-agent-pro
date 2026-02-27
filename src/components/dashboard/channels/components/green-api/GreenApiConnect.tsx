@@ -288,14 +288,14 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
                     // Solo guardar automáticamente si venimos de un estado de espera (QR escaneado)
                     // o de inicialización (nueva instancia). 
-                    // Si es el chequeo inicial al montar y ya está autorizado, NO guardamos 
-                    // para evitar el bucle de re-conexión tras una desconexión manual.
-                    if (!hasSynced && (status === 'waiting' || status === 'starting' || isStarting || status === 'disconnected')) {
+                    // Si es el chequeo inicial al montar y el estado es 'disconnected' (valor inicial),
+                    // NO guardamos para evitar deshacer un "Desconectar" manual.
+                    if (!hasSynced && (status === 'waiting' || status === 'starting' || isStarting)) {
                         console.log('🔄 Sincronizando configuración y guardando conexión...');
                         setHasSynced(true);
                         await saveToSupabase();
                     } else {
-                        console.log('ℹ️ Instancia ya autorizada y sincronizada');
+                        console.log('ℹ️ Instancia ya autorizada (no se requiere auto-guardado)');
                     }
                 } else if (data.stateInstance === 'starting') {
                     console.log('Instance is still starting...');
