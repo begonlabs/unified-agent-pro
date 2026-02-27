@@ -44,7 +44,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     const [retryCount, setRetryCount] = useState(0);
     const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
     const [isStarting, setIsStarting] = useState(false);
-    const [startingTimeLeft, setStartingTimeLeft] = useState(60);
+    const [startingTimeLeft, setStartingTimeLeft] = useState(120);
 
     // Auto-generate QR if initial values are provided
     useEffect(() => {
@@ -113,7 +113,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
                     // Iniciar polling de estado en lugar de recargar
                     setIsStarting(true);
-                    setStartingTimeLeft(60);
+                    setStartingTimeLeft(120);
                     setQrCode(null);
 
                     // Limpiar cualquier intervalo previo antes de iniciar uno nuevo
@@ -426,7 +426,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     </Button>
                     {loading && (
                         <p className="text-[11px] text-green-700 mt-2 text-center animate-pulse">
-                            Esto puede tardar hasta 45 segundos mientras Green API prepara tu línea.
+                            Esto puede tardar hasta 2 minutos mientras Green API prepara tu línea.
                         </p>
                     )}
                     <p className="text-[10px] text-green-600 mt-4 text-center opacity-70">
@@ -435,17 +435,17 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 </div>
             )}
 
-            {(isStarting || (loading && !qrCode)) && (
+            {(isStarting || loading) && !qrCode && (
                 <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col items-center text-center">
                     <Loader2 className="h-12 w-12 text-blue-600 mb-4 animate-spin" />
                     <h4 className="font-bold text-blue-900 mb-2">Iniciando Instancia</h4>
                     <p className="text-sm text-blue-700 mb-2 max-w-xs">
-                        Green API está preparando tu servidor dedicado. Esto suele tardar unos 60 segundos.
+                        Green API está preparando tu servidor dedicado. Esto suele tardar unos 2 minutos.
                     </p>
                     <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden mt-4">
                         <div
                             className="bg-blue-600 h-full transition-all duration-1000 ease-linear"
-                            style={{ width: `${Math.min(100, (60 - startingTimeLeft) * 1.66)}%` }}
+                            style={{ width: `${Math.min(100, (120 - startingTimeLeft) * 0.833)}%` }}
                         />
                     </div>
                 </div>
