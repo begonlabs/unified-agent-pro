@@ -131,13 +131,14 @@ serve(async (req) => {
         }
 
         // 3. Save instance to communication_channels (Checking for duplicates first)
-        console.log(`🧹 Limpiando duplicados previos para instancia ${idInstance}...`);
+        // ENFORCED UNIQUENESS: Delete ALL previous whatsapp records for this user 
+        // to prevent orphans and ghost instances in the UI
+        console.log(`🧹 Realizando limpieza agresiva de canales previos para usuario ${user_id}...`);
         await supabase
             .from('communication_channels')
             .delete()
             .eq('user_id', user_id)
-            .eq('channel_type', 'whatsapp_green_api')
-            .or(`channel_config->>idInstance.eq.${String(idInstance)}`);
+            .in('channel_type', ['whatsapp', 'whatsapp_green_api']);
 
         const { error: insertError } = await supabase
             .from('communication_channels')

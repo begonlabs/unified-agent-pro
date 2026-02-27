@@ -48,35 +48,53 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
               <h4 className="font-medium text-gray-700 text-xs sm:text-sm mb-2">Estado de Conexiones (Debug):</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
                 {(() => {
-                  const uniqueChannelsMap = new Map();
+                  // Agrupar por tipo real (whatsapp vs otros)
+                  const groupedByType = new Map<string, any[]>();
+
                   channels.forEach(channel => {
-                    const key = channel.channel_type === 'whatsapp_green_api'
-                      ? `wa_${(channel.channel_config as any)?.idInstance || channel.id}`
-                      : `${channel.channel_type}_${channel.id}`;
-                    uniqueChannelsMap.set(key, channel);
+                    const normalizedType = channel.channel_type === 'whatsapp_green_api' ? 'whatsapp' : channel.channel_type;
+                    if (!groupedByType.has(normalizedType)) {
+                      groupedByType.set(normalizedType, []);
+                    }
+                    groupedByType.get(normalizedType)?.push(channel);
                   });
 
-                  return Array.from(uniqueChannelsMap.values()).map(channel => {
-                    const config = channel.channel_config as InstagramConfig | any;
-                    const displayChannelType = channel.channel_type === 'whatsapp_green_api' ? 'whatsapp' : channel.channel_type;
-                    const isConnected = getChannelStatus(displayChannelType);
-                    const displayName = channel.channel_type === 'whatsapp_green_api' ? 'WHATSAPP' : channel.channel_type.toUpperCase();
+                  return Array.from(groupedByType.entries()).map(([type, typeChannels]) => {
+                    const isWhatsApp = type === 'whatsapp';
+                    const hasDuplicates = typeChannels.length > 1;
 
-                    return (
-                      <div key={channel.id} className={`p-2 rounded border ${isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <div className="font-medium">
-                          {displayName}
-                          {isConnected ? <CheckCircle className="inline h-4 w-4 text-green-500 ml-1" /> : <X className="inline h-4 w-4 text-red-500 ml-1" />}
-                        </div>
-                        {channel.channel_type === 'instagram' && <div className="text-gray-600">@{(config as InstagramConfig)?.username}</div>}
-                        {channel.channel_type === 'facebook' && <div className="text-gray-600">{config?.page_name}</div>}
-                        {(channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api') && (
-                          <div className="text-gray-600">
-                            {config?.business_name || config?.display_phone_number || config?.idInstance || 'WhatsApp Business'}
+                    // Para el badge de arriba usamos el primero, pero abajo mostramos todos si hay duplicados
+                    return typeChannels.map((channel, idx) => {
+                      const config = channel.channel_config as any;
+                      const isConnected = channel.is_connected;
+                      const displayName = type.toUpperCase();
+                      const instanceId = isWhatsApp ? (config?.idInstance || channel.id) : null;
+
+                      return (
+                        <div key={channel.id} className={`p-2 rounded border flex flex-col gap-1 ${isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} ${hasDuplicates && idx > 0 ? 'opacity-70 border-dashed' : ''}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold">
+                              {displayName} {hasDuplicates && `(#${idx + 1})`}
+                            </span>
+                            {isConnected ? <CheckCircle className="h-3 w-3 text-green-500" /> : <X className="h-3 w-3 text-red-500" />}
                           </div>
-                        )}
-                      </div>
-                    );
+
+                          {isWhatsApp && (
+                            <div className="flex flex-col text-[10px]">
+                              <span className="text-gray-500">ID: {instanceId}</span>
+                              {hasDuplicates && idx > 0 && (
+                                <span className="text-amber-600 flex items-center gap-1 font-medium italic">
+                                  <AlertTriangle className="h-2 w-2" /> Instancia huérfana
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {channel.channel_type === 'instagram' && config?.username && <div className="text-gray-600">@{config.username}</div>}
+                          {channel.channel_type === 'facebook' && config?.page_name && <div className="text-gray-600">{config.page_name}</div>}
+                        </div>
+                      );
+                    });
                   });
                 })()}
               </div>

@@ -227,14 +227,33 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
               <AlertDescription className="text-blue-700 mt-1">
                 <p className="mb-2">{getPermissionsDescription(profile)}</p>
                 <div className="flex flex-wrap gap-2 text-sm">
-                  <span className={`px-2 py-1 rounded-md ${channels.length >= permissions.maxChannels && permissions.maxChannels !== -1 ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
-                    Canales totales: {channels.length} / {permissions.maxChannels === -1 ? 'Ilimitados' : permissions.maxChannels}
-                  </span>
-                  {permissions.maxWhatsappChannels !== -1 && (
-                    <span className={`px-2 py-1 rounded-md ${channels.filter(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api').length >= permissions.maxWhatsappChannels ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
-                      WhatsApp: {channels.filter(c => c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api').length} / {permissions.maxWhatsappChannels}
-                    </span>
-                  )}
+                  {(() => {
+                    const uniqueTotal = new Set();
+                    const uniqueWhatsApp = new Set();
+
+                    channels.forEach(c => {
+                      const type = c.channel_type === 'whatsapp_green_api' ? 'whatsapp' : c.channel_type;
+                      const id = c.channel_type === 'whatsapp_green_api'
+                        ? (c.channel_config as any)?.idInstance
+                        : c.id;
+
+                      uniqueTotal.add(`${type}_${id}`);
+                      if (type === 'whatsapp') uniqueWhatsApp.add(id);
+                    });
+
+                    return (
+                      <>
+                        <span className={`px-2 py-1 rounded-md ${uniqueTotal.size >= permissions.maxChannels && permissions.maxChannels !== -1 ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                          Canales totales: {uniqueTotal.size} / {permissions.maxChannels === -1 ? 'Ilimitados' : permissions.maxChannels}
+                        </span>
+                        {permissions.maxWhatsappChannels !== -1 && (
+                          <span className={`px-2 py-1 rounded-md ${uniqueWhatsApp.size >= permissions.maxWhatsappChannels ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                            WhatsApp: {uniqueWhatsApp.size} / {permissions.maxWhatsappChannels}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </AlertDescription>
             </div>
