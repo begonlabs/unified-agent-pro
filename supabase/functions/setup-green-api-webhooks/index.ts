@@ -23,9 +23,15 @@ serve(async (req) => {
         console.log(`⚙️ Configurando Webhooks para instancia ${idInstance} en ${host}...`)
 
         // Configurar Webhook URL y habilitar notificaciones
+        // Usar SUPABASE_URL dinámico para que funcione en cualquier proyecto (OndAI o dev)
+        const projectUrl = Deno.env.get('SUPABASE_URL') || "https://supabase.ondai.ai"
+        const webhookUrl = `${projectUrl.replace(/\/$/, '')}/functions/v1/green-api-webhook`
+
+        console.log(`⚙️ Apuntando webhooks a: ${webhookUrl}`)
+
         const settingsUrl = `${host}/waInstance${idInstance}/setSettings/${apiTokenInstance}`
         const settingsData = {
-            webhookUrl: "https://supabase.ondai.ai/functions/v1/green-api-webhook",
+            webhookUrl: webhookUrl,
             incomingWebhook: "yes",
             outgoingWebhook: "yes",
             stateWebhook: "yes",

@@ -305,9 +305,17 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             const setupResult = await setupResponse.json();
             if (!setupResult.success) {
                 console.warn('⚠️ No se pudieron configurar los webhooks automáticamente:', setupResult.error);
-                // No bloqueamos el proceso, el usuario puede intentarlo después
+                toast({
+                    title: "Aviso de Webhook",
+                    description: "No pudimos configurar el auto-recibo, pero la cuenta está conectada. Si no recibes mensajes, desconecta y vuelve a conectar.",
+                    variant: "destructive"
+                });
             } else {
                 console.log('✅ Webhooks configurados exitosamente');
+                toast({
+                    title: "¡Conectado!",
+                    description: "WhatsApp conectado y receptor de mensajes activado",
+                });
             }
 
             // 2. Limpiar duplicados previos (Misma instancia para este usuario)
@@ -341,11 +349,6 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 });
 
             if (saveError) throw saveError;
-
-            toast({
-                title: "¡Conectado!",
-                description: "WhatsApp conectado exitosamente",
-            });
 
             onSuccess();
         } catch (error) {
