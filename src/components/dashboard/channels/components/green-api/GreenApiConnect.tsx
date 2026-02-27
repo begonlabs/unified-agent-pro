@@ -144,7 +144,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         }
     };
 
-    const getQRCode = async (isRetry = false) => {
+    const getQRCode = async (isRetry = false, currentRetry = 0) => {
         if (!idInstance || !apiToken) {
             toast({
                 title: "Credenciales requeridas",
@@ -154,8 +154,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             return;
         }
 
+        setLoading(true);
         if (!isRetry) {
-            setLoading(true);
             setRetryCount(0);
         }
 
@@ -167,7 +167,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
             setApiUrl(host); // Sincronizar apiUrl con el host detectado
 
-            console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${retryCount + 1}/6)`);
+            console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${currentRetry + 1}/6)`);
             const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
 
             if (response.status === 401 || response.status === 404) {
@@ -180,13 +180,13 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             }
 
             if (!response.ok) {
-                if (retryCount < 5) {
+                if (currentRetry < 5) {
                     console.log('⚠️ Fallo temporal al obtener QR, reintentando en 10s...');
                     setTimeout(() => {
-                        setRetryCount(prev => prev + 1);
-                        getQRCode(true);
+                        setRetryCount(currentRetry + 1);
+                        getQRCode(true, currentRetry + 1);
                     }, 10000);
-                    return;
+                    return; // No ejecutamos el catch/finally todavía porque sigue el flujo
                 }
                 // Si llegamos aquí es que falló después de todos los reintentos
                 setIsInvalid(true);
@@ -325,6 +325,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             }
         } catch (error) {
             console.error('Error checking status:', error);
+            // Network errors or total failures are suspicious
+            setIsInvalid(true);
         }
     };
 
