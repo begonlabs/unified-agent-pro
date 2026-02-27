@@ -53,9 +53,25 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   const isConnected = greenApiChannels.some(c => c.is_connected);
   const unconnectedInstance = greenApiChannels.find(c => !c.is_connected);
 
+  const [isDisconnecting, setIsDisconnecting] = React.useState<string | null>(null);
+
   const handleGreenApiSuccess = () => {
     // Refresh the page to show the connected channel
     window.location.reload();
+  };
+
+  const handleDisconnectWithLoading = async (channelId: string) => {
+    setIsDisconnecting(channelId);
+    try {
+      await onDisconnect(channelId);
+      // Tras desconectar, esperamos un poco y recargamos para asegurar que el backend procesó todo
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error('Error in handleDisconnectWithLoading:', error);
+      setIsDisconnecting(null);
+    }
   };
 
   // Check permissions
@@ -158,9 +174,10 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
                     variant="outline"
                     size="sm"
                     className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
-                    onClick={() => onDisconnect(channel.id)}
+                    disabled={isDisconnecting !== null}
+                    onClick={() => handleDisconnectWithLoading(channel.id)}
                   >
-                    Desconectar
+                    {isDisconnecting === channel.id ? "Desconectando..." : "Desconectar"}
                   </Button>
                 </div>
               </div>

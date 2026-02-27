@@ -279,8 +279,16 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     setStatus('connected');
                     setIsStarting(false);
 
-                    // Save to Supabase (this will handle updating or creating)
-                    await saveToSupabase();
+                    // Solo guardar automáticamente si venimos de un estado de espera (QR escaneado)
+                    // o de inicialización (nueva instancia). 
+                    // Si es el chequeo inicial al montar y ya está autorizado, NO guardamos 
+                    // para evitar el bucle de re-conexión tras una desconexión manual.
+                    if (status === 'waiting' || status === 'starting' || isStarting) {
+                        console.log('🔄 Guardando conexión automática tras escaneo o inicio...');
+                        await saveToSupabase();
+                    } else {
+                        console.log('ℹ️ Instancia ya autorizada, esperando confirmación manual o acción del usuario');
+                    }
                 } else if (data.stateInstance === 'starting') {
                     console.log('Instance is still starting...');
                     setIsStarting(true);

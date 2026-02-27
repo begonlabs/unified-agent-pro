@@ -46,7 +46,14 @@ export const useChannelActions = (user: User | null) => {
       }
 
       // Eliminar canal de la base de datos
+      console.log(`🔌 Desconectando canal ${channelId} (${channelName})`);
+      toast({
+        title: "Desconectando...",
+        description: `Cerrando sesión en ${channelName}`,
+      });
+
       await ChannelsService.disconnectChannel(channelId, user);
+      console.log('✅ Desconexión en DB exitosa');
 
       // Actualizar estado local
       const isGreenApi = channel.channel_type === 'whatsapp_green_api';
@@ -57,6 +64,11 @@ export const useChannelActions = (user: User | null) => {
       } else {
         setChannels(channels.filter(c => c.id !== channelId));
       }
+
+      toast({
+        title: "Canal desconectado",
+        description: `${channelName} ha sido desconectado correctamente.`,
+      });
 
       // Crear notificación de desconexión exitosa
       if (user?.id) {

@@ -100,10 +100,15 @@ serve(async (req) => {
         try {
             console.log('⚙️ Configurando Webhooks y Permisos...')
 
-            // Configurar Webhook URL y habilitar notificaciones
-            const settingsUrl = `${apiUrl}/waInstance${idInstance}/setSettings/${apiTokenInstance}`
+            // Usar URL pública robusta
+            let projectUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || "https://supabase.ondai.ai"
+            if (projectUrl.includes('localhost') || projectUrl.includes('kong') || projectUrl.includes('127.0.0.1')) {
+                projectUrl = "https://supabase.ondai.ai"
+            }
+            const webhookUrl = `${projectUrl.replace(/\/$/, '')}/functions/v1/green-api-webhook`
+
             const settingsData = {
-                webhookUrl: "https://supabase.ondai.ai/functions/v1/green-api-webhook",
+                webhookUrl: webhookUrl,
                 incomingWebhook: "yes",
                 outgoingWebhook: "yes",
                 stateWebhook: "yes",
