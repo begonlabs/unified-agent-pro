@@ -34,6 +34,8 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     const [loading, setLoading] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
+    const [isStarting, setIsStarting] = useState(false);
+    const [startingTimeLeft, setStartingTimeLeft] = useState(60);
 
     // Auto-generate QR if initial values are provided
     useEffect(() => {
@@ -52,6 +54,19 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
         };
     }, []);
+
+    // Countdown for starting state
+    useEffect(() => {
+        let timer: any;
+        if (isStarting && startingTimeLeft > 0) {
+            timer = setInterval(() => {
+                setStartingTimeLeft(prev => prev - 1);
+            }, 1000);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [isStarting, startingTimeLeft]);
 
     const provisionInstance = async () => {
         setLoading(true);
@@ -80,15 +95,23 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     description: "Se ha asignado una nueva instancia automáticamente.",
                 });
 
-                // Actualizamos las credenciales localmente para que el componente las use
-                if (result.idInstance) {
+                if (result.idInstance && result.apiTokenInstance) {
                     setIdInstance(result.idInstance);
-                    // Nota: En un escenario real, el apiToken vendría en el resultado de la función.
-                    // Si no viene, el usuario tendrá la instancia vinculada y solo deberá refrescar.
-                }
+                    setApiToken(result.apiTokenInstance);
+                    if (result.apiUrl) setApiUrl(result.apiUrl);
 
-                // Recargar página para asegurar que el estado sea el correcto
-                window.location.reload();
+                    // Iniciar polling de estado en lugar de recargar
+                    setIsStarting(true);
+                    setStartingTimeLeft(60);
+
+                    // Iniciar chequeo de estado inmediatamente
+                    statusCheckInterval.current = setInterval(() => {
+                        checkStatus();
+                    }, 5000);
+                } else {
+                    // Fallback si algo falló en el retorno pero se creó
+                    window.location.reload();
+                }
             } else {
                 throw new Error(result.error || "Error desconocido al crear instancia");
             }
@@ -220,11 +243,22 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
 
                     setStatus('connected');
+                    setIsStarting(false);
 
                     // Save to Supabase
                     await saveToSupabase();
+                } else if (data.stateInstance === 'starting') {
+                    console.log('Instance is still starting...');
+                    setIsStarting(true);
+                } else if (data.stateInstance === 'notAuthorized' || data.stateInstance === 'not_authorized') {
+                    console.log('Instance is ready but not authorized. Triggering QR...');
+                    if (isStarting) {
+                        setIsStarting(false);
+                        if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
+                        getQRCode();
+                    }
                 } else {
-                    console.log('Status not authorized yet:', data.stateInstance);
+                    console.log('Status check:', data.stateInstance);
                 }
             } else {
                 console.error('Status check failed:', response.status);
@@ -346,7 +380,23 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 </div>
             )}
 
-            {initialIdInstance && status === 'disconnected' && !qrCode && (
+            {(isStarting || (loading && !qrCode)) && (
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col items-center text-center">
+                    <Loader2 className="h-12 w-12 text-blue-600 mb-4 animate-spin" />
+                    <h4 className="font-bold text-blue-900 mb-2">Iniciando Instancia</h4>
+                    <p className="text-sm text-blue-700 mb-2 max-w-xs">
+                        Green API está preparando tu servidor dedicado. Esto suele tardar unos 60 segundos.
+                    </p>
+                    <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden mt-4">
+                        <div
+                            className="bg-blue-600 h-full transition-all duration-1000 ease-linear"
+                            style={{ width: `${Math.min(100, (60 - startingTimeLeft) * 1.66)}%` }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {initialIdInstance && status === 'disconnected' && !qrCode && !isStarting && !loading && (
                 <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 flex flex-col items-center text-center">
                     <QrCode className="h-12 w-12 text-emerald-600 mb-4 animate-pulse" />
                     <h4 className="font-bold text-emerald-900 mb-2">Generar Código QR</h4>

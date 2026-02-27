@@ -129,6 +129,7 @@ serve(async (req) => {
             JSON.stringify({
                 success: true,
                 idInstance,
+                apiTokenInstance,
                 apiUrl,
                 message: 'Instancia creada, configurada y asignada exitosamente'
             }),
