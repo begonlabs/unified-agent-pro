@@ -286,7 +286,6 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             onConnect={handleWhatsAppLogin}
             onReconnect={handleWhatsAppLogin}
             onDisconnect={handleDisconnect}
-            onHardDelete={handleHardDelete}
             permissions={permissions}
             profile={profile}
           />

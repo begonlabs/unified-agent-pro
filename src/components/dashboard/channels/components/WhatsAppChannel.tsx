@@ -16,7 +16,6 @@ interface WhatsAppChannelProps {
   onConnect: () => void;
   onReconnect: () => void;
   onDisconnect: (channelId: string) => void;
-  onHardDelete?: (channelId: string) => void;
   permissions?: ChannelPermissions | null;
   profile?: Profile | null;
 }
@@ -24,7 +23,6 @@ interface WhatsAppChannelProps {
 export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   channels,
   onDisconnect,
-  onHardDelete,
   permissions,
   profile
 }) => {
@@ -128,21 +126,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
             onSuccess={handleGreenApiSuccess}
             initialIdInstance={(unconnectedInstance.channel_config as any).idInstance}
             initialApiToken={(unconnectedInstance.channel_config as any).apiTokenInstance}
-            onInvalidInstance={() => onHardDelete && onHardDelete(unconnectedInstance.id)}
           />
-
-          {onHardDelete && (
-            <div className="mt-4 flex justify-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-red-400 hover:text-red-600 hover:bg-red-50 text-[10px]"
-                onClick={() => onHardDelete(unconnectedInstance.id)}
-              >
-                Borrar permanentemente esta instancia y crear una nueva
-              </Button>
-            </div>
-          )}
         </div>
       )}
 
