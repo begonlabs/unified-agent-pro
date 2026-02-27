@@ -44,34 +44,6 @@ export const useChannelActions = (user: User | null) => {
         return;
       }
 
-      // Si es Green API, hacer logout primero
-      if (channel.channel_type === 'whatsapp_green_api') {
-        try {
-          const config = channel.channel_config as any;
-          const idInstance = config?.idInstance;
-          const apiToken = config?.apiTokenInstance;
-
-          if (idInstance && apiToken) {
-            console.log('🔓 Logging out from Green API instance:', idInstance);
-            const host = getGreenApiHost(idInstance, config?.apiUrl).replace(/\/$/, '');
-            const logoutUrl = `${host}/waInstance${idInstance}/logout/${apiToken}`;
-
-            const response = await fetch(logoutUrl, {
-              method: 'GET'
-            });
-
-            if (response.ok) {
-              console.log('✅ Green API logout successful');
-            } else {
-              console.warn('⚠️ Green API logout failed, but continuing with disconnect');
-            }
-          }
-        } catch (error) {
-          console.error('Error during Green API logout:', error);
-          // Continue with disconnect even if logout fails
-        }
-      }
-
       // Eliminar canal de la base de datos
       await ChannelsService.disconnectChannel(channelId, user);
 

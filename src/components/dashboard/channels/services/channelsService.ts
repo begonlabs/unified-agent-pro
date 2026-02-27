@@ -155,14 +155,19 @@ export class ChannelsService {
         try {
           const host = getGreenApiHost(idInstance, apiUrl).replace(/\/$/, '');
           const url = `${host}/waInstance${idInstance}/logout/${apiTokenInstance}`;
-          console.log('Logging out from Green API:', url);
+          console.log('🔓 Cerrando sesión en Green API:', url.replace(apiTokenInstance, 'REDACTED'));
 
-          const response = await fetch(url, { method: 'POST' });
-          const result = await response.json();
-          console.log('Green API Logout result:', result);
+          const response = await fetch(url, { method: 'GET' });
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Cierre de sesión exitoso:', result);
+          } else {
+            const errorText = await response.text();
+            console.warn('⚠️ Error al cerrar sesión en Green API, continuando con eliminación:', errorText);
+          }
         } catch (e) {
-          console.error('Error logging out from Green API:', e);
-          // We continue with deletion even if logout fails
+          console.error('❌ Error fatal al intentar cerrar sesión en Green API:', e);
+          // Continuamos con la eliminación aunque falle el cierre de sesión externo
         }
       }
     }
