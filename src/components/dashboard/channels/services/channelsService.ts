@@ -172,15 +172,28 @@ export class ChannelsService {
       }
     }
 
-    // 3. Delete from Supabase
-    const { error } = await supabase
-      .from('communication_channels')
-      .delete()
-      .eq('id', channelId)
-      .eq('user_id', user.id);
+    // 3. Update or Delete from Supabase
+    if (channel && channel.channel_type === 'whatsapp_green_api') {
+      // For Green API, we keep the record to preserve the assigned instance
+      const { error } = await supabase
+        .from('communication_channels')
+        .update({
+          is_connected: false
+        })
+        .eq('id', channelId)
+        .eq('user_id', user.id);
 
-    if (error) {
-      throw error;
+      if (error) throw error;
+      console.log('✅ Canal de Green API marcado como desconectado (registro preservado)');
+    } else {
+      // For other channels, we delete as before
+      const { error } = await supabase
+        .from('communication_channels')
+        .delete()
+        .eq('id', channelId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
     }
   }
 

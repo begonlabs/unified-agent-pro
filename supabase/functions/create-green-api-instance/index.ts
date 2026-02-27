@@ -104,7 +104,15 @@ serve(async (req) => {
             // No bloqueamos el proceso si la configuración falla, el usuario puede hacerlo manual
         }
 
-        // 3. Save instance to communication_channels
+        // 3. Save instance to communication_channels (Checking for duplicates first)
+        console.log(`🧹 Limpiando duplicados previos para instancia ${idInstance}...`);
+        await supabase
+            .from('communication_channels')
+            .delete()
+            .eq('user_id', user_id)
+            .eq('channel_type', 'whatsapp_green_api')
+            .eq('channel_config->>idInstance', String(idInstance));
+
         const { error: insertError } = await supabase
             .from('communication_channels')
             .insert({

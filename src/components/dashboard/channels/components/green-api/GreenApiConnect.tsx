@@ -40,7 +40,9 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     // Auto-generate QR if initial values are provided
     useEffect(() => {
         if (initialIdInstance && initialApiToken) {
-            getQRCode();
+            // Primero verificamos el estado antes de pedir QR
+            // Esto evita fallos si la cuenta ya está autorizada o está iniciando
+            checkStatus();
         }
     }, [initialIdInstance, initialApiToken]);
     const { toast } = useToast();
@@ -245,16 +247,22 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     setStatus('connected');
                     setIsStarting(false);
 
-                    // Save to Supabase
+                    // Save to Supabase (this will handle updating or creating)
                     await saveToSupabase();
                 } else if (data.stateInstance === 'starting') {
                     console.log('Instance is still starting...');
                     setIsStarting(true);
+
+                    // Aseguramos que el polling siga activo
+                    if (!statusCheckInterval.current) {
+                        statusCheckInterval.current = setInterval(checkStatus, 5000);
+                    }
                 } else if (data.stateInstance === 'notAuthorized' || data.stateInstance === 'not_authorized') {
                     console.log('Instance is ready but not authorized. Triggering QR...');
-                    if (isStarting) {
-                        setIsStarting(false);
-                        if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
+                    setIsStarting(false);
+
+                    // Si venimos de un estado inicial o de "starting", pedimos el QR
+                    if (!qrCode && !loading) {
                         getQRCode();
                     }
                 } else {
@@ -297,17 +305,21 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 console.log('✅ Webhooks configurados exitosamente');
             }
 
-            // 2. Limpiar duplicados previos (paso de seguridad adicional)
-            console.log('🧹 Limpiando posibles duplicados...');
-            await supabase
+            // 2. Limpiar duplicados previos (Misma instancia para este usuario)
+            console.log('🧹 Limpiando duplicados para la instancia:', idInstance);
+            const { error: deleteError } = await supabase
                 .from('communication_channels')
                 .delete()
                 .eq('user_id', userId)
                 .eq('channel_type', 'whatsapp_green_api')
-                .eq('channel_config->>idInstance', idInstance);
+                .eq('channel_config->>idInstance', String(idInstance));
+
+            if (deleteError) {
+                console.warn('⚠️ Error limpiando duplicados (no crítico):', deleteError);
+            }
 
             // 3. Guardar en Supabase (Limpio)
-            console.log('🆕 Creando nueva conexión...');
+            console.log('🆕 Registrando conexión...');
 
             const { error: saveError } = await supabase
                 .from('communication_channels')
@@ -315,7 +327,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     user_id: userId,
                     channel_type: 'whatsapp_green_api',
                     channel_config: {
-                        idInstance,
+                        idInstance: String(idInstance),
                         apiTokenInstance: apiToken,
                         apiUrl: apiUrl || 'https://7107.api.green-api.com',
                         connected_at: new Date().toISOString()
