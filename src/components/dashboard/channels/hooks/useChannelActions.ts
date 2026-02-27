@@ -48,7 +48,14 @@ export const useChannelActions = (user: User | null) => {
       await ChannelsService.disconnectChannel(channelId, user);
 
       // Actualizar estado local
-      setChannels(channels.filter(c => c.id !== channelId));
+      const isGreenApi = channel.channel_type === 'whatsapp_green_api';
+      if (isGreenApi) {
+        setChannels(channels.map(c =>
+          c.id === channelId ? { ...c, is_connected: false } : c
+        ));
+      } else {
+        setChannels(channels.filter(c => c.id !== channelId));
+      }
 
       // Crear notificación de desconexión exitosa
       if (user?.id) {

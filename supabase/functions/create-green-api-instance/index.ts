@@ -39,6 +39,32 @@ serve(async (req) => {
             throw new Error('user_id is required');
         }
 
+        // 0. Safety Check: Does the user already have an instance?
+        console.log(`🔍 Verificando si el usuario ${user_id} ya tiene una instancia asignada...`);
+        const { data: existingChannel } = await supabase
+            .from('communication_channels')
+            .select('*')
+            .eq('user_id', user_id)
+            .eq('channel_type', 'whatsapp_green_api')
+            .maybeSingle();
+
+        if (existingChannel) {
+            console.log(`✅ Instancia existente encontrada: ${existingChannel.channel_config.idInstance}. Devolviendo credenciales actuales.`);
+            return new Response(
+                JSON.stringify({
+                    success: true,
+                    idInstance: existingChannel.channel_config.idInstance,
+                    apiTokenInstance: existingChannel.channel_config.apiTokenInstance,
+                    apiUrl: existingChannel.channel_config.apiUrl,
+                    message: 'Se reutilizó la instancia existente'
+                }),
+                {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    status: 200,
+                }
+            )
+        }
+
         console.log(`🚀 Solicitando nueva instancia a Green API (User: ${user_id}, Plan: ${plan_type})`);
 
         // 1. Create instance via Partner API
