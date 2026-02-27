@@ -63,6 +63,9 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   const handleDisconnectWithLoading = async (channelId: string) => {
     setIsDisconnecting(channelId);
     try {
+      // Guardar bandera en localStorage para evitar reconexión automática inmediata
+      localStorage.setItem(`last_disconnect_${channelId}`, Date.now().toString());
+
       console.log(`⏳ Iniciando desconexión de canal: ${channelId}`);
       await onDisconnect(channelId);
 

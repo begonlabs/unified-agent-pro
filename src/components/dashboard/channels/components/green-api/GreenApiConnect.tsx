@@ -59,6 +59,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     const { toast } = useToast();
     const qrRefreshInterval = useRef<any>(null);
     const statusCheckInterval = useRef<any>(null);
+    const isSyncing = useRef(false); // Ref para evitar ejecuciones paralelas
 
     useEffect(() => {
         return () => {
@@ -82,36 +83,30 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     }, [isStarting, startingTimeLeft]);
 
     const provisionInstance = async () => {
+        if (loading) return;
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            console.log('🚀 Iniciando aprovisionamiento de instancia...');
 
-            // Call our Edge Function
-            // @ts-ignore
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const response = await fetch(`${supabaseUrl}/functions/v1/create-green-api-instance`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
+            const { data, error } = await supabase.functions.invoke('create-green-api-instance', {
+                body: {
                     user_id: userId,
                     plan_type: 'manual_provision'
-                })
+                }
             });
 
-            const result = await response.json();
-            if (result.success) {
+            if (error) throw error;
+
+            if (data?.success) {
                 toast({
                     title: "¡Éxito!",
                     description: "Se ha asignado una nueva instancia automáticamente.",
                 });
 
-                if (result.idInstance && result.apiTokenInstance) {
-                    setIdInstance(result.idInstance);
-                    setApiToken(result.apiTokenInstance);
-                    if (result.apiUrl) setApiUrl(result.apiUrl);
+                if (data.idInstance && data.apiTokenInstance) {
+                    setIdInstance(data.idInstance);
+                    setApiToken(data.apiTokenInstance);
+                    if (data.apiUrl) setApiUrl(data.apiUrl);
 
                     // Iniciar polling de estado en lugar de recargar
                     setIsStarting(true);
@@ -130,7 +125,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     window.location.reload();
                 }
             } else {
-                throw new Error(result.error || "Error desconocido al crear instancia");
+                throw new Error(data?.error || "Error desconocido al crear instancia");
             }
         } catch (error: any) {
             console.error('Error provisioning instance:', error);
@@ -286,16 +281,26 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     setStatus('connected');
                     setIsStarting(false);
 
-                    // Solo guardar automáticamente si venimos de un estado de espera (QR escaneado)
-                    // o de inicialización (nueva instancia). 
-                    // Si es el chequeo inicial al montar y el estado es 'disconnected' (valor inicial),
-                    // NO guardamos para evitar deshacer un "Desconectar" manual.
-                    if (!hasSynced && (status === 'waiting' || status === 'starting' || isStarting)) {
-                        console.log('🔄 Sincronizando configuración y guardando conexión...');
-                        setHasSynced(true);
-                        await saveToSupabase();
-                    } else {
-                        console.log('ℹ️ Instancia ya autorizada (no se requiere auto-guardado)');
+                    // Evitar bucles: Si acabamos de desconectar (en los últimos 45s), no auto-sincronizamos
+                    // Usamos localStorage porque las refs se pierden al recargar la página
+                    const lastDisconnectKey = `last_disconnect_${idInstance}`;
+                    const lastDisconnectTimeStr = localStorage.getItem(lastDisconnectKey);
+                    const now = Date.now();
+                    const recentlyDisconnected = lastDisconnectTimeStr
+                        ? (now - parseInt(lastDisconnectTimeStr)) < 45000
+                        : false;
+
+                    // Bloque de sincronización robusto
+                    if (!hasSynced && !isSyncing.current && !recentlyDisconnected) {
+                        // Sincronizamos si:
+                        // a) Estamos en flujo activo (waiting/starting)
+                        // b) Es el primer chequeo y no hay rastro de desconexión reciente (Auto-repair mount)
+                        const shouldSync = status === 'waiting' || status === 'starting' || isStarting || status === 'disconnected';
+
+                        if (shouldSync) {
+                            console.log('🔄 Sincronizando configuración y guardando conexión...');
+                            saveToSupabase();
+                        }
                     }
                 } else if (data.stateInstance === 'starting') {
                     console.log('Instance is still starting...');
@@ -331,41 +336,32 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     };
 
     const saveToSupabase = async () => {
+        if (isSyncing.current) return;
+        isSyncing.current = true;
         setHasSynced(true);
+
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            // @ts-ignore
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            console.log('⚙️ Iniciando guardado en Supabase...');
 
             // 1. Configurar Webhooks automáticamente
-            console.log('⚙️ Configurando Webhooks...');
-            const setupResponse = await fetch(`${supabaseUrl}/functions/v1/setup-green-api-webhooks`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
+            console.log('⚙️ Configurando Webhooks mediante Edge Function...');
+            const { data, error: setupError } = await supabase.functions.invoke('setup-green-api-webhooks', {
+                body: {
                     idInstance,
                     apiTokenInstance: apiToken,
                     apiUrl: apiUrl
-                })
+                }
             });
 
-            const setupResult = await setupResponse.json();
-            if (!setupResult.success) {
-                console.warn('⚠️ No se pudieron configurar los webhooks automáticamente:', setupResult.error);
+            if (setupError || !data?.success) {
+                console.warn('⚠️ No se pudieron configurar los webhooks automáticamente:', setupError || data?.error);
                 toast({
                     title: "Aviso de Webhook",
-                    description: "No pudimos configurar el auto-recibo, pero la cuenta está conectada. Si no recibes mensajes, desconecta y vuelve a conectar.",
+                    description: "No pudimos configurar el receptor de mensajes. La conexión se guardará, pero podrías no recibir mensajes.",
                     variant: "destructive"
                 });
             } else {
                 console.log('✅ Webhooks configurados exitosamente');
-                toast({
-                    title: "¡Conectado!",
-                    description: "WhatsApp conectado y receptor de mensajes activado",
-                });
             }
 
             // 2. Limpiar duplicados previos (Misma instancia para este usuario)
@@ -382,8 +378,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             }
 
             // 3. Guardar en Supabase (Limpio)
-            console.log('🆕 Registrando conexión...');
-
+            console.log('🆕 Registrando nueva entrada en communication_channels...');
             const { error: saveError } = await supabase
                 .from('communication_channels')
                 .insert({
@@ -400,12 +395,24 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
             if (saveError) throw saveError;
 
-            onSuccess();
-        } catch (error) {
-            console.error('Error saving to Supabase:', error);
+            console.log('✅ Conexión guardada con éxito en Supabase');
             toast({
-                title: "Error",
-                description: "No se pudo guardar la configuración",
+                title: "¡WhatsApp Conectado!",
+                description: "Sincronización completada con éxito.",
+            });
+
+            // Dar un tiempo para que Supabase propague antes de llamar onSuccess (reload)
+            setTimeout(() => {
+                isSyncing.current = false;
+                onSuccess();
+            }, 1500);
+
+        } catch (error: any) {
+            console.error('❌ Error fatal guardando en Supabase:', error);
+            isSyncing.current = false;
+            toast({
+                title: "Error de Sincronización",
+                description: error.message || "No se pudo guardar la configuración en la base de datos.",
                 variant: "destructive"
             });
         }
