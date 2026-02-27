@@ -56,10 +56,13 @@ export const useChannelActions = (user: User | null) => {
       console.log('✅ Desconexión en DB exitosa');
 
       // Actualizar estado local
-      const isGreenApi = channel.channel_type === 'whatsapp_green_api';
-      if (isGreenApi) {
+      const isWhatsApp = channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api';
+      if (isWhatsApp) {
+        // Marcamos TODOS los de WhatsApp como desconectados localmente
         setChannels(channels.map(c =>
-          c.id === channelId ? { ...c, is_connected: false } : c
+          (c.channel_type === 'whatsapp' || c.channel_type === 'whatsapp_green_api')
+            ? { ...c, is_connected: false }
+            : c
         ));
       } else {
         setChannels(channels.filter(c => c.id !== channelId));

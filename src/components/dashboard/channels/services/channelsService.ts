@@ -173,7 +173,10 @@ export class ChannelsService {
     }
 
     // 3. Update or Delete from Supabase
-    if (channel && channel.channel_type === 'whatsapp_green_api') {
+    // Si el canal es de tipo whatsapp (cualquiera), marcamos TODOS como desconectados para este usuario
+    const isWhatsApp = channel && (channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api');
+
+    if (isWhatsApp) {
       if (hardDelete) {
         // Full removal from Green API and Supabase
         const { idInstance } = channel.channel_config as any;
@@ -196,7 +199,7 @@ export class ChannelsService {
           throw new Error(result.error || 'Error al eliminar la instancia permanentemente');
         }
       } else {
-        // For Green API, we mark AS DISCONNECTED for ALL whatsapp types for this user
+        // For ALL whatsapp types for this user, mark as disconnected
         // This solves desync issues where orphans might still be 'is_connected: true'
         console.log(`📝 Marcando TODOS los canales de WhatsApp del usuario ${user.id} como desconectados`);
 
