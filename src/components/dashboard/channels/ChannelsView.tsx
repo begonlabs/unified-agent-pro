@@ -38,7 +38,11 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
     handleFacebookLogin,
     handleInstagramLogin
   } = useChannelConnections(currentUser);
-  const { handleDisconnectChannel, handleTestWebhook } = useChannelActions(currentUser);
+  const {
+    handleDisconnectChannel,
+    handleTestWebhook,
+    handleHardDeleteChannel
+  } = useChannelActions(currentUser);
 
   // Check for success parameters in URL
   useEffect(() => {
@@ -135,6 +139,10 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
   // Handlers para acciones de canales
   const handleDisconnect = (channelId: string) => {
     handleDisconnectChannel(channelId, channels, setChannels);
+  };
+
+  const handleHardDelete = (channelId: string) => {
+    handleHardDeleteChannel(channelId, channels, setChannels);
   };
 
 
@@ -258,6 +266,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
             onConnect={handleWhatsAppLogin}
             onReconnect={handleWhatsAppLogin}
             onDisconnect={handleDisconnect}
+            onHardDelete={handleHardDelete}
             permissions={permissions}
             profile={profile}
           />

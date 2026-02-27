@@ -47,40 +47,38 @@ export const ChannelStatus: React.FC<ChannelStatusProps> = ({
             <div className="bg-gray-50 p-3 rounded-lg">
               <h4 className="font-medium text-gray-700 text-xs sm:text-sm mb-2">Estado de Conexiones (Debug):</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-                {channels.map(channel => {
-                  const config = channel.channel_config as InstagramConfig | any;
-                  // Map whatsapp_green_api to whatsapp for status check
-                  const displayChannelType = channel.channel_type === 'whatsapp_green_api' ? 'whatsapp' : channel.channel_type;
-                  const isConnected = getChannelStatus(displayChannelType);
+                {(() => {
+                  const uniqueChannelsMap = new Map();
+                  channels.forEach(channel => {
+                    const key = channel.channel_type === 'whatsapp_green_api'
+                      ? `wa_${(channel.channel_config as any)?.idInstance || channel.id}`
+                      : `${channel.channel_type}_${channel.id}`;
+                    uniqueChannelsMap.set(key, channel);
+                  });
 
-                  // Hide Green API implementation detail - show as WhatsApp
-                  const displayName = channel.channel_type === 'whatsapp_green_api' ? 'WHATSAPP' : channel.channel_type.toUpperCase();
+                  return Array.from(uniqueChannelsMap.values()).map(channel => {
+                    const config = channel.channel_config as InstagramConfig | any;
+                    const displayChannelType = channel.channel_type === 'whatsapp_green_api' ? 'whatsapp' : channel.channel_type;
+                    const isConnected = getChannelStatus(displayChannelType);
+                    const displayName = channel.channel_type === 'whatsapp_green_api' ? 'WHATSAPP' : channel.channel_type.toUpperCase();
 
-                  return (
-                    <div key={channel.id} className={`p-2 rounded border ${isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                      }`}>
-                      <div className="font-medium">
-                        {displayName}
-                        {isConnected ? <CheckCircle className="inline h-4 w-4 text-green-500 ml-1" /> : <X className="inline h-4 w-4 text-red-500 ml-1" />}
+                    return (
+                      <div key={channel.id} className={`p-2 rounded border ${isConnected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                        <div className="font-medium">
+                          {displayName}
+                          {isConnected ? <CheckCircle className="inline h-4 w-4 text-green-500 ml-1" /> : <X className="inline h-4 w-4 text-red-500 ml-1" />}
+                        </div>
+                        {channel.channel_type === 'instagram' && <div className="text-gray-600">@{(config as InstagramConfig)?.username}</div>}
+                        {channel.channel_type === 'facebook' && <div className="text-gray-600">{config?.page_name}</div>}
+                        {(channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api') && (
+                          <div className="text-gray-600">
+                            {config?.business_name || config?.display_phone_number || config?.idInstance || 'WhatsApp Business'}
+                          </div>
+                        )}
                       </div>
-                      {channel.channel_type === 'instagram' && (
-                        <div className="text-gray-600">
-                          @{(config as InstagramConfig)?.username}
-                        </div>
-                      )}
-                      {channel.channel_type === 'facebook' && (
-                        <div className="text-gray-600">
-                          {config?.page_name}
-                        </div>
-                      )}
-                      {(channel.channel_type === 'whatsapp' || channel.channel_type === 'whatsapp_green_api') && (
-                        <div className="text-gray-600">
-                          {config?.business_name || config?.display_phone_number || config?.idInstance || 'WhatsApp Business'}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}

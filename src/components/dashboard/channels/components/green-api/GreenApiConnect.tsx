@@ -29,7 +29,14 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 }) => {
     const [idInstance, setIdInstance] = useState(initialIdInstance || '');
     const [apiToken, setApiToken] = useState(initialApiToken || '');
-    const [apiUrl, setApiUrl] = useState(initialIdInstance ? (String(initialIdInstance).startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com') : 'https://7107.api.green-api.com');
+    const [apiUrl, setApiUrl] = useState(() => {
+        if (initialIdInstance) {
+            const idStr = String(initialIdInstance);
+            if (idStr.startsWith('77')) return 'https://7700.api.green-api.com';
+            if (idStr.startsWith('71')) return 'https://7107.api.green-api.com';
+        }
+        return 'https://7107.api.green-api.com';
+    });
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -158,6 +165,14 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
 
             console.log(`🔍 Intentando obtener QR de: ${host} (Intento: ${retryCount + 1}/6)`);
             const response = await fetch(`${host}/waInstance${idInstance}/qr/${apiToken}`);
+
+            if (response.status === 401) {
+                throw new Error('No autorizado. Tu instancia podría estar expirada o el token es incorrecto.');
+            }
+
+            if (response.status === 466) {
+                throw new Error('Instancia en espera. Inténtalo de nuevo en unos segundos.');
+            }
 
             if (!response.ok) {
                 if (retryCount < 5) {

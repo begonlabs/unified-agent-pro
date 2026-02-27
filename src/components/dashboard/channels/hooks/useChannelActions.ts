@@ -129,6 +129,48 @@ export const useChannelActions = (user: User | null) => {
     }
   }, [user]);
 
+  // Función para eliminar permanentemente un canal (Hard Delete)
+  const handleHardDeleteChannel = useCallback(async (channelId: string, channels: Channel[], setChannels: (channels: Channel[]) => void) => {
+    try {
+      if (!user?.id) {
+        console.error('Error: Usuario no autenticado');
+        return;
+      }
+
+      const channel = channels.find(c => c.id === channelId);
+      const isGreenApi = channel?.channel_type === 'whatsapp_green_api';
+
+      if (!confirm(`¿Estás SEGURO de que quieres BORRAR PERMANENTEMENTE esta instancia de WhatsApp? Esta acción no se puede deshacer y perderás el acceso a esta línea específica en Green API.${!isGreenApi ? ' NOTA: Este no es un canal de Green API.' : ''}`)) {
+        return;
+      }
+
+      toast({
+        title: "Eliminando...",
+        description: "Borrando instancia de Green API y de tu cuenta.",
+      });
+
+      // Eliminar canal permanentemente
+      await ChannelsService.disconnectChannel(channelId, user, true);
+
+      // Actualizar estado local (eliminar totalmente de la lista)
+      setChannels(channels.filter(c => c.id !== channelId));
+
+      toast({
+        title: "Instancia eliminada",
+        description: "La instancia ha sido borrada permanentemente.",
+      });
+
+    } catch (error: unknown) {
+      console.error('Error in hard delete:', error);
+      const errorMessage = error instanceof Error ? error.message : "No se pudo eliminar la instancia";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  }, [user, toast]);
+
   // Función para probar webhook de Facebook
   const handleTestWebhook = useCallback(async (channelId: string) => {
     try {
@@ -203,6 +245,7 @@ export const useChannelActions = (user: User | null) => {
 
   return {
     handleDisconnectChannel,
-    handleTestWebhook
+    handleTestWebhook,
+    handleHardDeleteChannel
   };
 };

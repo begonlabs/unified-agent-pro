@@ -135,9 +135,9 @@ export class ChannelsService {
   }
 
   /**
-   * Desconecta un canal
+   * Desconecta o elimina permanentemente un canal
    */
-  static async disconnectChannel(channelId: string, user: User): Promise<void> {
+  static async disconnectChannel(channelId: string, user: User, hardDelete: boolean = false): Promise<void> {
     // 1. Fetch channel details to check if we need to perform external logout
     const { data: channel } = await supabase
       .from('communication_channels')
@@ -174,17 +174,40 @@ export class ChannelsService {
 
     // 3. Update or Delete from Supabase
     if (channel && channel.channel_type === 'whatsapp_green_api') {
-      // For Green API, we keep the record to preserve the assigned instance
-      const { error } = await supabase
-        .from('communication_channels')
-        .update({
-          is_connected: false
-        })
-        .eq('id', channelId)
-        .eq('user_id', user.id);
+      if (hardDelete) {
+        // Full removal from Green API and Supabase
+        const { idInstance } = channel.channel_config as any;
+        console.log(`🧨 Eliminación permanente solicitada para instancia: ${idInstance}`);
 
-      if (error) throw error;
-      console.log('✅ Canal de Green API marcado como desconectado (registro preservado)');
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_BASE_URL}/functions/v1/delete-green-api-instance`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idInstance,
+            user_id: user.id
+          })
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Error al eliminar la instancia permanentemente');
+        }
+      } else {
+        // For Green API, we keep the record to preserve the assigned instance
+        const { error } = await supabase
+          .from('communication_channels')
+          .update({
+            is_connected: false
+          })
+          .eq('id', channelId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      }
+      console.log('✅ Canal de Green API procesado correctamente');
     } else {
       // For other channels, we delete as before
       const { error } = await supabase

@@ -137,7 +137,7 @@ serve(async (req) => {
             .delete()
             .eq('user_id', user_id)
             .eq('channel_type', 'whatsapp_green_api')
-            .eq('channel_config->>idInstance', String(idInstance));
+            .or(`channel_config->>idInstance.eq.${String(idInstance)}`);
 
         const { error: insertError } = await supabase
             .from('communication_channels')
