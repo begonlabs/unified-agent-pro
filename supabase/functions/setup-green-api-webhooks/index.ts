@@ -17,7 +17,16 @@ serve(async (req) => {
             throw new Error('idInstance y apiTokenInstance son requeridos')
         }
 
-        const host = apiUrl || (String(idInstance).startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com')
+        const providedHost = apiUrl || (String(idInstance).startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com')
+
+        // Robustez: Forzar host correcto basado en el ID si es un ID conocido
+        const idStr = String(idInstance)
+        let host = providedHost
+        if (idStr.startsWith('77')) {
+            host = 'https://7700.api.green-api.com'
+        } else if (idStr.startsWith('71')) {
+            host = 'https://7107.api.green-api.com'
+        }
 
         console.log(`⚙️ Configurando Webhooks para instancia ${idInstance} en ${host}...`)
 

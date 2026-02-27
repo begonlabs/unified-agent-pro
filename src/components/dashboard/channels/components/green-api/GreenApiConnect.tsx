@@ -120,7 +120,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
         try {
             // Usar el host configurado o el autodetectado por el ID (asegurando que sea string)
             const idStr = String(idInstance);
-            const host = idStr.startsWith('7700') || idStr.startsWith('7705') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
+            const host = idStr.startsWith('77') ? 'https://7700.api.green-api.com' : 'https://7107.api.green-api.com';
 
             setApiUrl(host); // Sincronizar apiUrl con el host detectado
 

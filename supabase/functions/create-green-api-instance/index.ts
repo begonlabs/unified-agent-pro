@@ -64,7 +64,16 @@ serve(async (req) => {
         }
 
         // Host detectado dinámicamente (ej: 7700 o 7107)
-        const apiUrl = host ? `https://${host}` : 'https://7107.api.green-api.com'
+        let apiUrl = host ? `https://${host}` : 'https://7107.api.green-api.com'
+
+        // Robustez adicional: Verificar el ID de instancia si el host no viene o es el default
+        const idStr = String(idInstance)
+        if (idStr.startsWith('77')) {
+            apiUrl = 'https://7700.api.green-api.com'
+        } else if (idStr.startsWith('71')) {
+            apiUrl = 'https://7107.api.green-api.com'
+        }
+
         console.log(`📡 Usando host: ${apiUrl} para la instancia ${idInstance}`)
 
         // 2. Configurar instancia automáticamente
