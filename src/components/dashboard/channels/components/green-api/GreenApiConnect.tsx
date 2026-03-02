@@ -465,16 +465,22 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             {(isStarting || loading) && !qrCode && (
                 <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col items-center text-center">
                     <Loader2 className="h-12 w-12 text-blue-600 mb-4 animate-spin" />
-                    <h4 className="font-bold text-blue-900 mb-2">Iniciando Instancia</h4>
+                    <h4 className="font-bold text-blue-900 mb-2">
+                        {isStarting ? "Iniciando Instancia" : "Generando Código QR..."}
+                    </h4>
                     <p className="text-sm text-blue-700 mb-2 max-w-xs">
-                        Green API está preparando tu servidor dedicado. Esto suele tardar unos 2 minutos.
+                        {isStarting
+                            ? "Green API está preparando tu servidor dedicado. Esto suele tardar unos 2 minutos."
+                            : "Estamos obteniendo tu código de conexión segura."}
                     </p>
-                    <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden mt-4">
-                        <div
-                            className="bg-blue-600 h-full transition-all duration-1000 ease-linear"
-                            style={{ width: `${Math.min(100, (120 - startingTimeLeft) * 0.833)}%` }}
-                        />
-                    </div>
+                    {isStarting && (
+                        <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden mt-4">
+                            <div
+                                className="bg-blue-600 h-full transition-all duration-1000 ease-linear"
+                                style={{ width: `${Math.min(100, (120 - startingTimeLeft) * 0.833)}%` }}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 

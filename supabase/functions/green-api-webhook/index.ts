@@ -54,23 +54,27 @@ serve(async (req) => {
 
             // Only process incoming messages
             if (body.typeWebhook === 'incomingMessageReceived' && body.messageData) {
-                console.log('📱 Processing Green API incoming message:', {
+                console.log('📱 Green API incoming message detected:', {
                     idInstance: body.instanceData?.idInstance,
                     sender: body.senderData?.sender,
-                    chatId: body.senderData?.chatId,
                     messageType: body.messageData?.typeMessage
                 });
 
-                await handleGreenApiEvent(body);
-                console.log('✅ Green API message processed successfully');
-            } else {
-                console.log('⏭️ Skipping non-message webhook:', {
-                    typeWebhook: body.typeWebhook,
-                    hasMessageData: !!body.messageData
-                });
-            }
+                // 🔥 OPTIMIZATION: Process in background and respond immediately to avoid Green API timeout/queuing
+                (async () => {
+                    try {
+                        await handleGreenApiEvent(body);
+                        console.log('✅ Green API message processed in background');
+                    } catch (err) {
+                        console.error('❌ Error processing Green API event in background:', err);
+                    }
+                })();
 
-            return new Response('OK', { headers: corsHeaders })
+                return new Response('OK', { headers: corsHeaders });
+            } else {
+                console.log('⏭️ Skipping non-message webhook:', body.typeWebhook);
+                return new Response('OK', { headers: corsHeaders });
+            }
         }
 
         return new Response('Method not allowed', { status: 405, headers: corsHeaders })
