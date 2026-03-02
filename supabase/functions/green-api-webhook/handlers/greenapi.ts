@@ -456,7 +456,7 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
 
                 // Get AI config
                 console.log('🔍 Fetching AI config for user:', conversation.user_id);
-                const { data: aiConfig, error: aiConfigError } = await supabase
+                let { data: aiConfig, error: aiConfigError } = await supabase
                     .from('ai_configurations')
                     .select('*')
                     .eq('user_id', conversation.user_id)

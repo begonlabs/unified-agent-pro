@@ -405,7 +405,7 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
         }
       }
 
-      const { data: aiConfig } = await supabase
+      let { data: aiConfig } = await supabase
         .from('ai_configurations')
         .select('*')
         .eq('user_id', conversation.user_id)

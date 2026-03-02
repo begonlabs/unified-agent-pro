@@ -688,7 +688,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           }
         }
 
-        const { data: aiConfig } = await supabase
+        let { data: aiConfig } = await supabase
           .from('ai_configurations')
           .select('*')
           .eq('user_id', conversation.user_id)

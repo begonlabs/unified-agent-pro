@@ -745,7 +745,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         }
 
         // Obtener configuración de IA del usuario
-        const { data: aiConfig } = await supabase
+        let { data: aiConfig } = await supabase
           .from('ai_configurations')
           .select('*')
           .eq('user_id', conversation.user_id)
