@@ -696,8 +696,14 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
           .maybeSingle();
 
         if (!aiConfig) {
-          console.log('⚠️ No se encontró configuración de IA para el usuario:', conversation.user_id);
-          return;
+          console.log('⚠️ No se encontró configuración de IA para el usuario, usando valores por defecto:', conversation.user_id);
+          aiConfig = {
+            is_active: true,
+            always_active: true,
+            goals: 'Eres un asistente amable y profesional.',
+            restrictions: 'No des información falsa.',
+            response_time: 30
+          };
         }
 
         // Verificar si la IA debe responder a este mensaje

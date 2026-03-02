@@ -469,8 +469,15 @@ export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
                 }
 
                 if (!aiConfig) {
-                    console.log('⚠️ No AI config found for user:', conversation.user_id);
-                    return;
+                    console.log('⚠️ No AI config found for user, using defaults:', conversation.user_id);
+                    // Usar configuración por defecto para nuevos usuarios
+                    aiConfig = {
+                        is_active: true,
+                        always_active: true,
+                        goals: 'Eres un asistente amable y profesional.',
+                        restrictions: 'No des información falsa.',
+                        response_time: 30
+                    };
                 }
 
                 console.log('🤖 AI Config status:', {

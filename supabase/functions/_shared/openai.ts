@@ -120,7 +120,7 @@ export function isAgentActiveNow(aiConfig: AIConfig): boolean {
     }
 
     const now = new Date();
-    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const currentTime = now.toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',

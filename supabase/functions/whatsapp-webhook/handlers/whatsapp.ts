@@ -409,11 +409,17 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
         .from('ai_configurations')
         .select('*')
         .eq('user_id', conversation.user_id)
-        .single();
+        .maybeSingle();
 
       if (!aiConfig) {
-        console.log('⚠️ No AI configuration found for user:', conversation.user_id);
-        return;
+        console.log('⚠️ No se encontró configuración de IA para el usuario, usando valores por defecto:', conversation.user_id);
+        aiConfig = {
+          is_active: true,
+          always_active: true,
+          goals: 'Eres un asistente amable y profesional.',
+          restrictions: 'No des información falsa.',
+          response_time: 30
+        };
       }
 
       // Check if AI should respond to this message

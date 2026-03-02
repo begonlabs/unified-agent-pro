@@ -60,9 +60,9 @@ export const useAIConfig = () => {
         setConfig(data);
       }
     } catch (error: unknown) {
-      const isConnectionError = (error as Error)?.message?.includes('upstream connect error') || 
-                               (error as Error)?.message?.includes('503');
-      
+      const isConnectionError = (error as Error)?.message?.includes('upstream connect error') ||
+        (error as Error)?.message?.includes('503');
+
       if (isConnectionError) {
         // Crear notificación de error de conexión
         if (user?.id) {
@@ -86,13 +86,13 @@ export const useAIConfig = () => {
             console.error('Error creating connection notification:', notificationError);
           });
         }
-        
+
         toast({
           title: "Error de conexión",
           description: "Problemas de conectividad. Reintentando automáticamente...",
           variant: "destructive",
         });
-        
+
         setTimeout(() => {
           fetchAIConfig();
         }, 3000);
@@ -119,7 +119,7 @@ export const useAIConfig = () => {
             console.error('Error creating load notification:', notificationError);
           });
         }
-        
+
         toast({
           title: "Error",
           description: "No se pudo cargar la configuración",
@@ -158,7 +158,7 @@ export const useAIConfig = () => {
             console.error('Error creating validation notification:', error);
           });
         }
-        
+
         toast({
           title: "Configuración incompleta",
           description: errors.join(', '),
@@ -168,13 +168,13 @@ export const useAIConfig = () => {
       }
 
       await AIConfigService.saveAIConfig(config);
-      
+
       // Crear notificación de éxito
       if (user?.id) {
         const completionPercentage = Math.round(
           (Object.values(config.training_progress).filter(Boolean).length / Object.keys(config.training_progress).length) * 100
         );
-        
+
         NotificationService.createNotification(
           user.id,
           'system',
@@ -195,7 +195,7 @@ export const useAIConfig = () => {
           console.error('Error creating success notification:', error);
         });
       }
-      
+
       toast({
         title: "Configuración guardada",
         description: "Tu agente de IA ha sido actualizado exitosamente",
@@ -227,7 +227,7 @@ export const useAIConfig = () => {
           if (shouldSend && user.email) {
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
             const template = EmailService.getTemplates().criticalError(
-              user.email.split('@')[0], 
+              user.email.split('@')[0],
               `Error al guardar configuración: ${errorMessage}`
             );
             EmailService.sendEmail({
@@ -240,7 +240,7 @@ export const useAIConfig = () => {
           }
         });
       }
-      
+
       toast({
         title: "Error",
         description: "No se pudo guardar la configuración",
@@ -254,7 +254,7 @@ export const useAIConfig = () => {
   const updateConfig = (updates: Partial<AIConfig>) => {
     setConfig(prev => {
       const newConfig = { ...prev, ...updates };
-      
+
       // Detectar cambios importantes y crear notificaciones
       if (user?.id) {
         // Notificación de activación/desactivación del agente
@@ -263,7 +263,7 @@ export const useAIConfig = () => {
             user.id,
             'system',
             updates.is_active ? 'Agente IA Activado' : 'Agente IA Desactivado',
-            updates.is_active 
+            updates.is_active
               ? 'Tu agente IA ahora responderá automáticamente a los mensajes'
               : 'Tu agente IA ha sido desactivado y no responderá automáticamente',
             {
@@ -297,7 +297,7 @@ export const useAIConfig = () => {
             });
           }
         }
-        
+
         // Notificación de cambio en horarios
         if ('always_active' in updates && updates.always_active !== prev.always_active) {
           NotificationService.createNotification(
@@ -321,7 +321,7 @@ export const useAIConfig = () => {
             console.error('Error creating schedule notification:', error);
           });
         }
-        
+
         // Notificación de activación del asesor humano
         if ('advisor_enabled' in updates && updates.advisor_enabled !== prev.advisor_enabled) {
           NotificationService.createNotification(
@@ -346,7 +346,7 @@ export const useAIConfig = () => {
           });
         }
       }
-      
+
       // Auto-save cuando se actualiza la configuración
       // Usar debounce implícito con setTimeout
       if (typeof window !== 'undefined') {
@@ -355,12 +355,12 @@ export const useAIConfig = () => {
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
-        
+
         globalWindow.__aiConfigSaveTimeout = setTimeout(() => {
           autoSaveConfig(newConfig);
         }, 1500); // Guardar después de 1.5 segundos de inactividad
       }
-      
+
       return newConfig;
     });
   };
@@ -368,16 +368,12 @@ export const useAIConfig = () => {
   const autoSaveConfig = async (configToSave: AIConfig) => {
     setAutoSaving(true);
     try {
-      // Validar configuración básica antes de guardar
-      const errors = AIConfigService.validateConfig(configToSave);
-      if (errors.length > 0) {
-        // No mostrar errores en auto-save, solo en save manual
-        setAutoSaving(false);
-        return;
-      }
+      // En auto-save no bloqueamos por validación para permitir que cambios en toggles (como activación) 
+      // se guarden incluso si los campos de texto están incompletos.
+      // La validación se sigue aplicando en el guardado manual.
 
       await AIConfigService.saveAIConfig(configToSave);
-      
+
       // NO hacer re-fetch completo para evitar interrumpir al usuario
       // Solo actualizar el estado local con el training_progress calculado
       setConfig(prev => ({
@@ -391,7 +387,7 @@ export const useAIConfig = () => {
           schedule: configToSave.always_active || (configToSave.operating_hours && Object.keys(configToSave.operating_hours).length > 0)
         }
       }));
-      
+
       // Mostrar notificación sutil y no intrusiva
       toast({
         title: "✓ Guardado",
