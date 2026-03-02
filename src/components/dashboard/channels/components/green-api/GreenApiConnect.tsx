@@ -323,15 +323,20 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 }
             } else {
                 console.error('Status check failed:', response.status);
-                // Si falla con 401, 404 o cualquier error persistente (excepto 466), marcar como sospechoso
-                if (response.status === 401 || response.status === 404 || response.status === 400) {
+
+                // CRITICAL FIX: Don't mark as zombie if we just started (Green API takes ~2 mins)
+                const isGracePeriod = isStarting && startingTimeLeft > 0;
+
+                if (!isGracePeriod && (response.status === 401 || response.status === 404 || response.status === 400)) {
                     setIsInvalid(true);
                 }
             }
         } catch (error) {
             console.error('Error checking status:', error);
-            // Network errors or total failures are suspicious
-            setIsInvalid(true);
+            // Network errors or total failures are suspicious ONLY if not starting
+            if (!isStarting || startingTimeLeft <= 0) {
+                setIsInvalid(true);
+            }
         }
     };
 

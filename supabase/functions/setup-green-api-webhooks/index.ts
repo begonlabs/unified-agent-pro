@@ -37,13 +37,16 @@ serve(async (req) => {
         const settingsUrl = `${host}/waInstance${idInstance}/setSettings/${apiTokenInstance}`
         const settingsData = {
             webhookUrl: webhookUrl,
-            incomingWebhook: "yes",
+            webhookUrlToken: "",
+            delaySendMessagesMilliseconds: 0,
+            markIncomingMessagesReaded: "yes",
+            markIncomingMessagesReadedOnReply: "yes",
             outgoingWebhook: "yes",
-            stateWebhook: "yes",
-            incomingMessageWebhook: "yes",
             outgoingMessageWebhook: "yes",
-            outgoingAPIMessageWebhook: "yes",
-            markIncomingMessagesReaded: "yes"
+            stateWebhook: "yes",
+            incomingWebhook: "yes",
+            deviceStatusWebhook: "yes",
+            statusInstanceWebhook: "yes"
         }
 
         const settingsResponse = await fetch(settingsUrl, {

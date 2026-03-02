@@ -12,13 +12,14 @@ export function getGreenApiHost(idInstance: string, providedUrl?: string): strin
 
     // Si ya viene un URL, respetamos si usa el dominio con o sin guion
     if (providedUrl) {
+        // Detectar si el URL proporcionado ya tiene un puerto o subdominio específico
         const isDashless = providedUrl.includes('greenapi.com');
         const domain = isDashless ? 'greenapi.com' : 'green-api.com';
 
         if (idStr.startsWith('77')) return `https://7700.api.${domain}`;
         if (idStr.startsWith('71')) return `https://7107.api.${domain}`;
 
-        return providedUrl;
+        return providedUrl.replace(/\/$/, '');
     }
 
     // Default con guion (oficial)
