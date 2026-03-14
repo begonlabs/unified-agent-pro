@@ -218,7 +218,7 @@ const DashboardOptimized: React.FC = () => {
       <ChannelAlertBanner />
 
       {/* Contenido principal con lazy loading */}
-      <main className="flex-1 overflow-hidden relative">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
         <div className="h-full">
           {renderCurrentView(user)}
         </div>
