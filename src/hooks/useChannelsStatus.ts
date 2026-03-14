@@ -83,11 +83,13 @@ export const useChannelsStatus = () => {
   });
   const [disconnectedChannels, setDisconnectedChannels] = useState<Channel[]>([]);
 
-  const fetchChannels = useCallback(async () => {
+  const fetchChannels = useCallback(async (silent: boolean = false) => {
     if (!user?.id) return;
 
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       // Fetching channels status
 
       const { data } = await supabaseSelect(
@@ -117,7 +119,9 @@ export const useChannelsStatus = () => {
       console.error('Sidebar: Error loading channels:', error);
       handleSupabaseError(error, "Error al cargar estado de canales");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [user?.id]); // Solo depende de user.id
 

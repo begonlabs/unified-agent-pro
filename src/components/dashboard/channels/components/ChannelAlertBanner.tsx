@@ -16,8 +16,9 @@ export const ChannelAlertBanner: React.FC = () => {
     if (!user) return;
 
     // Listen for realtime changes on the communication_channels table
+    // (Requires Realtime to be enabled for this table in Supabase)
     const channelSubscription = supabase
-      .channel('public:communication_channels')
+      .channel(`channels_status_${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -27,14 +28,22 @@ export const ChannelAlertBanner: React.FC = () => {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          // When a change happens, refresh the status
-          refreshChannels();
+          console.log('🔄 Realtime channel status change received');
+          // When a change happens, refresh the status silently
+          refreshChannels(true);
         }
       )
       .subscribe();
 
+    // Fallback polling: Check for disconnections every 15 seconds silently
+    // This ensures the banner appears even if Supabase Realtime is disabled for the table
+    const pollInterval = setInterval(() => {
+      refreshChannels(true);
+    }, 15000);
+
     return () => {
       supabase.removeChannel(channelSubscription);
+      clearInterval(pollInterval);
     };
   }, [user, refreshChannels]);
 
