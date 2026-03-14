@@ -6,8 +6,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
 import { useDashboardRenderer } from '@/hooks/useDashboardRenderer';
+import { useDashboardOptimized } from '@/hooks/useDashboardOptimized';
 import { AutoPreloader } from '@/components/lazy/LazyComponents';
-import { ResponsiveSidebar } from '@/components/dashboard';
+import ResponsiveSidebarOptimized from '@/components/dashboard/sidebar/ResponsiveSidebarOptimized';
+import { ChannelAlertBanner } from '@/components/dashboard/channels/components/ChannelAlertBanner';
 
 /**
  * Dashboard optimizado con lazy loading y gestión de estado mejorada
@@ -17,20 +19,21 @@ const DashboardOptimized: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPersisted, setIsPersisted] = useState(false);
-  
+
   // Refs para valores que no necesitan re-renderizar
   const authSubscriptionRef = useRef<any>(null);
   const isMountedRef = useRef(true);
-  
+
   // Hooks optimizados
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentView, setCurrentView] = useViewFromUrlOrPersisted('messages');
   const { refreshGlobalData, refreshViewData } = useDataRefresh();
   const { detectViewChange } = useViewChangeDetector();
-  
+
   // Hook personalizado para renderizado optimizado
   const { renderCurrentView, renderAdminPanel, preloadInfo } = useDashboardRenderer();
+  const { setCurrentView: setGlobalView } = useDashboardOptimized();
 
   /**
    * Función optimizada para manejar cambios de autenticación
@@ -39,13 +42,13 @@ const DashboardOptimized: React.FC = () => {
     if (!isMountedRef.current) return;
 
     console.log('Auth state changed:', event, session?.user?.email);
-    
+
     if (event === 'SIGNED_IN' && session) {
       setUser(session.user);
       setLoading(false);
-      
+
       // Refrescar datos globales después del login
-      refreshGlobalData(session.user.id);
+      refreshGlobalData();
     } else if (event === 'SIGNED_OUT') {
       setUser(null);
       setLoading(false);
@@ -67,10 +70,10 @@ const DashboardOptimized: React.FC = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('Session retrieved:', session?.user?.email);
-      
+
       if (session) {
         setUser(session.user);
-        refreshGlobalData(session.user.id);
+        refreshGlobalData();
       } else {
         navigate('/auth');
       }
@@ -88,10 +91,11 @@ const DashboardOptimized: React.FC = () => {
    * Función optimizada para cambiar vista
    */
   const handleViewChange = useCallback((newView: string) => {
-    setCurrentView(newView);
+    setCurrentView(newView); // URL param / Local state
+    setGlobalView(newView as any); // Global AppStateContext used by renderer
     detectViewChange(newView);
-    refreshViewData();
-  }, [setCurrentView, detectViewChange, refreshViewData]);
+    refreshViewData(newView);
+  }, [setCurrentView, setGlobalView, detectViewChange, refreshViewData]);
 
   /**
    * Función optimizada para manejar persistencia
@@ -106,17 +110,17 @@ const DashboardOptimized: React.FC = () => {
    */
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     // Inicializar autenticación
     initializeAuth();
-    
+
     // Configurar suscripción de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
     authSubscriptionRef.current = subscription;
-    
+
     // Verificar persistencia inicial
     handlePersistenceChange();
-    
+
     // Cleanup
     return () => {
       isMountedRef.current = false;
@@ -133,7 +137,7 @@ const DashboardOptimized: React.FC = () => {
     const handleStorageChange = () => {
       handlePersistenceChange();
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [handlePersistenceChange]);
@@ -149,15 +153,38 @@ const DashboardOptimized: React.FC = () => {
     preloadPercentage: preloadInfo.preloadPercentage,
   }), [user?.email, loading, currentView, isPersisted, preloadInfo.preloadPercentage]);
 
+  const handleSignOut = useCallback(async () => {
+    try {
+      toast({
+        title: "Cerrando sesión...",
+        description: "Redirigiendo...",
+      });
+
+      const { robustSignOut } = await import('@/lib/utils');
+      await robustSignOut();
+    } catch (error: unknown) {
+      console.error('Error during sign out:', error);
+      toast({
+        title: "Error al cerrar sesión",
+        description: "Redirigiendo de todas formas...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 1000);
+    }
+  }, [toast]);
+
   /**
    * Props memoizadas para el sidebar
    */
   const sidebarProps = useMemo(() => ({
     currentView,
     onViewChange: handleViewChange,
+    onSignOut: handleSignOut,
     user,
     isAdmin: false, // Se determinará dinámicamente
-  }), [currentView, handleViewChange, user]);
+  }), [currentView, handleViewChange, handleSignOut, user]);
 
   /**
    * Renderizado condicional optimizado
@@ -183,20 +210,23 @@ const DashboardOptimized: React.FC = () => {
     <div className="flex h-screen bg-background">
       {/* AutoPreloader para componentes críticos */}
       <AutoPreloader isAdmin={false} />
-      
+
       {/* Sidebar optimizado */}
-      <ResponsiveSidebar {...sidebarProps} />
-      
+      <ResponsiveSidebarOptimized {...sidebarProps} />
+
+      {/* Alertas Globales de Canales */}
+      <ChannelAlertBanner />
+
       {/* Contenido principal con lazy loading */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden relative">
         <div className="h-full">
-          {renderCurrentView()}
+          {renderCurrentView(user)}
         </div>
       </main>
-      
+
       {/* Panel de admin si es necesario */}
-      {renderAdminPanel()}
-      
+      {renderAdminPanel(user)}
+
       {/* Debug info solo en desarrollo */}
       {import.meta.env.DEV && (
         <div className="fixed bottom-4 right-4 bg-background border rounded-lg p-2 text-xs opacity-50 hover:opacity-100 transition-opacity">

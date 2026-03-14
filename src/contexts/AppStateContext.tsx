@@ -8,24 +8,24 @@ interface AppState {
   // Autenticación
   user: User | null;
   isAuthenticated: boolean;
-  
+
   // Admin
   isAdmin: boolean;
   adminLoading: boolean;
   adminError: string | null;
-  
+
   // UI State
   currentView: 'messages' | 'ai-agent' | 'channels' | 'stats' | 'crm' | 'profile' | 'support';
   loading: boolean;
   error: string | null;
-  
+
   // Persistencia
   isPersisted: boolean;
-  
+
   // Notificaciones
   hasNewNotification: boolean;
   notificationCount: number;
-  
+
   // Performance
   lastRefresh: number;
   refreshCount: number;
@@ -79,7 +79,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         loading: false,
         error: null,
       };
-      
+
     case 'SET_ADMIN_STATUS':
       return {
         ...state,
@@ -87,61 +87,61 @@ function appReducer(state: AppState, action: AppAction): AppState {
         adminLoading: action.payload.loading,
         adminError: action.payload.error || null,
       };
-      
+
     case 'SET_CURRENT_VIEW':
       return {
         ...state,
         currentView: action.payload,
       };
-      
+
     case 'SET_LOADING':
       return {
         ...state,
         loading: action.payload,
       };
-      
+
     case 'SET_ERROR':
       return {
         ...state,
         error: action.payload,
         loading: false,
       };
-      
+
     case 'SET_PERSISTED':
       return {
         ...state,
         isPersisted: action.payload,
       };
-      
+
     case 'SET_NOTIFICATION_COUNT':
       return {
         ...state,
         notificationCount: action.payload,
         hasNewNotification: action.payload > 0,
       };
-      
+
     case 'SET_HAS_NEW_NOTIFICATION':
       return {
         ...state,
         hasNewNotification: action.payload,
       };
-      
+
     case 'INCREMENT_REFRESH_COUNT':
       return {
         ...state,
         refreshCount: state.refreshCount + 1,
         lastRefresh: Date.now(),
       };
-      
+
     case 'RESET_STATE':
       return initialState;
-      
+
     case 'BATCH_UPDATE':
       return {
         ...state,
         ...action.payload,
       };
-      
+
     default:
       return state;
   }
@@ -181,51 +181,75 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) 
   /**
    * Acciones memoizadas para evitar re-renderizados innecesarios
    */
+  const setUser = useCallback((user: User | null) => {
+    dispatch({ type: 'SET_USER', payload: user });
+  }, []);
+
+  const setAdminStatus = useCallback((isAdmin: boolean, loading: boolean, error?: string | null) => {
+    dispatch({ type: 'SET_ADMIN_STATUS', payload: { isAdmin, loading, error } });
+  }, []);
+
+  const setCurrentView = useCallback((view: AppState['currentView']) => {
+    dispatch({ type: 'SET_CURRENT_VIEW', payload: view });
+  }, []);
+
+  const setLoading = useCallback((loading: boolean) => {
+    dispatch({ type: 'SET_LOADING', payload: loading });
+  }, []);
+
+  const setError = useCallback((error: string | null) => {
+    dispatch({ type: 'SET_ERROR', payload: error });
+  }, []);
+
+  const setPersisted = useCallback((persisted: boolean) => {
+    dispatch({ type: 'SET_PERSISTED', payload: persisted });
+  }, []);
+
+  const setNotificationCount = useCallback((count: number) => {
+    dispatch({ type: 'SET_NOTIFICATION_COUNT', payload: count });
+  }, []);
+
+  const setHasNewNotification = useCallback((hasNew: boolean) => {
+    dispatch({ type: 'SET_HAS_NEW_NOTIFICATION', payload: hasNew });
+  }, []);
+
+  const incrementRefreshCount = useCallback(() => {
+    dispatch({ type: 'INCREMENT_REFRESH_COUNT' });
+  }, []);
+
+  const resetState = useCallback(() => {
+    dispatch({ type: 'RESET_STATE' });
+  }, []);
+
+  const batchUpdate = useCallback((updates: Partial<AppState>) => {
+    dispatch({ type: 'BATCH_UPDATE', payload: updates });
+  }, []);
+
   const actions = useMemo(() => ({
-    setUser: useCallback((user: User | null) => {
-      dispatch({ type: 'SET_USER', payload: user });
-    }, []),
-    
-    setAdminStatus: useCallback((isAdmin: boolean, loading: boolean, error?: string | null) => {
-      dispatch({ type: 'SET_ADMIN_STATUS', payload: { isAdmin, loading, error } });
-    }, []),
-    
-    setCurrentView: useCallback((view: AppState['currentView']) => {
-      dispatch({ type: 'SET_CURRENT_VIEW', payload: view });
-    }, []),
-    
-    setLoading: useCallback((loading: boolean) => {
-      dispatch({ type: 'SET_LOADING', payload: loading });
-    }, []),
-    
-    setError: useCallback((error: string | null) => {
-      dispatch({ type: 'SET_ERROR', payload: error });
-    }, []),
-    
-    setPersisted: useCallback((persisted: boolean) => {
-      dispatch({ type: 'SET_PERSISTED', payload: persisted });
-    }, []),
-    
-    setNotificationCount: useCallback((count: number) => {
-      dispatch({ type: 'SET_NOTIFICATION_COUNT', payload: count });
-    }, []),
-    
-    setHasNewNotification: useCallback((hasNew: boolean) => {
-      dispatch({ type: 'SET_HAS_NEW_NOTIFICATION', payload: hasNew });
-    }, []),
-    
-    incrementRefreshCount: useCallback(() => {
-      dispatch({ type: 'INCREMENT_REFRESH_COUNT' });
-    }, []),
-    
-    resetState: useCallback(() => {
-      dispatch({ type: 'RESET_STATE' });
-    }, []),
-    
-    batchUpdate: useCallback((updates: Partial<AppState>) => {
-      dispatch({ type: 'BATCH_UPDATE', payload: updates });
-    }, []),
-  }), []);
+    setUser,
+    setAdminStatus,
+    setCurrentView,
+    setLoading,
+    setError,
+    setPersisted,
+    setNotificationCount,
+    setHasNewNotification,
+    incrementRefreshCount,
+    resetState,
+    batchUpdate,
+  }), [
+    setUser,
+    setAdminStatus,
+    setCurrentView,
+    setLoading,
+    setError,
+    setPersisted,
+    setNotificationCount,
+    setHasNewNotification,
+    incrementRefreshCount,
+    resetState,
+    batchUpdate,
+  ]);
 
   /**
    * Valor del contexto memoizado
@@ -248,11 +272,11 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) 
  */
 export const useAppState = () => {
   const context = useContext(AppStateContext);
-  
+
   if (!context) {
     throw new Error('useAppState must be used within an AppStateProvider');
   }
-  
+
   return context;
 };
 
@@ -277,7 +301,7 @@ export const useAppActions = () => {
  */
 export const useUserInfo = () => {
   const { state } = useAppState();
-  
+
   return useMemo(() => ({
     user: state.user,
     isAuthenticated: state.isAuthenticated,
@@ -292,7 +316,7 @@ export const useUserInfo = () => {
  */
 export const useAdminInfo = () => {
   const { state } = useAppState();
-  
+
   return useMemo(() => ({
     isAdmin: state.isAdmin,
     adminLoading: state.adminLoading,
@@ -305,7 +329,7 @@ export const useAdminInfo = () => {
  */
 export const useUIState = () => {
   const { state } = useAppState();
-  
+
   return useMemo(() => ({
     currentView: state.currentView,
     loading: state.loading,
@@ -319,7 +343,7 @@ export const useUIState = () => {
  */
 export const useNotificationState = () => {
   const { state } = useAppState();
-  
+
   return useMemo(() => ({
     hasNewNotification: state.hasNewNotification,
     notificationCount: state.notificationCount,
@@ -331,7 +355,7 @@ export const useNotificationState = () => {
  */
 export const usePerformanceState = () => {
   const { state } = useAppState();
-  
+
   return useMemo(() => ({
     lastRefresh: state.lastRefresh,
     refreshCount: state.refreshCount,
@@ -344,7 +368,7 @@ export const usePerformanceState = () => {
  */
 export const useAppStateDebug = () => {
   const { state } = useAppState();
-  
+
   if (import.meta.env.DEV) {
     console.log('🔍 App State Debug:', {
       user: state.user?.email || 'No user',
@@ -355,6 +379,6 @@ export const useAppStateDebug = () => {
       refreshCount: state.refreshCount,
     });
   }
-  
+
   return state;
 };

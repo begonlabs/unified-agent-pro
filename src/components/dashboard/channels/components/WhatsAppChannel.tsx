@@ -152,7 +152,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <span className="font-medium text-green-900 text-sm sm:text-base">
-                      WhatsApp Business (Green API)
+                      WhatsApp Business
                     </span>
                   </div>
                   <Badge variant="default" className="bg-green-600 text-xs">

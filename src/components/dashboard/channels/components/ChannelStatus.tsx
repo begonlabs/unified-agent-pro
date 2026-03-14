@@ -46,7 +46,7 @@ export const ChannelStatus: React.FC<ChannelStatusProps & { onHardDelete?: (id: 
           {/* Debug info for development */}
           {channels.length > 0 && (
             <div className="bg-gray-50 p-3 rounded-lg">
-              <h4 className="font-medium text-gray-700 text-xs sm:text-sm mb-2">Estado de Conexiones (Debug):</h4>
+              <h4 className="font-medium text-gray-700 text-xs sm:text-sm mb-2">Estado de Conexiones:</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
                 {(() => {
                   // Agrupar por tipo real (whatsapp vs otros)

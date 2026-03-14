@@ -81,6 +81,7 @@ export const useChannelsStatus = () => {
     facebook: false,
     instagram: false
   });
+  const [disconnectedChannels, setDisconnectedChannels] = useState<Channel[]>([]);
 
   const fetchChannels = useCallback(async () => {
     if (!user?.id) return;
@@ -108,6 +109,10 @@ export const useChannelsStatus = () => {
         instagram: getChannelStatus(channelsData, 'instagram')
       });
 
+      // Filter exactly which ones exist but are disconnected
+      const disconnected = channelsData.filter(c => !c.is_connected);
+      setDisconnectedChannels(disconnected);
+
     } catch (error: unknown) {
       console.error('Sidebar: Error loading channels:', error);
       handleSupabaseError(error, "Error al cargar estado de canales");
@@ -125,6 +130,8 @@ export const useChannelsStatus = () => {
   return {
     status,
     loading,
+    channels,
+    disconnectedChannels,
     refreshChannels: fetchChannels
   };
 };

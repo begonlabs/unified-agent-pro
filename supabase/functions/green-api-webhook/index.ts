@@ -12,6 +12,7 @@ const corsHeaders = {
 
 interface GreenApiWebhookEvent {
     typeWebhook?: string;
+    stateInstance?: string;
     instanceData?: {
         idInstance: number;
         wid: string;
@@ -52,19 +53,19 @@ serve(async (req) => {
             // Log the complete webhook payload
             console.log('📦 Complete Green API webhook payload:', JSON.stringify(body, null, 2));
 
-            // Only process incoming messages
-            if (body.typeWebhook === 'incomingMessageReceived' && body.messageData) {
-                console.log('📱 Green API incoming message detected:', {
+            // Only process incoming messages or state changes
+            if ((body.typeWebhook === 'incomingMessageReceived' && body.messageData) || body.typeWebhook === 'stateInstanceChanged') {
+                console.log('📱 Green API event detected:', {
+                    typeWebhook: body.typeWebhook,
                     idInstance: body.instanceData?.idInstance,
-                    sender: body.senderData?.sender,
-                    messageType: body.messageData?.typeMessage
+                    state: body.stateInstance
                 });
 
                 // 🔥 OPTIMIZATION: Process in background and respond immediately to avoid Green API timeout/queuing
                 (async () => {
                     try {
                         await handleGreenApiEvent(body);
-                        console.log('✅ Green API message processed in background');
+                        console.log('✅ Green API event processed in background');
                     } catch (err) {
                         console.error('❌ Error processing Green API event in background:', err);
                     }
@@ -72,7 +73,7 @@ serve(async (req) => {
 
                 return new Response('OK', { headers: corsHeaders });
             } else {
-                console.log('⏭️ Skipping non-message webhook:', body.typeWebhook);
+                console.log('⏭️ Skipping non-message/non-state webhook:', body.typeWebhook);
                 return new Response('OK', { headers: corsHeaders });
             }
         }

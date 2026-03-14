@@ -360,16 +360,7 @@ const Auth = () => {
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Botón de vuelta */}
-      <Link
-        to="/"
-        className="fixed top-6 left-6 z-50 group"
-      >
-        <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-full border border-white/20 hover:border-white/40 text-white transition-all duration-300 hover:scale-105">
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          <span className="text-sm font-medium">Volver al inicio</span>
-        </button>
-      </Link>
+
 
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">

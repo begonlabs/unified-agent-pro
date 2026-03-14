@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { useDashboardOptimized } from '@/hooks/useDashboardOptimized';
 import { useComponentPreloader } from '@/components/lazy/LazyComponents';
+import { User } from '@supabase/supabase-js';
 
 /**
  * Hook optimizado para renderizar componentes del dashboard con lazy loading
@@ -12,8 +13,9 @@ export const useDashboardRenderer = () => {
   /**
    * Función optimizada para renderizar el contenido actual
    */
-  const renderCurrentView = useCallback(() => {
+  const renderCurrentView = useCallback((localUser?: User | null) => {
     const { currentView } = dashboardState;
+    const activeUser = localUser || dashboardState.user;
 
     // Importaciones dinámicas con lazy loading
     switch (currentView) {
@@ -58,7 +60,7 @@ export const useDashboardRenderer = () => {
               <p className="text-sm text-muted-foreground animate-pulse">Cargando canales...</p>
             </div>
           }>
-            <ChannelsView />
+            <ChannelsView user={activeUser as any} />
           </React.Suspense>
         );
 
@@ -88,7 +90,7 @@ export const useDashboardRenderer = () => {
               <p className="text-sm text-muted-foreground animate-pulse">Cargando CRM...</p>
             </div>
           }>
-            <CRMView />
+            <CRMView user={activeUser as any} />
           </React.Suspense>
         );
 
@@ -103,7 +105,7 @@ export const useDashboardRenderer = () => {
               <p className="text-sm text-muted-foreground animate-pulse">Cargando perfil...</p>
             </div>
           }>
-            <ProfileView />
+            <ProfileView user={activeUser as any} />
           </React.Suspense>
         );
 
@@ -135,10 +137,11 @@ export const useDashboardRenderer = () => {
   /**
    * Función optimizada para renderizar el panel de admin
    */
-  const renderAdminPanel = useCallback(() => {
+  const renderAdminPanel = useCallback((localUser?: User | null) => {
     if (!dashboardState.isAdmin) {
       return null;
     }
+    const activeUser = localUser || dashboardState.user;
 
     const AdminDashboard = React.lazy(() => import('@/components/admin/admin-panel/AdminPanel'));
     
@@ -151,10 +154,10 @@ export const useDashboardRenderer = () => {
           <p className="text-sm text-muted-foreground animate-pulse">Cargando panel de administración...</p>
         </div>
       }>
-        <AdminDashboard />
+        <AdminDashboard user={activeUser as any} />
       </React.Suspense>
     );
-  }, [dashboardState.isAdmin]);
+  }, [dashboardState.isAdmin, dashboardState.user]);
 
   /**
    * Información de preloading memoizada
@@ -188,7 +191,8 @@ export const useDashboardRenderer = () => {
  * Hook para optimizar la navegación entre vistas
  */
 export const useNavigationOptimizer = () => {
-  const { setCurrentView, currentView } = useDashboardOptimized();
+  const dashboardState = useDashboardOptimized();
+  const { setCurrentView, currentView } = dashboardState;
   const { preloadCriticalComponents, preloadAdminComponents } = useComponentPreloader();
 
   /**
@@ -200,13 +204,13 @@ export const useNavigationOptimizer = () => {
       await preloadCriticalComponents();
     }
     
-    if (view === 'admin' && dashboardState.isAdmin) {
+    if ((view as any) === 'admin' && dashboardState.isAdmin) {
       await preloadAdminComponents();
     }
 
     // Cambiar vista
     setCurrentView(view);
-  }, [setCurrentView, preloadCriticalComponents, preloadAdminComponents]);
+  }, [setCurrentView, preloadCriticalComponents, preloadAdminComponents, dashboardState.isAdmin]);
 
   /**
    * Navegación rápida sin preloading (para casos urgentes)

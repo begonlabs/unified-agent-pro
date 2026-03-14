@@ -5,16 +5,16 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const SERVICE_ROLE_KEY = import.meta.env.VITE_SERVICE_ROLE_KEY;
 
-if (!SUPABASE_URL) {
-  throw new Error('Missing VITE_SUPABASE_URL environment variable');
+if (!SUPABASE_URL || SUPABASE_URL === 'your_supabase_url') {
+  console.warn('Missing or invalid VITE_SUPABASE_URL environment variable');
 }
 
-if (!SUPABASE_ANON_KEY) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable');
+if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'your_supabase_anon_key') {
+  console.warn('Missing or invalid VITE_SUPABASE_ANON_KEY environment variable');
 }
 
-if (!SERVICE_ROLE_KEY) {
-  throw new Error('Missing VITE_SERVICE_ROLE_KEY environment variable');
+if (!SERVICE_ROLE_KEY || SERVICE_ROLE_KEY === 'your_service_role_key') {
+  console.warn('Missing or invalid VITE_SERVICE_ROLE_KEY environment variable');
 }
 
 /**
@@ -28,29 +28,36 @@ class SupabaseSingleton {
   /**
    * Obtiene la instancia única del cliente Supabase (anon key)
    */
-  static getInstance(): ReturnType<typeof createClient<Database>> {
+  static getInstance(): ReturnType<typeof createClient<Database>> | null {
     if (!this.instance) {
-      this.instance = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-          storage: localStorage,
-          persistSession: true,
-          autoRefreshToken: true,
-          // Configuración optimizada para evitar múltiples instancias
-          refreshTokenRetryInterval: 2000,
-          storageKey: 'ondai-auth-token',
-          debug: import.meta.env.DEV,
-        },
-        realtime: {
-          params: {
-            eventsPerSecond: 10,
+      if (!SUPABASE_URL || SUPABASE_URL === 'your_supabase_url' || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'your_supabase_anon_key') {
+        console.warn('Supabase client not initialized: Missing or invalid credentials.');
+        return null;
+      }
+      try {
+        this.instance = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            storage: localStorage,
+            persistSession: true,
+            autoRefreshToken: true,
+            storageKey: 'ondai-auth-token',
+            debug: import.meta.env.DEV,
           },
-        },
-        global: {
-          headers: {
-            'X-Client-Info': 'ondai-web-app',
+          realtime: {
+            params: {
+              eventsPerSecond: 10,
+            },
           },
-        },
-      });
+          global: {
+            headers: {
+              'X-Client-Info': 'ondai-web-app',
+            },
+          },
+        });
+      } catch (e) {
+        console.error('Error creating Supabase client:', e);
+        return null;
+      }
     }
     return this.instance;
   }
@@ -58,14 +65,23 @@ class SupabaseSingleton {
   /**
    * Obtiene la instancia única del cliente Supabase Admin (service role)
    */
-  static getAdminInstance(): ReturnType<typeof createClient<Database>> {
+  static getAdminInstance(): ReturnType<typeof createClient<Database>> | null {
     if (!this.adminInstance) {
-      this.adminInstance = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      });
+      if (!SUPABASE_URL || SUPABASE_URL === 'your_supabase_url' || !SERVICE_ROLE_KEY || SERVICE_ROLE_KEY === 'your_service_role_key') {
+        console.warn('Supabase admin client not initialized: Missing or invalid credentials.');
+        return null;
+      }
+      try {
+        this.adminInstance = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+      } catch (e) {
+        console.error('Error creating Supabase admin client:', e);
+        return null;
+      }
     }
     return this.adminInstance;
   }

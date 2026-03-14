@@ -123,11 +123,53 @@ async function getContactInfo(
     }
 }
 
-export async function handleGreenApiEvent(event: GreenApiEvent): Promise<void> {
+export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance?: string }): Promise<void> {
     try {
-        console.log('🎯 Processing Green API event');
+        const idInstance = event.instanceData?.idInstance?.toString();
+        
+        console.log('🎯 Processing Green API event:', event.typeWebhook, 'Instance:', idInstance);
 
-        // Extract message text
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+            console.error('❌ Missing Supabase environment variables');
+            return;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        // Handle State Instance Changes (Disconnections)
+        if (event.typeWebhook === 'stateInstanceChanged') {
+            const state = event.stateInstance;
+            console.log(`⚠️ Green API State Changed for instance ${idInstance}: ${state}`);
+            
+            if (state === 'notAuthorized' || state === 'blocked' || state === 'sleepMode') {
+                const { error } = await supabase
+                    .from('communication_channels')
+                    .update({ is_connected: false })
+                    .eq('channel_type', 'whatsapp_green_api')
+                    .eq('channel_config->>idInstance', idInstance);
+                
+                if (error) {
+                    console.error('❌ Error updating channel state on disconnect:', error);
+                } else {
+                    console.log(`✅ Channel ${idInstance} marked as disconnected due to state: ${state}`);
+                }
+            } else if (state === 'authorized') {
+                // Optionally auto-reconnect if it somehow reconnects, though unlikely without user action
+                const { error } = await supabase
+                    .from('communication_channels')
+                    .update({ is_connected: true })
+                    .eq('channel_type', 'whatsapp_green_api')
+                    .eq('channel_config->>idInstance', idInstance);
+                    
+                if (!error) console.log(`✅ Channel ${idInstance} marked as reconnected`);
+            }
+            return; // Stop processing this event
+        }
+
+        // Extract message text for incoming messages
         let messageText: string | undefined;
         if (event.messageData?.textMessageData?.textMessage) {
             messageText = event.messageData.textMessageData.textMessage;
