@@ -187,7 +187,7 @@ export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance
             return;
         }
 
-        const idInstance = event.instanceData?.idInstance?.toString();
+        // El idInstance ya fue extraído arriba en la línea 128
         const senderId = event.senderData?.sender;
         const chatId = event.senderData?.chatId;
         const messageId = event.idMessage;
@@ -209,16 +209,8 @@ export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance
             messageId
         });
 
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-        if (!supabaseUrl || !supabaseServiceKey) {
-            console.error('❌ Missing Supabase environment variables');
-            return;
-        }
-
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+        // El cliente de supabase ya está instanciado arriba
+        
         // Check for duplicate messages
         if (messageId) {
             const { data: existingMessage } = await supabase
