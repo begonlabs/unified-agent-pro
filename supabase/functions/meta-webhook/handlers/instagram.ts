@@ -864,8 +864,20 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
             );
 
             if (!instagramApiResponse.ok) {
-              const errorData = await instagramApiResponse.text();
-              console.error('❌ Error enviando mensaje por Instagram API:', errorData);
+              const errorDataText = await instagramApiResponse.text();
+              console.error('❌ Error enviando mensaje por Instagram API:', errorDataText);
+              try {
+                const errorData = JSON.parse(errorDataText);
+                if (errorData.error && (errorData.error.code === 190 || errorData.error.type === 'OAuthException')) {
+                  console.error(`🔌 Instagram token expired for channel ${channel.id}. Disconnecting channel in DB.`);
+                  await supabase
+                    .from('communication_channels')
+                    .update({ is_connected: false })
+                    .eq('id', channel.id);
+                }
+              } catch (e) {
+                console.error('Failed to parse Instagram error response:', e);
+              }
             } else {
               const result = await instagramApiResponse.json();
               console.log('✅ Mensaje de IA enviado a Instagram:', result.message_id);

@@ -115,8 +115,21 @@ async function sendAIResponseToFacebook(
     );
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('❌ Error enviando mensaje de IA a Facebook:', response.status, errorData);
+      const errorDataText = await response.text();
+      console.error('❌ Error enviando mensaje de IA a Facebook:', response.status, errorDataText);
+      try {
+        const errorData = JSON.parse(errorDataText);
+        if (errorData.error && (errorData.error.code === 190 || errorData.error.type === 'OAuthException')) {
+          console.error(`🔌 Facebook token expired for page ${pageId}. Disconnecting channel in DB.`);
+          await supabase
+            .from('communication_channels')
+            .update({ is_connected: false })
+            .eq('channel_type', 'facebook')
+            .eq('channel_config->>page_id', pageId);
+        }
+      } catch (e) {
+        console.error('Failed to parse Facebook error response:', e);
+      }
       return { success: false };
     }
 
