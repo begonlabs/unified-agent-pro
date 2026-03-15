@@ -101,7 +101,51 @@ export const useChannelsStatus = () => {
       );
 
       // Channels fetched successfully
-      const channelsData = (data as Channel[]) || [];
+      let channelsData = (data as Channel[]) || [];
+
+      // ACTIVO: Verificación proactiva de tokens de Meta
+      const verificationPromises = channelsData.map(async (channel) => {
+        if ((channel.channel_type === 'facebook' || channel.channel_type === 'instagram' || channel.channel_type === 'instagram_legacy') && channel.is_connected) {
+          try {
+            const config = channel.channel_config as Record<string, any>;
+            // Try to find the page access token or user access token
+            const token = config?.page_access_token || config?.access_token;
+            
+            if (token) {
+              // Silently ping Meta Graph API to verify token validity
+              const graphVersion = import.meta.env.VITE_META_GRAPH_VERSION || 'v24.0';
+              const response = await fetch(`https://graph.facebook.com/${graphVersion}/me?access_token=${token}`);
+              
+              if (!response.ok) {
+                const errorData = await response.json();
+                console.error(`❌ Token de Meta detectado como inválido para canal ${channel.id}:`, errorData);
+                
+                // Si el error es de autenticación (ej: token expirado o desautorizado)
+                if (errorData.error && (errorData.error.code === 190 || errorData.error.type === 'OAuthException')) {
+                  console.log(`🔌 Desconectando canal ${channel.id} en la base de datos debido a token expirado/inválido.`);
+                  // Actualizar en base de datos
+                  await supabase
+                    .from('communication_channels')
+                    .update({ is_connected: false })
+                    .eq('id', channel.id);
+                  
+                  // Actualizar el estado local para reflejar la desconexión
+                  return { ...channel, is_connected: false };
+                }
+              }
+            }
+          } catch (e) {
+            console.error(`Error verificando token de meta para canal ${channel.id}:`, e);
+          }
+        }
+        return channel;
+      });
+
+      // Wait for all verifications to complete
+      if (verificationPromises.length > 0) {
+        channelsData = await Promise.all(verificationPromises);
+      }
+
       setChannels(channelsData);
 
       // Actualizar estado de cada canal usando la función helper
@@ -128,6 +172,20 @@ export const useChannelsStatus = () => {
   useEffect(() => {
     if (user && !authLoading) {
       fetchChannels();
+
+      // Suscribirse a notificaciones de desconexión en tiempo real (Backend reactive detection)
+      const channel = supabase.channel('channel_notifications')
+        .on('broadcast', { event: 'channel_disconnected' }, (payload) => {
+          if (payload.payload.userId === user.id) {
+            console.log('📡 Recibida notificación de desconexión por Realtime. Actualizando dashboard...');
+            fetchChannels(true); // Refresco silencioso
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user, authLoading, fetchChannels]);
 

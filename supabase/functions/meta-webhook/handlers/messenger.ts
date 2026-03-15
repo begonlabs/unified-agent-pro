@@ -126,6 +126,28 @@ async function sendAIResponseToFacebook(
             .update({ is_connected: false })
             .eq('channel_type', 'facebook')
             .eq('channel_config->>page_id', pageId);
+
+          // Broadcast disconnection event for real-time UI updates
+          const { data: channelData } = await supabase
+            .from('communication_channels')
+            .select('user_id')
+            .eq('channel_type', 'facebook')
+            .eq('channel_config->>page_id', pageId)
+            .single();
+
+          if (channelData) {
+            const realtimeChannel = supabase.channel('channel_notifications');
+            await realtimeChannel.send({
+              type: 'broadcast',
+              event: 'channel_disconnected',
+              payload: { 
+                userId: channelData.user_id,
+                channelType: 'facebook',
+                pageId: pageId
+              },
+            });
+            console.log(`📡 Broadcasted disconnection for user ${channelData.user_id}`);
+          }
         }
       } catch (e) {
         console.error('Failed to parse Facebook error response:', e);

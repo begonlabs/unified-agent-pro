@@ -874,6 +874,19 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
                     .from('communication_channels')
                     .update({ is_connected: false })
                     .eq('id', channel.id);
+                  
+                  // Broadcast disconnection event for real-time UI updates
+                  const realtimeChannel = supabase.channel('channel_notifications');
+                  await realtimeChannel.send({
+                    type: 'broadcast',
+                    event: 'channel_disconnected',
+                    payload: { 
+                      userId: channel.user_id,
+                      channelType: 'instagram',
+                      channelId: channel.id
+                    },
+                  });
+                  console.log(`📡 Broadcasted Instagram disconnection for user ${channel.user_id}`);
                 }
               } catch (e) {
                 console.error('Failed to parse Instagram error response:', e);
