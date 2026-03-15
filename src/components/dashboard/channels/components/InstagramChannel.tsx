@@ -91,9 +91,15 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                    <Badge variant="default" className="bg-pink-600 text-xs">
-                      En Línea
-                    </Badge>
+                    {channel.is_connected ? (
+                      <Badge variant="default" className="bg-pink-600 text-xs">
+                        En Línea
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="bg-red-600 text-xs">
+                        Desconectado
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
@@ -113,14 +119,16 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                   >
                     Reconectar
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
-                    onClick={() => onDisconnect(channel.id)}
-                  >
-                    Desconectar
-                  </Button>
+                  {channel.is_connected && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
+                      onClick={() => onDisconnect(channel.id)}
+                    >
+                      Desconectar
+                    </Button>
+                  )}
                 </div>
               </div>
             );

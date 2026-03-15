@@ -86,9 +86,15 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                    <Badge variant="default" className="bg-blue-600 text-xs">
-                      En Línea
-                    </Badge>
+                    {channel.is_connected ? (
+                      <Badge variant="default" className="bg-blue-600 text-xs">
+                        En Línea
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="bg-red-600 text-xs">
+                        Desconectado
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <div className="text-xs text-blue-800 space-y-1">
@@ -107,14 +113,16 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                   >
                     Reconectar
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
-                    onClick={() => onDisconnect(channel.id)}
-                  >
-                    Desconectar
-                  </Button>
+                  {channel.is_connected && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-red-600 border-red-300 hover:bg-red-100 text-xs sm:text-sm"
+                      onClick={() => onDisconnect(channel.id)}
+                    >
+                      Desconectar
+                    </Button>
+                  )}
                 </div>
               </div>
             );
