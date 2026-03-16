@@ -76,27 +76,15 @@ interface Message {
 async function sendAIResponseToFacebook(
   message: string,
   pageId: string,
-  recipientId: string
+  recipientId: string,
+  pageAccessToken: string,
+  supabase: any // Pass supabase client to reuse configuration
 ): Promise<{ success: boolean; facebook_message_id?: string }> {
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Obtener token de acceso de la página
-    const { data: channel } = await supabase
-      .from('communication_channels')
-      .select('channel_config')
-      .eq('channel_type', 'facebook')
-      .eq('channel_config->>page_id', pageId)
-      .single();
-
-    if (!channel?.channel_config?.page_access_token) {
-      console.error('❌ No se encontró token de acceso para la página:', pageId);
+    if (!pageAccessToken) {
+      console.error('❌ No se proporcionó token de acceso para la página:', pageId);
       return { success: false };
     }
-
-    const pageAccessToken = channel.channel_config.page_access_token;
 
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v21.0';
     const apiUrl = `https://graph.facebook.com/${graphVersion}/${pageId}/messages`;
@@ -892,7 +880,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           }
 
           //  fix 4: Enviar primero y guardar el message_id real de Facebook
-          const sendResult = await sendAIResponseToFacebook(aiResponse.response, recipientId, senderId);
+          const sendResult = await sendAIResponseToFacebook(
+            aiResponse.response, 
+            recipientId, // Este es el pageId del webhook
+            senderId, // Este es el PSID del usuario
+            channel.channel_config.page_access_token,
+            supabase
+          );
 
           if (sendResult.success) {
             // fix 5: Verificar una última vez antes de guardar (por si otro proceso ya guardó)
