@@ -767,7 +767,6 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
             await handleAdvisorHandoff({
               supabase,
               conversation_id: conversation.id,
-              user_id: conversation.user_id,
               platform: 'instagram',
               client_id: client.id
             });

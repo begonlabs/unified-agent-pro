@@ -873,7 +873,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
             await handleAdvisorHandoff({
               supabase,
               conversation_id: conversation.id,
-              user_id: conversation.user_id,
               platform: 'facebook',
               client_id: client.id
             });
@@ -911,7 +910,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
               .from('messages')
               .insert({
                 conversation_id: conversation.id,
-                user_id: conversation.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
                 content: aiResponse.response,
                 sender_type: 'ia',
                 sender_name: 'IA Assistant',

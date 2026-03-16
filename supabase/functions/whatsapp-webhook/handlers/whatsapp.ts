@@ -483,7 +483,6 @@ async function handleIncomingMessage(event: WhatsAppEvent, supabase: SupabaseCli
           await handleAdvisorHandoff({
             supabase,
             conversation_id: conversation.id,
-            user_id: conversation.user_id,
             platform: 'whatsapp',
             client_id: client.id
           });

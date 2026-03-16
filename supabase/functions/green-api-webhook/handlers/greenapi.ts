@@ -583,7 +583,6 @@ export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance
                         await handleAdvisorHandoff({
                             supabase,
                             conversation_id: conversation.id,
-                            user_id: conversation.user_id,
                             platform: 'whatsapp_green_api',
                             client_id: client.id
                         });
