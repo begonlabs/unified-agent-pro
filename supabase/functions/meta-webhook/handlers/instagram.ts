@@ -80,7 +80,7 @@ async function getInstagramUserProfile(
   pageAccessToken: string
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
-    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v21.0';
     // IMPORTANT: Use 'username' and 'profile_pic' fields for Instagram
     // 'username' returns the Instagram handle (e.g., "ernesto_grz")
     // 'profile_pic' returns the profile picture URL

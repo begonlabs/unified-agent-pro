@@ -33,7 +33,7 @@ const DashboardOptimized: React.FC = () => {
 
   // Hook personalizado para renderizado optimizado
   const { renderCurrentView, renderAdminPanel, preloadInfo } = useDashboardRenderer();
-  const { setCurrentView: setGlobalView } = useDashboardOptimized();
+  const { currentView: globalView, setCurrentView: setGlobalView } = useDashboardOptimized();
 
   /**
    * Función optimizada para manejar cambios de autenticación
@@ -131,6 +131,17 @@ const DashboardOptimized: React.FC = () => {
   }, [initializeAuth, handleAuthStateChange, handlePersistenceChange]);
 
   /**
+   * Effect para sincronizar la vista local/persistida con el estado global
+   * Soluciona el error donde el contenido y el sidebar se descoordinan tras un refresh
+   */
+  useEffect(() => {
+    if (currentView) {
+      console.log('🔄 Sincronizando vista local con estado global:', currentView);
+      setGlobalView(currentView as any);
+    }
+  }, [currentView, setGlobalView]);
+
+  /**
    * Effect optimizado para detectar cambios de persistencia
    */
   useEffect(() => {
@@ -179,12 +190,12 @@ const DashboardOptimized: React.FC = () => {
    * Props memoizadas para el sidebar
    */
   const sidebarProps = useMemo(() => ({
-    currentView,
+    currentView: globalView,
     onViewChange: handleViewChange,
     onSignOut: handleSignOut,
     user,
     isAdmin: false, // Se determinará dinámicamente
-  }), [currentView, handleViewChange, handleSignOut, user]);
+  }), [globalView, handleViewChange, handleSignOut, user]);
 
   /**
    * Renderizado condicional optimizado

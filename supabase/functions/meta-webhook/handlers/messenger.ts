@@ -389,12 +389,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       pageAccessToken: string
     ): Promise<{ name: string; avatar_url?: string; error?: string }> {
       try {
-        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v24.0';
-        // Use 'name' and 'profile_pic' fields for PSID (Page-Scoped ID) compatibility
-        // These fields work with both regular user IDs and PSIDs
-        const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,profile_pic&access_token=${pageAccessToken}`;
+        // Use v21.0 as a safer default (v24.0 does not exist yet)
+        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v21.0';
+        
+        // Request first_name, last_name, and name for better compatibility with PSIDs
+        const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,name,profile_pic&access_token=${pageAccessToken}`;
 
-        console.log('🔍 Fetching Facebook profile:', { userId, graphVersion });
+        console.log('🔍 Fetching Facebook profile:', { userId, graphVersion, url: url.replace(pageAccessToken, '***') });
 
         const response = await fetch(url);
 
@@ -406,7 +407,7 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
             error: errorText,
             userId
           });
-          // Return fallback WITH error information
+          // Return fallback WITH error information for debugging
           return {
             name: `Facebook User ${userId.slice(-4)}`,
             avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
@@ -417,8 +418,16 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         const data = await response.json();
         console.log('✅ Facebook profile data received:', JSON.stringify(data));
 
-        const name = data.name || `Facebook User ${userId.slice(-4)}`;
-        // Facebook returns profile_pic as a direct URL (similar to Instagram)
+        // Construct name prioritizing first_name + last_name, falling back to name field
+        let name = data.name;
+        if (data.first_name || data.last_name) {
+          name = [data.first_name, data.last_name].filter(Boolean).join(' ');
+        }
+        
+        if (!name) {
+          name = `Facebook User ${userId.slice(-4)}`;
+        }
+        
         const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
 
         return {
@@ -428,7 +437,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       } catch (error) {
         const errorMsg = `Exception: ${error.message}`;
         console.error('❌ Error in getFacebookUserProfile:', error);
-        // Return fallback WITH error information
         return {
           name: `Facebook User ${userId.slice(-4)}`,
           avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
@@ -710,6 +718,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
     });
 
     // 🤖 GENERAR RESPUESTA AUTOMÁTICA DE IA (solo para mensajes entrantes)
+    console.log('🤖 AI Check for conversation:', {
+      isEcho,
+      eventType,
+      ai_enabled: conversation.ai_enabled,
+      conversation_id: conversation.id
+    });
+
     if (!isEcho && eventType === 'text_message' && conversation.ai_enabled) {
       try {
         console.log('🤖 Generando respuesta automática de IA para conversación:', conversation.id);
