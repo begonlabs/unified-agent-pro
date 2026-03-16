@@ -433,7 +433,6 @@ export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance
             is_automated: false,
             sender_name: client.name,
             platform_message_id: messageId,
-            user_id: channel.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
             metadata: {
                 platform: 'whatsapp_green_api',
                 idInstance,
@@ -608,7 +607,6 @@ export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance
                             sender_type: 'ia',
                             sender_name: 'IA Assistant',
                             is_automated: true,
-                            user_id: conversation.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
                             platform_message_id: sendResult.messageId || `ai_${Date.now()}`,
                             metadata: {
                                 confidence_score: aiResponse.confidence_score,

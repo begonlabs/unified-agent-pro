@@ -658,7 +658,6 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       is_automated: false,
       sender_name: senderName,
       platform_message_id: messageId,
-      user_id: channel.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
       metadata: {
         platform: 'facebook',
         sender_id: senderId,
