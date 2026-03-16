@@ -386,58 +386,70 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
       pageAccessToken: string
     ): Promise<{ name: string; avatar_url?: string; error?: string }> {
       try {
-        // Use v21.0 as a safer default (v24.0 does not exist yet)
-        const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v21.0';
+        // Use v21.0 as a stable version for Facebook Graph API
+        const graphVersion = 'v21.0';
         
-        // Request first_name, last_name, and name for better compatibility with PSIDs
-        const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,name,profile_pic&access_token=${pageAccessToken}`;
+        // Strategy 1: Attempt to get detailed fields
+        let url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,name,profile_pic&access_token=${pageAccessToken}`;
 
-        console.log('🔍 Fetching Facebook profile:', { userId, graphVersion, url: url.replace(pageAccessToken, '***') });
+        console.log('🔍 Fetching Facebook profile (Strategy 1):', { userId, graphVersion });
 
-        const response = await fetch(url);
+        let response = await fetch(url);
+        let data;
 
         if (!response.ok) {
           const errorText = await response.text();
-          const errorMsg = `HTTP ${response.status}: ${errorText}`;
-          console.error('❌ Error fetching Facebook profile:', {
+          console.warn('⚠️ Strategy 1 failed, trying Strategy 2 (minimal fields):', {
             status: response.status,
             error: errorText,
             userId
           });
-          // Return fallback WITH error information for debugging
-          return {
-            name: `Facebook User ${userId.slice(-4)}`,
-            avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
-            error: errorMsg
-          };
+
+          // Strategy 2: Fallback to minimal fields if Strategy 1 fails (common for some PSIDs/permissions)
+          url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,profile_pic&access_token=${pageAccessToken}`;
+          response = await fetch(url);
+          
+          if (!response.ok) {
+            const finalErrorText = await response.text();
+            console.error('❌ Strategy 2 also failed:', {
+              status: response.status,
+              error: finalErrorText,
+              userId
+            });
+            return {
+              name: `Facebook User ${userId.slice(-4)}`,
+              avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
+              error: finalErrorText
+            };
+          }
         }
 
-        const data = await response.json();
+        data = await response.json();
         console.log('✅ Facebook profile data received:', JSON.stringify(data));
 
-        // Construct name prioritizing first_name + last_name, falling back to name field
-        let name = data.name;
+        // Construct name prioritizing explicit first/last name, then fall back to full name field
+        let name = '';
         if (data.first_name || data.last_name) {
           name = [data.first_name, data.last_name].filter(Boolean).join(' ');
         }
         
-        if (!name) {
-          name = `Facebook User ${userId.slice(-4)}`;
+        // If concatenation resulted in empty string or we only have 'name' field
+        if (!name || name.trim() === '') {
+          name = data.name || `Facebook User ${userId.slice(-4)}`;
         }
         
         const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
 
         return {
-          name: name,
+          name: name.trim(),
           avatar_url: avatarUrl
         };
       } catch (error) {
-        const errorMsg = `Exception: ${error.message}`;
-        console.error('❌ Error in getFacebookUserProfile:', error);
+        console.error('❌ Exception in getFacebookUserProfile:', error);
         return {
           name: `Facebook User ${userId.slice(-4)}`,
           avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
-          error: errorMsg
+          error: error.message
         };
       }
     }
