@@ -601,6 +601,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
       is_automated: false, // Could be automated if it's a bot message
       sender_name: senderName,
       platform_message_id: messageId, // Instagram message ID
+      user_id: channel.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
       metadata: {
         platform: 'instagram',
         sender_id: senderId,
@@ -781,6 +782,7 @@ export async function handleInstagramEvent(event: InstagramEvent): Promise<void>
               sender_type: 'ia',
               sender_name: 'IA Assistant',
               is_automated: true,
+              user_id: conversation.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
               platform_message_id: `ai_ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               metadata: {
                 confidence_score: aiResponse.confidence_score,

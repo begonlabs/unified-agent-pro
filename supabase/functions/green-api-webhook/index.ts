@@ -61,15 +61,13 @@ serve(async (req) => {
                     state: body.stateInstance
                 });
 
-                // 🔥 OPTIMIZATION: Process in background and respond immediately to avoid Green API timeout/queuing
-                (async () => {
-                    try {
-                        await handleGreenApiEvent(body);
-                        console.log('✅ Green API event processed in background');
-                    } catch (err) {
-                        console.error('❌ Error processing Green API event in background:', err);
-                    }
-                })();
+                // 🔥 CRITICAL: Process synchronously to avoid premature isolate termination in self-hosted environments
+                try {
+                    await handleGreenApiEvent(body);
+                    console.log('✅ Green API event processed successfully');
+                } catch (err) {
+                    console.error('❌ Error processing Green API event:', err);
+                }
 
                 return new Response('OK', { headers: corsHeaders });
             } else {
