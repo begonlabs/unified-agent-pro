@@ -98,9 +98,18 @@ async function sendAIResponseToFacebook(
 
     const pageAccessToken = channel.channel_config.page_access_token;
 
-    // Enviar mensaje a Facebook Messenger API
+    const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v21.0';
+    const apiUrl = `https://graph.facebook.com/${graphVersion}/${pageId}/messages`;
+
+    console.log('📤 Enviando mensaje de IA por Messenger API:', {
+      url: apiUrl,
+      recipient: recipientId,
+      pageId: pageId
+    });
+
+    // Enviar mensaje a Facebook Messenger API usando el endpoint de la página
     const response = await fetch(
-      `https://graph.facebook.com/v23.0/me/messages?access_token=${pageAccessToken}`,
+      `${apiUrl}?access_token=${pageAccessToken}`,
       {
         method: 'POST',
         headers: {
@@ -902,10 +911,13 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
               return;
             }
 
+            console.log('💾 Guardando respuesta de IA en la base de datos para conversación:', conversation.id);
+            
             const { error: aiMessageError } = await supabase
               .from('messages')
               .insert({
                 conversation_id: conversation.id,
+                user_id: conversation.user_id, // 🔥 CRITICAL: Assign user_id for RLS visibility in dashboard
                 content: aiResponse.response,
                 sender_type: 'ia',
                 sender_name: 'IA Assistant',
