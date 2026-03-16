@@ -470,7 +470,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     </h4>
                     <p className="text-sm text-blue-700 mb-2 max-w-xs">
                         {isStarting
-                            ? "Green API está preparando tu servidor dedicado. Esto suele tardar unos 2 minutos."
+                            ? "Se están realizando las configuraciones necesarias. Esto suele tardar varios minutos, ten paciencia por favor."
                             : "Estamos obteniendo tu código de conexión segura."}
                     </p>
                     {isStarting && (
