@@ -21,6 +21,7 @@ interface Conversation {
     phone?: string;
     status: string;
     avatar_url?: string;
+    tags?: string[];
   };
 }
 
@@ -34,8 +35,11 @@ interface ConnectionStatus {
 interface UseRealtimeConversationsReturn {
   conversations: Conversation[];
   loading: boolean;
+  isFetchingMore: boolean;
+  hasMore: boolean;
   connectionStatus: ConnectionStatus;
   refreshConversations: () => Promise<void>;
+  loadMore: () => Promise<void>;
   error: string | null;
 }
 
@@ -43,11 +47,15 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     isConnected: false,
     isConnecting: false,
     reconnectAttempts: 0
   });
+  const PAGE_SIZE = 50;
 
   const { toast } = useToast();
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -55,15 +63,27 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
   const maxReconnectAttempts = 5;
   const reconnectDelay = 2000; // 2 seconds
 
-  // Función para obtener conversaciones iniciales
-  const fetchConversations = useCallback(async () => {
+  // Función para obtener conversaciones iniciales o adicionales
+  const fetchConversations = useCallback(async (isInitial = true) => {
     if (!userId) {
       setLoading(false);
       return;
     }
 
+    if (isInitial) {
+      setLoading(true);
+      setPage(0);
+      setHasMore(true);
+    } else {
+      setIsFetchingMore(true);
+    }
+
     try {
-      console.log('🔍 Fetching conversations for user:', userId);
+      const currentPage = isInitial ? 0 : page + 1;
+      const from = currentPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      console.log(`🔍 Fetching conversations for user: ${userId}, Range: ${from}-${to}`);
 
       const { data, error: fetchError } = await supabase
         .from('conversations')
@@ -80,14 +100,28 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
           )
         `)
         .eq('user_id', userId)
-        .order('last_message_at', { ascending: false });
+        .order('last_message_at', { ascending: false })
+        .range(from, to);
 
       if (fetchError) {
         throw fetchError;
       }
 
-      console.log('💬 Conversations loaded:', data?.length || 0);
-      setConversations(data || []);
+      console.log(`💬 Conversations loaded (page ${currentPage}):`, data?.length || 0);
+      
+      if (data) {
+        if (isInitial) {
+          setConversations(data);
+        } else {
+          setConversations(prev => [...prev, ...data]);
+        }
+        
+        setPage(currentPage);
+        setHasMore(data.length === PAGE_SIZE);
+      } else {
+        setHasMore(false);
+      }
+      
       setError(null);
     } catch (err: unknown) {
       console.error('Error fetching conversations:', err);
@@ -101,8 +135,15 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       });
     } finally {
       setLoading(false);
+      setIsFetchingMore(false);
     }
-  }, [userId, toast]);
+  }, [userId, page, toast]);
+
+  // Función para cargar más (Paginación)
+  const loadMore = useCallback(async () => {
+    if (loading || isFetchingMore || !hasMore) return;
+    await fetchConversations(false);
+  }, [loading, isFetchingMore, hasMore, fetchConversations]);
 
   // Helper to fetch a single conversation with full details
   const fetchSingleConversation = async (conversationId: string) => {
@@ -372,8 +413,11 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
   return {
     conversations,
     loading,
+    isFetchingMore,
+    hasMore,
     connectionStatus,
     refreshConversations,
+    loadMore,
     error
   };
 };

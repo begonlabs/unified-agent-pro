@@ -106,9 +106,22 @@ const MessagesView = () => {
   const {
     conversations,
     loading: conversationsLoading,
+    isFetchingMore,
+    hasMore,
     connectionStatus,
-    refreshConversations
+    refreshConversations,
+    loadMore
   } = useRealtimeConversations(user?.id || null);
+
+  // 🖱️ Manejar scroll infinito
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    // Si estamos a menos de 100px del fondo y hay más datos, cargamos más
+    if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !isFetchingMore) {
+      console.log('📜 Near bottom of conversations, loading more...');
+      loadMore();
+    }
+  };
 
   // 🔄 Escuchar eventos de refresh de datos
   useRefreshListener(
@@ -697,7 +710,7 @@ const MessagesView = () => {
           </div>
 
           {/* Lista de conversaciones con scroll independiente */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
             <div className="p-2 space-y-2">
               {filteredConversations.length === 0 ? (
                 <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -705,120 +718,136 @@ const MessagesView = () => {
                   <p className="text-sm sm:text-base">No hay conversaciones</p>
                 </div>
               ) : (
-                filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`group cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${selectedConversation === conversation.id
-                      ? 'bg-blue-50'
-                      : 'bg-white'
-                      }`}
-                    onClick={() => handleConversationSelect(conversation.id)}
-                  >
-                    <div className="p-3 sm:p-4">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
-                          {conversation.crm_clients?.avatar_url ? (
-                            <img
-                              src={conversation.crm_clients.avatar_url}
-                              alt={conversation.crm_clients.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
-                              {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          {/* Nombre del cliente - línea completa */}
-                          <div className="mb-1">
-                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 leading-tight">
-                              {conversation.crm_clients?.name || 'Cliente Anónimo'}
-                            </h3>
-                          </div>
+                <>
+                  {filteredConversations.map((conversation) => (
+                    <div
+                      key={conversation.id}
+                      className={`group cursor-pointer transition-all duration-200 hover:bg-gray-50 rounded-lg border-b border-gray-100 ${selectedConversation === conversation.id
+                        ? 'bg-blue-50'
+                        : 'bg-white'
+                        }`}
+                      onClick={() => handleConversationSelect(conversation.id)}
+                    >
+                      <div className="p-3 sm:p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
+                            {conversation.crm_clients?.avatar_url ? (
+                              <img
+                                src={conversation.crm_clients.avatar_url}
+                                alt={conversation.crm_clients.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
+                                {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            {/* Nombre del cliente - línea completa */}
+                            <div className="mb-1">
+                              <h3 className="font-semibold text-sm sm:text-base text-gray-900 leading-tight">
+                                {conversation.crm_clients?.name || 'Cliente Anónimo'}
+                              </h3>
+                            </div>
 
-                          {/* Información de contacto */}
-                          <div className="mb-2">
-                            <p className="text-xs sm:text-sm text-gray-600 truncate">
-                              {(() => {
-                                const phone = conversation.crm_clients?.phone;
-                                const email = conversation.crm_clients?.email;
+                            {/* Información de contacto */}
+                            <div className="mb-2">
+                              <p className="text-xs sm:text-sm text-gray-600 truncate">
+                                {(() => {
+                                  const phone = conversation.crm_clients?.phone;
+                                  const email = conversation.crm_clients?.email;
 
-                                // If there's a phone and it's NOT a PSID, format and display it
-                                if (phone && !isPSID(phone)) {
-                                  const formatted = formatWhatsAppNumber(phone);
-                                  if (formatted) {
-                                    return (
-                                      <span className="flex items-center gap-2">
-                                        <span>{formatted.flag}</span>
-                                        <span>{formatted.formattedNumber}</span>
-                                      </span>
-                                    );
+                                  // If there's a phone and it's NOT a PSID, format and display it
+                                  if (phone && !isPSID(phone)) {
+                                    const formatted = formatWhatsAppNumber(phone);
+                                    if (formatted) {
+                                      return (
+                                        <span className="flex items-center gap-2">
+                                          <span>{formatted.flag}</span>
+                                          <span>{formatted.formattedNumber}</span>
+                                        </span>
+                                      );
+                                    }
                                   }
-                                }
 
-                                // If there's an email, show it
-                                if (email) {
-                                  return email;
-                                }
+                                  // If there's an email, show it
+                                  if (email) {
+                                    return email;
+                                  }
 
-                                // Otherwise, show the channel name
-                                const channelName = conversation.channel === 'facebook' ? 'Facebook' :
-                                  conversation.channel === 'instagram' ? 'Instagram' :
-                                    conversation.channel === 'whatsapp' ? 'WhatsApp' :
-                                      'Sin contacto';
+                                  // Otherwise, show the channel name
+                                  const channelName = conversation.channel === 'facebook' ? 'Facebook' :
+                                    conversation.channel === 'instagram' ? 'Instagram' :
+                                      conversation.channel === 'whatsapp' ? 'WhatsApp' :
+                                        'Sin contacto';
 
-                                return channelName;
-                              })()}
+                                  return channelName;
+                                })()}
+                              </p>
+                            </div>
+
+                            {/* Badges y estado en una línea */}
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge
+                                  variant={(conversation.unread_count || 0) > 0 ? 'destructive' : 'default'}
+                                  className="text-xs"
+                                >
+                                  {(conversation.unread_count || 0) > 0 ? 'Nuevo' : 'Leído'}
+                                </Badge>
+                                {/* Advisor Badge */}
+                                {conversation.crm_clients?.tags?.includes('Asesor Requerido') && (
+                                  <Badge variant="destructive" className="text-[10px] h-5 px-1.5 animate-pulse bg-red-600 hover:bg-red-700">
+                                    Asesor Requerido
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {getChannelIcon(conversation.channel)}
+                                {conversation.ai_enabled && (
+                                  <Bot className="h-3 w-3 text-purple-600" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Fecha */}
+                            <p className="text-xs text-gray-500">
+                              {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
 
-                          {/* Badges y estado en una línea */}
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <Badge
-                                variant={(conversation.unread_count || 0) > 0 ? 'destructive' : 'default'}
-                                className="text-xs"
-                              >
-                                {(conversation.unread_count || 0) > 0 ? 'Nuevo' : 'Leído'}
-                              </Badge>
-                              {/* Advisor Badge */}
-                              {conversation.crm_clients?.tags?.includes('Asesor Requerido') && (
-                                <Badge variant="destructive" className="text-[10px] h-5 px-1.5 animate-pulse bg-red-600 hover:bg-red-700">
-                                  Asesor Requerido
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {getChannelIcon(conversation.channel)}
-                              {conversation.ai_enabled && (
-                                <Bot className="h-3 w-3 text-purple-600" />
-                              )}
-                            </div>
+                          {/* Delete Button - Visible on hover or always visible on mobile */}
+                          <div className="flex items-center self-center pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                              onClick={(e) => handleDeleteConversation(e, conversation.id)}
+                              title="Eliminar conversación"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-
-                          {/* Fecha */}
-                          <p className="text-xs text-gray-500">
-                            {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-
-                        {/* Delete Button - Visible on hover or always visible on mobile */}
-                        <div className="flex items-center self-center pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                            onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                            title="Eliminar conversación"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+
+                  {/* Infinite Scroll Loader */}
+                  {(isFetchingMore || (hasMore && filteredConversations.length >= 20)) && (
+                    <div className="py-4 flex justify-center items-center">
+                      {isFetchingMore ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          <span>Cargando más chats...</span>
+                        </div>
+                      ) : (
+                        <div className="h-8" /> 
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
