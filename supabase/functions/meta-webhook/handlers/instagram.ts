@@ -81,39 +81,40 @@ async function getInstagramUserProfile(
 ): Promise<{ name: string; avatar_url?: string }> {
   try {
     const graphVersion = Deno.env.get('META_GRAPH_VERSION') || 'v21.0';
-    // IMPORTANT: Use 'username' and 'profile_pic' fields for Instagram
+    // IMPORTANT: Use 'name', 'username' and 'profile_pic' fields for Instagram
+    // 'name' returns the full name (e.g., "Sarkis Panosian")
     // 'username' returns the Instagram handle (e.g., "ernesto_grz")
     // 'profile_pic' returns the profile picture URL
-    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=username,profile_pic&access_token=${pageAccessToken}`;
-
+    const url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,username,profile_pic&access_token=${pageAccessToken}`;
+ 
     console.log('🔍 Fetching Instagram profile via Facebook Graph API:', { userId, graphVersion });
-
+ 
     const response = await fetch(url);
-
+ 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Error fetching Instagram profile:', {
-        status: response.status,
-        error: errorText,
-        userId,
-        endpoint: 'Facebook Graph API'
-      });
-      // Fallback with picture URL
-      return {
-        name: `Instagram User ${userId.slice(-4)}`,
-        avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
-      };
+       const errorText = await response.text();
+       console.error('❌ Error fetching Instagram profile:', {
+         status: response.status,
+         error: errorText,
+         userId,
+         endpoint: 'Facebook Graph API'
+       });
+       // Fallback with generic name
+       return {
+         name: `Instagram User ${userId.slice(-4)}`,
+         avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`
+       };
     }
-
+ 
     const data = await response.json();
     console.log('✅ Instagram profile data received:', JSON.stringify(data));
-
-    // Use 'username' field (Instagram handle) and 'profile_pic' (direct URL)
-    const username = data.username || `Instagram User ${userId.slice(-4)}`;
+ 
+    // Prioritize 'name' (Full Name) over 'username'
+    const displayName = data.name || (data.username ? (data.username.startsWith('@') ? data.username : `@${data.username}`) : `Instagram User ${userId.slice(-4)}`);
     const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
-
+ 
     return {
-      name: username.startsWith('@') ? username : `@${username}`,
+      name: displayName,
       avatar_url: avatarUrl
     };
   } catch (error) {
