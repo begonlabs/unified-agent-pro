@@ -40,61 +40,70 @@ async function isValidSignature(request: Request, rawBody: string): Promise<bool
     return false;
   }
 
-  // Determine webhook type from body to use correct app secret
-  let webhookType = 'facebook'; // default
+  // Determine webhook type from body to help prioritize secrets
+  let suspectedType = 'facebook';
   try {
     const body = JSON.parse(rawBody);
     if (body.object === 'instagram') {
-      webhookType = 'instagram';
-    } else if (body.object === 'page') {
-      webhookType = 'facebook';
+      suspectedType = 'instagram';
     }
   } catch (error) {
-    console.error('Error parsing body for webhook type detection:', error);
+    console.warn('Could not parse body for signature type detection:', error.message);
   }
 
-  // IMPORTANT: Both Facebook and Instagram now use Meta Graph API, so use META_APP_SECRET for both
-  // Instagram Basic Display API is no longer used
-  const appSecret = Deno.env.get("META_APP_SECRET");
+  // Collect potential secrets from environment
+  // Priority 1: Specific secrets based on type
+  // Priority 2: Generic META_APP_SECRET
+  // Priority 3: Other platform secrets as fallbacks
+  const facebookSecret = Deno.env.get("META_APP_SECRET");
+  const instagramSecret = Deno.env.get("INSTAGRAM_BASIC_APP_SECRET") || Deno.env.get("META_APP_IG_SECRET");
+  
+  const secretsToTry: string[] = [];
+  
+  if (suspectedType === 'instagram') {
+    if (instagramSecret) secretsToTry.push(instagramSecret);
+    if (facebookSecret) secretsToTry.push(facebookSecret);
+  } else {
+    if (facebookSecret) secretsToTry.push(facebookSecret);
+    if (instagramSecret) secretsToTry.push(instagramSecret);
+  }
 
-  if (!appSecret) {
-    console.error(`Missing META_APP_SECRET for ${webhookType}:`, {
-      webhookType,
-      metaSecret: !!Deno.env.get("META_APP_SECRET")
-    });
+  // Remove undefined or empty secrets and duplicates
+  const finalSecretsList = [...new Set(secretsToTry.filter(s => !!s))];
+
+  if (finalSecretsList.length === 0) {
+    console.error('❌ No Meta secrets found in environment variables');
     return false;
   }
 
-  console.log('🔐 Verifying signature:', {
-    webhookType,
-    hasSignature: !!signatureHeader,
-    hasAppSecret: !!appSecret,
-    bodyLength: rawBody.length,
-    secretUsed: 'META_APP_SECRET (unified for both Facebook and Instagram)'
-  });
+  console.log(`🔐 Verifying signature (trying ${finalSecretsList.length} potential secrets)...`);
 
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(appSecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+  const encoder = new TextEncoder();
+  const bodyData = encoder.encode(rawBody);
 
-  const expectedSignature = `sha256=${toHex(digest)}`;
+  for (const secret of finalSecretsList) {
+    try {
+      const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"],
+      );
+      const digest = await crypto.subtle.sign("HMAC", key, bodyData);
+      const expectedSignature = `sha256=${toHex(digest)}`;
 
-  const isValid = safeEqual(expectedSignature, signatureHeader);
-  console.log('🔐 Signature verification result:', {
-    isValid,
-    webhookType,
-    expectedLength: expectedSignature.length,
-    receivedLength: signatureHeader.length,
-    expectedStart: expectedSignature.substring(0, 15),
-    receivedStart: signatureHeader.substring(0, 15)
-  });
+      if (safeEqual(expectedSignature, signatureHeader)) {
+        console.log(`✅ Signature verified successfully using ${secret === facebookSecret ? 'Facebook' : 'Instagram/Fallback'} secret`);
+        return true;
+      }
+    } catch (err) {
+      console.error('Error during crypto operation for a secret:', err.message);
+    }
+  }
 
-  return isValid;
+  console.error('❌ None of the available secrets matched the webhook signature');
+  return false;
 }
 
 interface WebhookEvent {
