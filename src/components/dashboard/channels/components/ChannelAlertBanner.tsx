@@ -3,7 +3,6 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useChannelsStatus } from '@/hooks/useChannelsStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 export const ChannelAlertBanner: React.FC = () => {
@@ -88,14 +87,6 @@ export const ChannelAlertBanner: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 ml-4">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="h-8 text-xs bg-white hover:bg-red-50 text-red-700 border-red-200 whitespace-nowrap"
-                onClick={() => navigate('/dashboard?view=channels')}
-              >
-                Reconectar
-              </Button>
               <button 
                 onClick={() => handleDismiss(channel.id)}
                 className="p-1 hover:bg-red-100 rounded-md transition-colors text-red-500"
