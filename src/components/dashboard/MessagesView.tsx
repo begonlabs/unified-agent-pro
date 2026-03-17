@@ -132,6 +132,30 @@ const MessagesView = () => {
     'messages'
   );
 
+  // Utilidad para formatear fechas estilo WhatsApp
+  const formatMessageTime = (dateString: string) => {
+    const messageDate = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const isToday = messageDate.toDateString() === today.toDateString();
+    const isYesterday = messageDate.toDateString() === yesterday.toDateString();
+
+    const timeString = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (isToday) {
+      return timeString; // Solo la hora para hoy (estilo WhatsApp general)
+    } else if (isYesterday) {
+      return `Ayer ${timeString}`;
+    } else {
+      // Para fechas anteriores, mostrar el día y el mes (ej: 14/03 15:30)
+      const day = messageDate.getDate().toString().padStart(2, '0');
+      const month = (messageDate.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}/${month} ${timeString}`;
+    }
+  };
+
   // 🔔 Detectar mensajes nuevos y crear notificaciones
   React.useEffect(() => {
     if (!user?.id || !conversations.length) return;
@@ -813,7 +837,7 @@ const MessagesView = () => {
 
                             {/* Fecha */}
                             <p className="text-xs text-gray-500">
-                              {new Date(conversation.last_message_at).toLocaleDateString()} {new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {formatMessageTime(conversation.last_message_at)}
                             </p>
                           </div>
 
@@ -974,10 +998,7 @@ const MessagesView = () => {
                           <p className="text-sm leading-relaxed">{message.content}</p>
                           <div className="flex items-center justify-end gap-2 mt-1">
                             <p className="text-xs opacity-70">
-                              {new Date(message.created_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                              {formatMessageTime(message.created_at)}
                             </p>
                             {message.is_automated && (
                               <div className="flex items-center gap-1">
@@ -1230,10 +1251,7 @@ const MessagesView = () => {
                             <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
                             <div className="flex items-center justify-between gap-2 mt-1 sm:mt-2">
                               <p className="text-xs opacity-70">
-                                {new Date(message.created_at).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {formatMessageTime(message.created_at)}
                               </p>
                               {message.is_automated && (
                                 <div className="flex items-center gap-1">
