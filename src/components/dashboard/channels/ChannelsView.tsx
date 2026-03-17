@@ -134,8 +134,26 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
       // Limpiar URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('error') === 'user_cancelled') {
+      setTimeout(() => {
+        toast({
+          title: "Conexión cancelada",
+          description: "Has cancelado la conexión con Meta. No se han guardado cambios.",
+          variant: "default",
+        });
+      }, 500);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('error') === 'oauth_failed') {
+      setTimeout(() => {
+        toast({
+          title: "Error de conexión",
+          description: "No se pudo completar la vinculación con Meta. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
+      }, 500);
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [fetchChannels, currentUser?.id]);
+  }, [fetchChannels, currentUser?.id, toast]);
 
 
 

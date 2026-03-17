@@ -21,19 +21,30 @@ serve(async (req) => {
     const url = new URL(req.url)
     const code = url.searchParams.get('code')
     const state = url.searchParams.get('state')
+    const errorParam = url.searchParams.get('error')
+
+    // Handle user cancellation (e.g., clicking "Not Now" in the OAuth dialog)
+    if (errorParam === 'access_denied') {
+      console.log('User cancelled the OAuth flow or denied permissions.');
+      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://app.ondai.ai';
+      const frontendCallbackUrl = `${frontendUrl}/dashboard?view=channels&error=user_cancelled`;
+
+      return new Response(
+        `<!DOCTYPE html><html><head><title>Conexión Cancelada</title><meta http-equiv="refresh" content="0;url=${frontendCallbackUrl}"><style>body{font-family:Arial,sans-serif;text-align:center;padding:50px;background:#f8fafc;color:#0f172a}.container{max-width:500px;margin:0 auto;background:white;padding:30px;border-radius:15px;box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1)}.spinner{border:3px solid #e2e8f0;border-top:3px solid #3b82f6;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:20px auto}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head><body><div class="container"><h1>Conexión Cancelada</h1><p>No se realizaron cambios. Redirigiendo al panel...</p><div class="spinner"></div></div><script>setTimeout(()=>{window.location.href="${frontendCallbackUrl}"},1500)</script></body></html>`,
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+      );
+    }
 
     if (!code) {
+      // If we don't have a code or an explicit access_denied error, show a generic redirect back to app
+      console.error('Missing authorization code in OAuth callback');
+      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://app.ondai.ai';
+      const frontendCallbackUrl = `${frontendUrl}/dashboard?view=channels&error=oauth_failed`;
+      
       return new Response(
-        JSON.stringify({
-          ok: false,
-          error: 'Missing authorization code',
-          debug: { request_url: req.url }
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+        `<!DOCTYPE html><html><head><title>Error de Conexión</title><meta http-equiv="refresh" content="0;url=${frontendCallbackUrl}"><style>body{font-family:Arial,sans-serif;text-align:center;padding:50px;background:#fee2e2;color:#991b1b}.container{max-width:500px;margin:0 auto;background:white;padding:30px;border-radius:15px;box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1)}.spinner{border:3px solid #fecaca;border-top:3px solid #ef4444;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:20px auto}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head><body><div class="container"><h1>Error de Conexión</h1><p>No se pudo completar la vinculación. Redirigiendo al panel...</p><div class="spinner"></div></div><script>setTimeout(()=>{window.location.href="${frontendCallbackUrl}"},1500)</script></body></html>`,
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+      );
     }
 
     // Get environment variables
