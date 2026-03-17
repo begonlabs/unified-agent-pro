@@ -50,12 +50,13 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const isFetchingRef = useRef<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     isConnected: false,
     isConnecting: false,
     reconnectAttempts: 0
   });
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
 
   const { toast } = useToast();
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -75,7 +76,9 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       setPage(0);
       setHasMore(true);
     } else {
+      if (isFetchingRef.current) return; // Prevent race conditions on concurrent scroll events
       setIsFetchingMore(true);
+      isFetchingRef.current = true;
     }
 
     try {
@@ -101,6 +104,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         `)
         .eq('user_id', userId)
         .order('last_message_at', { ascending: false })
+        .order('id', { ascending: true })
         .range(from, to);
 
       if (fetchError) {
@@ -113,7 +117,11 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
         if (isInitial) {
           setConversations(data);
         } else {
-          setConversations(prev => [...prev, ...data]);
+          setConversations(prev => {
+            const existingIds = new Set(prev.map(c => c.id));
+            const newConversations = data.filter(c => !existingIds.has(c.id));
+            return [...prev, ...newConversations];
+          });
         }
         
         setPage(currentPage);
@@ -136,14 +144,15 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     } finally {
       setLoading(false);
       setIsFetchingMore(false);
+      isFetchingRef.current = false;
     }
   }, [userId, page, toast]);
 
   // Función para cargar más (Paginación)
   const loadMore = useCallback(async () => {
-    if (loading || isFetchingMore || !hasMore) return;
+    if (loading || isFetchingRef.current || !hasMore) return;
     await fetchConversations(false);
-  }, [loading, isFetchingMore, hasMore, fetchConversations]);
+  }, [loading, hasMore, fetchConversations]);
 
   // Helper to fetch a single conversation with full details
   const fetchSingleConversation = async (conversationId: string) => {
@@ -389,17 +398,25 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     await fetchConversations();
   }, [fetchConversations]);
 
-  // Effect principal
+  // Effect for initial loading
   useEffect(() => {
     if (!userId) {
-      cleanupSubscription();
       setConversations([]);
       setLoading(false);
       return;
     }
 
     // Cargar conversaciones iniciales
-    fetchConversations();
+    fetchConversations(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Effect for realtime subscription lifecycle
+  useEffect(() => {
+    if (!userId) {
+      cleanupSubscription();
+      return;
+    }
 
     // Configurar suscripción realtime
     setupRealtimeSubscription();
@@ -408,7 +425,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     return () => {
       cleanupSubscription();
     };
-  }, [userId, fetchConversations, setupRealtimeSubscription, cleanupSubscription]);
+  }, [userId, setupRealtimeSubscription, cleanupSubscription]);
 
   return {
     conversations,
