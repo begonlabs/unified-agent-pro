@@ -52,7 +52,7 @@ export const ChannelAlertBanner: React.FC = () => {
   // Filter out dismissed alerts and channels that are purely for internal status rather than actual connections
   const activeAlerts = disconnectedChannels.filter(c => {
     // Only alert for active primary channel platforms
-    const isRelevantPlatform = ['facebook', 'instagram', 'whatsapp', 'whatsapp_green_api'].includes(c.channel_type);
+    const isRelevantPlatform = ['facebook', 'instagram', 'instagram_legacy', 'whatsapp', 'whatsapp_green_api'].includes(c.channel_type);
     return isRelevantPlatform && !dismissed[c.id];
   });
 
@@ -64,8 +64,8 @@ export const ChannelAlertBanner: React.FC = () => {
 
   const getPlatformName = (type: string) => {
     if (type.includes('whatsapp')) return 'WhatsApp';
-    if (type === 'facebook') return 'Facebook';
-    if (type === 'instagram') return 'Instagram';
+    if (type.includes('facebook')) return 'Facebook';
+    if (type.includes('instagram')) return 'Instagram';
     return type;
   };
 
