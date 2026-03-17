@@ -67,6 +67,7 @@ export interface AIConfigStatus {
   goals: boolean;
   restrictions: boolean;
   knowledge_base: boolean;
+  knowledge: boolean;
   advisor: boolean;
   schedule: boolean;
 }

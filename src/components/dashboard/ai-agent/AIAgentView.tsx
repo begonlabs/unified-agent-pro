@@ -139,6 +139,11 @@ const AIAgentView: React.FC = () => {
           <AIAgentTabs
             currentTab={currentTab}
             onTabChange={handleTabChange}
+            tabStatus={{
+              ...validation.status,
+              faq: !!config.faq.trim(),
+              settings: config.response_time > 0 // Las settings siempre están ok si el render está montado, pero chequeamos un valor base
+            } as any}
           />
 
           <TabsContent value={currentTab} className="space-y-4 sm:space-y-6">
