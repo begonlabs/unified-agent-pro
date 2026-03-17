@@ -389,43 +389,40 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         // Use v21.0 as a stable version for Facebook Graph API
         const graphVersion = 'v21.0';
         
+        console.log(`🔍 [ProfileFetch] Initiating request for PSID: ${userId}`);
+        
+        // Log a tiny snippet of the token for debugging (safety first, keep it short)
+        const tokenSnippet = pageAccessToken ? `${pageAccessToken.substring(0, 5)}...${pageAccessToken.substring(pageAccessToken.length - 5)}` : 'MISSING';
+        console.log(`🔐 [ProfileFetch] Using token snippet: ${tokenSnippet}`);
+
         // Strategy 1: Attempt to get detailed fields
         let url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=first_name,last_name,name,profile_pic&access_token=${pageAccessToken}`;
 
-        console.log('🔍 Fetching Facebook profile (Strategy 1):', { userId, graphVersion });
-
         let response = await fetch(url);
         let data;
+        let strat1Error = '';
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.warn('⚠️ Strategy 1 failed, trying Strategy 2 (minimal fields):', {
-            status: response.status,
-            error: errorText,
-            userId
-          });
+          strat1Error = await response.text();
+          console.warn(`⚠️ [ProfileFetch] Strategy 1 (detailed fields) failed. Status: ${response.status}. Error:`, strat1Error);
 
           // Strategy 2: Fallback to minimal fields if Strategy 1 fails (common for some PSIDs/permissions)
           url = `https://graph.facebook.com/${graphVersion}/${userId}?fields=name,profile_pic&access_token=${pageAccessToken}`;
           response = await fetch(url);
           
           if (!response.ok) {
-            const finalErrorText = await response.text();
-            console.error('❌ Strategy 2 also failed:', {
-              status: response.status,
-              error: finalErrorText,
-              userId
-            });
+            const strat2Error = await response.text();
+            console.error(`❌ [ProfileFetch] Strategy 2 (minimal fields) also failed. Status: ${response.status}. Error:`, strat2Error);
             return {
               name: `Facebook User ${userId.slice(-4)}`,
               avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
-              error: finalErrorText
+              error: `S1 Er: ${strat1Error} | S2 Er: ${strat2Error}`
             };
           }
         }
 
         data = await response.json();
-        console.log('✅ Facebook profile data received:', JSON.stringify(data));
+        console.log(`✅ [ProfileFetch] Success. Raw data received:`, JSON.stringify(data));
 
         // Construct name prioritizing explicit first/last name, then fall back to full name field
         let name = '';
@@ -434,8 +431,14 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
         }
         
         // If concatenation resulted in empty string or we only have 'name' field
+        if (!name && data.name) {
+          name = data.name;
+        }
+
+        // Final safety check for name
         if (!name || name.trim() === '') {
-          name = data.name || `Facebook User ${userId.slice(-4)}`;
+          console.warn(`⚠️ [ProfileFetch] API returned success but no valid name field. Data:`, data);
+          name = `Facebook User ${userId.slice(-4)}`;
         }
         
         const avatarUrl = data.profile_pic || `https://graph.facebook.com/${userId}/picture?type=large`;
@@ -445,11 +448,11 @@ export async function handleMessengerEvent(event: MessengerEvent): Promise<void>
           avatar_url: avatarUrl
         };
       } catch (error) {
-        console.error('❌ Exception in getFacebookUserProfile:', error);
+        console.error('❌ [ProfileFetch] Exception in getFacebookUserProfile:', error);
         return {
           name: `Facebook User ${userId.slice(-4)}`,
           avatar_url: `https://graph.facebook.com/${userId}/picture?type=large`,
-          error: error.message
+          error: error.message || 'Unknown exception in getFacebookUserProfile'
         };
       }
     }
