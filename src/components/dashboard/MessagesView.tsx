@@ -758,6 +758,7 @@ const MessagesView = () => {
                           <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
                             {conversation.crm_clients?.avatar_url ? (
                               <img
+                                referrerPolicy="no-referrer"
                                 src={conversation.crm_clients.avatar_url}
                                 alt={conversation.crm_clients.name}
                                 className="h-full w-full object-cover"
@@ -868,7 +869,7 @@ const MessagesView = () => {
                           <span>Cargando más chats...</span>
                         </div>
                       ) : (
-                        <div className="h-8" /> 
+                        <div className="h-8" />
                       )}
                     </div>
                   )}
@@ -898,6 +899,7 @@ const MessagesView = () => {
                 <Avatar className="h-10 w-10">
                   {selectedConv?.crm_clients?.avatar_url ? (
                     <img
+                      referrerPolicy="no-referrer"
                       src={selectedConv.crm_clients.avatar_url}
                       alt={selectedConv.crm_clients.name}
                       className="h-full w-full object-cover"
@@ -1142,6 +1144,7 @@ const MessagesView = () => {
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                       {selectedConv?.crm_clients?.avatar_url ? (
                         <img
+                          referrerPolicy="no-referrer"
                           src={selectedConv.crm_clients.avatar_url}
                           alt={selectedConv.crm_clients.name}
                           className="h-full w-full object-cover"

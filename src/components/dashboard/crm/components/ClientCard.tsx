@@ -67,7 +67,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-start sm:items-center gap-3 sm:gap-4">
             <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
-              <AvatarImage src={client.avatar_url} alt={client.name} />
+              <AvatarImage referrerPolicy="no-referrer" src={client.avatar_url} alt={client.name} />
               <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm sm:text-base">
                 {client.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
