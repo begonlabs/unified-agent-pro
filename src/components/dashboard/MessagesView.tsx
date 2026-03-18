@@ -34,7 +34,7 @@ import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ConversationConnectionStatus } from '@/components/ui/connection-status';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useDebounceValue } from '@/hooks/useDebounceValue';
 import { NotificationService } from '@/components/notifications';
 import { formatWhatsAppNumber, isPSID } from '@/utils/phoneNumberUtils';
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
@@ -87,6 +87,7 @@ const MessagesView = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounceValue(searchTerm, 500);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
 
@@ -111,7 +112,7 @@ const MessagesView = () => {
     connectionStatus,
     refreshConversations,
     loadMore
-  } = useRealtimeConversations(user?.id || null);
+  } = useRealtimeConversations(user?.id || null, debouncedSearchTerm);
 
   // 🖱️ Manejar scroll infinito
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {

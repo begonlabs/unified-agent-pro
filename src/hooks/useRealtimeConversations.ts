@@ -43,7 +43,7 @@ interface UseRealtimeConversationsReturn {
   error: string | null;
 }
 
-export const useRealtimeConversations = (userId: string | null): UseRealtimeConversationsReturn => {
+export const useRealtimeConversations = (userId: string | null, debouncedSearch: string = ''): UseRealtimeConversationsReturn => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,9 +86,24 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       const from = currentPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      console.log(`🔍 Fetching conversations for user: ${userId}, Range: ${from}-${to}`);
+      console.log(`🔍 Fetching conversations for user: ${userId}, Range: ${from}-${to}, Search: ${debouncedSearch}`);
 
-      const { data, error: fetchError } = await supabase
+      // 2-step search logic if debouncedSearch exists
+      let clientIdsToMatch: string[] = [];
+      if (debouncedSearch) {
+        // Step 1: Find matching clients
+        const { data: clientsData } = await supabase
+          .from('crm_clients')
+          .select('id')
+          .eq('user_id', userId)
+          .ilike('name', `%${debouncedSearch}%`);
+          
+        if (clientsData && clientsData.length > 0) {
+          clientIdsToMatch = clientsData.map(c => c.id);
+        }
+      }
+
+      let query = supabase
         .from('conversations')
         .select(`
           *,
@@ -102,7 +117,18 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
             tags
           )
         `)
-        .eq('user_id', userId)
+        .eq('user_id', userId);
+
+      if (debouncedSearch) {
+        // Step 2: filter based on channel or found clients
+        if (clientIdsToMatch.length > 0) {
+           query = query.or(`channel.ilike.%${debouncedSearch}%,client_id.in.(${clientIdsToMatch.join(',')})`);
+        } else {
+           query = query.ilike('channel', `%${debouncedSearch}%`);
+        }
+      }
+
+      const { data, error: fetchError } = await query
         .order('last_message_at', { ascending: false })
         .order('id', { ascending: true })
         .range(from, to);
@@ -146,7 +172,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
       setIsFetchingMore(false);
       isFetchingRef.current = false;
     }
-  }, [userId, page, toast]);
+  }, [userId, page, toast, debouncedSearch]);
 
   // Función para cargar más (Paginación)
   const loadMore = useCallback(async () => {
@@ -409,7 +435,7 @@ export const useRealtimeConversations = (userId: string | null): UseRealtimeConv
     // Cargar conversaciones iniciales
     fetchConversations(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, debouncedSearch]);
 
   // Effect for realtime subscription lifecycle
   useEffect(() => {
