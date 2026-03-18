@@ -32,8 +32,8 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
 
   // Hooks
   // Hooks
-  const { timeRange, setTimeRange, timeRangeOptions } = useTimeRange();
-  const { stats, chartData, loading } = useStats(user, timeRange);
+  const { timeRange, setTimeRange, dateRange, setDateRange, timeRangeOptions } = useTimeRange();
+  const { stats, chartData, loading } = useStats(user, timeRange, dateRange);
 
   // Calculate automation data for pie chart
   const automationData = StatsService.calculateAutomationData(stats);
@@ -60,7 +60,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
 
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-gray-900">Estadísticas Avanzadas</h2>
-              <p className="text-gray-500 max-w-md mx-auto">
+              <p className="text-gray-50 max-w-md mx-auto">
                 Obtén insights valiosos sobre tu rendimiento, actividad de canales y automatizaciones.
                 Esta función está disponible en los planes Avanzado, Pro y Empresarial.
               </p>
@@ -103,6 +103,8 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
         timeRange={timeRange}
         timeRangeOptions={timeRangeOptions}
         onTimeRangeChange={setTimeRange}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
       />
 
       {/* Loading State */}

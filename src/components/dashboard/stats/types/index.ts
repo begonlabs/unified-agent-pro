@@ -58,7 +58,12 @@ export interface StatsViewProps {
 }
 
 // Time range options
-export type TimeRange = '24h' | '7d' | '30d' | '90d';
+export type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all' | 'custom';
+
+export interface DateRange {
+  from: Date | undefined;
+  to?: Date | undefined;
+}
 
 // Raw conversation data from database
 export interface ConversationData {

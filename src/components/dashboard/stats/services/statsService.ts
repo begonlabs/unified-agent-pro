@@ -11,14 +11,15 @@ import {
   ConversationData,
   MessageData,
   ClientData,
-  User
+  User,
+  DateRange
 } from '../types';
 
 export class StatsService {
   /**
    * Fetch all statistics data for a user
    */
-  static async fetchUserStats(userId: string, timeRange: string = '7d'): Promise<StatsServiceResponse> {
+  static async fetchUserStats(userId: string, timeRange: string = '7d', dateRange?: DateRange): Promise<StatsServiceResponse> {
     try {
       console.log('🔍 Fetching stats for user:', userId, 'Time range:', timeRange);
 
@@ -61,10 +62,10 @@ export class StatsService {
       });
 
       // 3. Process statistics
-      const stats = this.processStats(conversations as ConversationData[], clients as ClientData[], timeRange);
+      const stats = this.processStats(conversations as ConversationData[], clients as ClientData[], timeRange, dateRange);
 
       // 4. Process chart data
-      const chartData = this.processChartData(conversations as ConversationData[], timeRange);
+      const chartData = this.processChartData(conversations as ConversationData[], timeRange, dateRange);
 
       console.log('Stats processed successfully:', {
         totalMessages: stats.totalMessages,
@@ -86,7 +87,7 @@ export class StatsService {
   /**
    * Get start date based on time range
    */
-  private static getStartDate(timeRange: string): Date {
+  private static getStartDate(timeRange: string, dateRange?: DateRange): Date {
     const now = new Date();
     switch (timeRange) {
       case '24h':
@@ -97,22 +98,48 @@ export class StatsService {
         return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       case '90d':
         return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      case 'all':
+        return new Date(0);
+      case 'custom':
+        return dateRange?.from ? new Date(dateRange.from) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       default:
         return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
   }
 
   /**
+   * Get end date based on time range (for custom ranges)
+   */
+  private static getEndDate(timeRange: string, dateRange?: DateRange): Date | null {
+    if (timeRange === 'custom' && dateRange?.to) {
+      const end = new Date(dateRange.to);
+      end.setHours(23, 59, 59, 999); // Include the whole end day
+      return end;
+    }
+    return null;
+  }
+
+  /**
+   * Check if a date falls within the calculated period
+   */
+  private static isDateInPeriod(dateStr: string, startDate: Date, endDate: Date | null): boolean {
+    const d = new Date(dateStr);
+    if (endDate) return d >= startDate && d <= endDate;
+    return d >= startDate;
+  }
+
+  /**
    * Process raw data into statistics
    */
-  private static processStats(conversations: ConversationData[], clients: ClientData[], timeRange: string): StatsData {
+  private static processStats(conversations: ConversationData[], clients: ClientData[], timeRange: string, dateRange?: DateRange): StatsData {
     let totalMessages = 0;
     let automatedMessages = 0;
     let humanMessages = 0;
     let clientMessages = 0;
     let conversationsWithResponse = 0;
 
-    const startDate = this.getStartDate(timeRange);
+    const startDate = this.getStartDate(timeRange, dateRange);
+    const endDate = this.getEndDate(timeRange, dateRange);
 
     // Filter conversations that have activity within the time range
     // Or just filter messages within the time range? 
@@ -122,7 +149,7 @@ export class StatsService {
       const messages = conversation.messages || [];
 
       // Filter messages by date
-      const messagesInPeriod = messages.filter(m => new Date(m.created_at) >= startDate);
+      const messagesInPeriod = messages.filter(m => this.isDateInPeriod(m.created_at, startDate, endDate));
 
       if (messagesInPeriod.length === 0) return;
 
@@ -149,15 +176,12 @@ export class StatsService {
 
     // Process client statistics
     const totalClients = clients?.length || 0;
-    const newLeads = clients?.filter(client => {
-      const createdAt = new Date(client.created_at);
-      return createdAt >= startDate;
-    }).length || 0;
+    const newLeads = clients?.filter(client => this.isDateInPeriod(client.created_at, startDate, endDate)).length || 0;
 
     // Calculate response rate based on active conversations in period
     // We count a conversation as "active" if it has messages in the period
     const activeConversationsCount = conversations.filter(c =>
-      (c.messages || []).some(m => new Date(m.created_at) >= startDate)
+      (c.messages || []).some(m => this.isDateInPeriod(m.created_at, startDate, endDate))
     ).length;
 
     const responseRate = activeConversationsCount > 0
@@ -179,10 +203,11 @@ export class StatsService {
   /**
    * Process raw data into chart data
    */
-  private static processChartData(conversations: ConversationData[], timeRange: string): ChartData {
+  private static processChartData(conversations: ConversationData[], timeRange: string, dateRange?: DateRange): ChartData {
     const channelStats: Record<string, ChannelStat> = {};
     const dailyStats: Record<string, DailyStat> = {};
-    const startDate = this.getStartDate(timeRange);
+    const startDate = this.getStartDate(timeRange, dateRange);
+    const endDate = this.getEndDate(timeRange, dateRange);
 
     // Process channel statistics
     conversations?.forEach(conversation => {
@@ -190,7 +215,7 @@ export class StatsService {
       const channel = conversation.channel;
 
       // Filter messages by date
-      const messagesInPeriod = messages.filter(m => new Date(m.created_at) >= startDate);
+      const messagesInPeriod = messages.filter(m => this.isDateInPeriod(m.created_at, startDate, endDate));
 
       if (messagesInPeriod.length === 0) return;
 

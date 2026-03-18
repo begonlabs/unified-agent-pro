@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRefreshListener } from '@/hooks/useDataRefresh';
 import { StatsService } from '../services/statsService';
-import { StatsData, ChartData, User } from '../types';
+import { StatsData, ChartData, User, DateRange } from '../types';
 
-export const useStats = (user: User | null, timeRange: string = '7d') => {
+export const useStats = (user: User | null, timeRange: string = '7d', dateRange?: DateRange) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<StatsData>({
     totalMessages: 0,
@@ -46,9 +46,9 @@ export const useStats = (user: User | null, timeRange: string = '7d') => {
 
     try {
       setLoading(true);
-      console.log('🔍 Fetching stats for user:', user.id, 'Time range:', timeRange);
+      console.log('🔍 Fetching stats for user:', user.id, 'Time range:', timeRange, 'Date range:', dateRange);
 
-      const { stats: fetchedStats, chartData: fetchedChartData } = await StatsService.fetchUserStats(user.id, timeRange);
+      const { stats: fetchedStats, chartData: fetchedChartData } = await StatsService.fetchUserStats(user.id, timeRange, dateRange);
 
       setStats(fetchedStats);
       setChartData(fetchedChartData);
@@ -80,13 +80,13 @@ export const useStats = (user: User | null, timeRange: string = '7d') => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, timeRange, toast]);
+  }, [user?.id, timeRange, dateRange, toast]);
 
   useEffect(() => {
     if (user?.id) {
       fetchStats();
     }
-  }, [user?.id, timeRange, fetchStats]);
+  }, [user?.id, timeRange, dateRange, fetchStats]);
 
   // Listen for data refresh events
   useRefreshListener(
