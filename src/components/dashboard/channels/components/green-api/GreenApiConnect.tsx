@@ -215,7 +215,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 console.error('Unexpected response from Green API:', data);
                 toast({
                     title: "Error",
-                    description: `Respuesta inesperada de Green API: ${JSON.stringify(data)}`,
+                    description: `Respuesta inesperada del servidor de conexión: ${JSON.stringify(data)}`,
                     variant: "destructive"
                 });
             }
@@ -223,7 +223,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             console.error('Error getting QR code:', error);
             if (error.message === 'INSTANCIA_INVALIDA') {
                 setIsInvalid(true);
-                const msg = "Esta instancia ya no existe o su token es inválido en Green API. Por favor, bórrala permanentemente para crear una nueva.";
+                const msg = "Esta instancia ya no existe o la conexión es inválida. Por favor, bórrala permanentemente para crear una nueva.";
                 toast({
                     title: "Instancia Inválida",
                     description: msg,
@@ -295,7 +295,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                         // Sincronizamos si:
                         // a) Estamos en flujo activo (waiting/starting)
                         // b) Es el primer chequeo y no hay rastro de desconexión reciente (Auto-repair mount)
-                        const shouldSync = status === 'waiting' || status === 'starting' || isStarting || status === 'disconnected';
+                        const shouldSync = status === 'waiting' || isStarting || status === 'disconnected';
 
                         if (shouldSync) {
                             console.log('🔄 Sincronizando configuración y guardando conexión...');
@@ -453,7 +453,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     </Button>
                     {loading && (
                         <p className="text-[11px] text-green-700 mt-2 text-center animate-pulse">
-                            Esto puede tardar hasta 2 minutos mientras Green API prepara tu línea.
+                            Esto puede tardar hasta 2 minutos mientras nuestros servidores preparan tu línea de WhatsApp.
                         </p>
                     )}
                     <p className="text-[10px] text-green-600 mt-4 text-center opacity-70">
@@ -491,7 +491,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     </div>
                     <h4 className="font-bold text-red-900 mb-2 italic">Instancia "Zombie" Detectada</h4>
                     <p className="text-sm text-red-700 mb-6 max-w-xs leading-relaxed">
-                        Esta instancia existe en nuestra base de datos pero ha sido eliminada o invalidada en Green API.
+                        Esta instancia existe en nuestra base de datos pero la conexión externa ha sido eliminada o invalidada.
                     </p>
                     <Button
                         onClick={() => onInvalidInstance && onInvalidInstance()}
@@ -514,7 +514,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                         Tu instancia está lista. Haz clic abajo para ver el código QR de conexión.
                     </p>
                     <Button
-                        onClick={getQRCode}
+                        onClick={() => getQRCode()}
                         disabled={loading}
                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >

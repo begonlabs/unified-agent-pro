@@ -145,13 +145,13 @@ export const useChannelActions = (user: User | null) => {
       const channel = channels.find(c => c.id === channelId);
       const isGreenApi = channel?.channel_type === 'whatsapp_green_api';
 
-      if (!confirm(`¿Estás SEGURO de que quieres BORRAR PERMANENTEMENTE esta instancia de WhatsApp? Esta acción no se puede deshacer y perderás el acceso a esta línea específica en Green API.${!isGreenApi ? ' NOTA: Este no es un canal de Green API.' : ''}`)) {
+      if (!confirm(`¿Estás SEGURO de que quieres BORRAR PERMANENTEMENTE esta instancia de WhatsApp? Esta acción no se puede deshacer y perderás el acceso a esta conexión de WhatsApp.`)) {
         return;
       }
 
       toast({
         title: "Eliminando...",
-        description: "Borrando instancia de Green API y de tu cuenta.",
+        description: "Borrando instancia de WhatsApp de tu cuenta.",
       });
 
       // Eliminar canal permanentemente
@@ -177,7 +177,7 @@ export const useChannelActions = (user: User | null) => {
   }, [user, toast]);
 
   const handleClearAllWhatsAppChannels = useCallback(async (channels: Channel[], setChannels: (channels: Channel[]) => void) => {
-    if (!confirm("⚠️ ¿Estás SEGURO de que quieres borrar TODAS tus instancias de WhatsApp? esto limpiará tanto Green API como tu base de datos local.")) return;
+    if (!confirm("⚠️ ¿Estás SEGURO de que quieres borrar TODAS tus instancias de WhatsApp? Esto limpiará las conexiones del servidor y tu base de datos local.")) return;
 
     try {
       toast({
