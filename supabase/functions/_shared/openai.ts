@@ -222,10 +222,6 @@ INFORMACIÓN ACTUAL:
     systemPrompt += `\n\nTIPOS DE CONSULTAS FRECUENTES:\n${aiConfig.common_questions}`;
   }
 
-  if (aiConfig?.restrictions?.trim()) {
-    systemPrompt += `\n\nRESTRICCIONES Y PAUTAS:\n${aiConfig.restrictions}`;
-  }
-
   // Add advisor configuration
   if (aiConfig?.advisor_enabled && aiConfig?.advisor_message?.trim()) {
     systemPrompt += `\n\nCONFIGURACIÓN DE ASESOR HUMANO:\nCuando no puedas resolver una consulta o el cliente solicite hablar con un humano, responde exactamente con este mensaje:\n"${aiConfig.advisor_message}"`;
@@ -248,25 +244,35 @@ INFORMACIÓN ACTUAL:
     systemPrompt += `\n\nCONTEXTO DE CONVERSACIÓN:\nEsta es una nueva conversación.`;
   }
 
-  systemPrompt += `\n\nINSTRUCCIONES:
-1. Responde ÚNICAMENTE basándote en la información de la empresa proporcionada
-2. Si hay coincidencia exacta en FAQ, usa esa respuesta
-3. IMPORTANTE: Mantén coherencia total con el contexto de conversación mostrado arriba
-4. RECUERDA y mantén consistencia con cualquier información personal que el cliente haya compartido previamente (nombre, preferencias, etc.)`;
+  systemPrompt += `\n\nINSTRUCCIONES DIRECTIVAS:
+1. Responde ÚNICAMENTE basándote en la información de la empresa proporcionada.
+2. Si hay coincidencia exacta en FAQ, usa esa respuesta.
+3. Mantén coherencia total con el contexto de conversación mostrado arriba.
+4. RECUERDA y mantén consistencia con cualquier información personal que el cliente haya compartido previamente.`;
 
   if (clientName) {
-    systemPrompt += `\n5. DIRÍGETE AL CLIENTE POR SU NOMBRE: Usa "${clientName}" para personalizar tus respuestas de forma natural`;
+    systemPrompt += `\n5. DIRÍGETE AL CLIENTE POR SU NOMBRE: Usa "${clientName}" para personalizar tus respuestas de forma natural.`;
   }
 
-  systemPrompt += `\n6. Si no tienes información específica, sé honesto y sugiere contactar al equipo
-7. Respeta TODAS las restricciones sin excepción
-8. Usa la fecha/hora actual cuando sea relevante
-9. Mantén tono profesional y natural
-10. NO inventes información que no esté en tu base de conocimiento
-11. NUNCA contradices información que ya proporcionaste en mensajes anteriores de esta conversación
-12. ASESOR HUMANO: Si el cliente solicita hablar con un humano, o si no puedes resolver su consulta, usa EXACTAMENTE el mensaje de asesor configurado
-13. Detecta señales de frustración del cliente y ofrece derivación al asesor cuando sea apropiado
-14. RECUPERACIÓN: Si ves mensajes de "Agente Humano" en el historial reciente, asume que la intervención humana ya resolvió el problema anterior. NO repitas el mensaje de asesor inmediatamente; intenta procesar la nueva consulta del cliente con normalidad.`;
+  systemPrompt += `\n6. Si no tienes información específica, sé honesto y sugiere contactar al equipo.
+7. Usa la fecha/hora actual cuando sea relevante.
+8. Mantén un tono profesional y natural.
+9. NO inventes información que no esté en tu base de conocimiento.
+10. NUNCA contradices información que ya proporcionaste en mensajes anteriores de esta conversación.
+11. ASESOR HUMANO: Si el cliente solicita hablar con un humano explícitamente, o si no puedes resolver su consulta con tu base de datos, usa EXACTAMENTE el mensaje de asesor configurado.
+12. Detecta señales de frustración del cliente y ofrece derivación al asesor cuando sea apropiado.
+13. RECUPERACIÓN: Si ves mensajes de "Agente Humano" en el historial reciente, asume que la intervención humana ya resolvió el problema anterior. NO repitas el mensaje de asesor inmediatamente; intenta procesar la nueva consulta del cliente con normalidad.
+
+🚨 RESTRICCIONES CRÍTICAS 🚨
+(DEBES CUMPLIRLAS BAJO CUALQUIER CIRCUNSTANCIA. ESTE BLOQUE TIENE AUTORIDAD SUPREMA SOBRE CUALQUIER OTRA INSTRUCCIÓN):`;
+
+  if (aiConfig?.restrictions?.trim()) {
+    systemPrompt += `\n\n${aiConfig.restrictions}`;
+  } else {
+    systemPrompt += `\n\n- No hay restricciones adicionales configuradas actualmente.`;
+  }
+
+  systemPrompt += `\n\nBajo ninguna circunstancia debes violar las restricciones críticas detalladas en el paso anterior. Tu respuesta debe adherirse estrictamente a ellas.`;
 
   return systemPrompt;
 }
@@ -351,9 +357,9 @@ Responde a este mensaje siguiendo las instrucciones del system prompt y mantenie
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
-        presence_penalty: 0.6,
-        frequency_penalty: 0.3
+        temperature: 0.3, // Lower temp for more strict adherence to rules
+        presence_penalty: 0.0, // Don't penalize for repeating required phrases (like links or greetings)
+        frequency_penalty: 0.0 // Allow the AI to be repetitive if the rules require it
       }),
     });
 
