@@ -32,7 +32,7 @@ export const StatsKPIs: React.FC<StatsKPIsProps> = ({ stats }) => (
     />
     <StatCard
       title="Mensajes IA"
-      value={`${stats.totalMessages > 0 ? ((stats.automatedMessages / stats.totalMessages) * 100).toFixed(1) : '0.0'}%`}
+      value={`${(stats.automatedMessages + stats.humanMessages) > 0 ? ((stats.automatedMessages / (stats.automatedMessages + stats.humanMessages)) * 100).toFixed(1) : '0.0'}%`}
       icon={Bot}
       color="text-emerald-600"
       subtitle="Automatización"
