@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users } from 'lucide-react';
+import { Users, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { CRMViewProps } from './types';
 import { useClients } from './hooks/useClients';
@@ -19,7 +19,7 @@ import { ViewMode } from './types';
 import { useProfile } from '@/components/dashboard/profile/hooks/useProfile';
 import { getCRMLevel, canCreateClient } from '@/lib/channelPermissions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock } from 'lucide-react';
+import { useDebounceValue } from '@/hooks/useDebounceValue';
 
 const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   console.log('CRMView: Component is rendering!');
@@ -29,8 +29,22 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   const currentUser = propUser || authUser;
 
   // Hooks principales
-  const { clients, setClients, loading } = useClients(currentUser);
-  const { filters, filteredClients, updateFilters } = useClientFilters(clients);
+  const { filters, updateFilters } = useClientFilters();
+  const debouncedSearchTerm = useDebounceValue(filters.searchTerm, 500);
+  const debouncedFilters = React.useMemo(() => ({
+    ...filters,
+    searchTerm: debouncedSearchTerm
+  }), [filters, debouncedSearchTerm]);
+
+  const { 
+    clients, 
+    setClients, 
+    loading, 
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    stats: clientStats 
+  } = useClients(currentUser, debouncedFilters);
   const { updateClientStatus, updateClient, deleteClient } = useClientActions(currentUser, clients, setClients);
   const { exportToCSV, exportToExcel } = useExport();
   const {
@@ -50,12 +64,9 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
   const crmLevel = profile ? getCRMLevel(profile) : 'basic';
   const clientCheck = profile ? canCreateClient(profile, clients.length) : { allowed: true };
 
-  // Calcular estadísticas
-  const clientStats = CRMService.calculateStats(clients);
-
   // Handlers
-  const handleExportCSV = () => exportToCSV(filteredClients);
-  const handleExportExcel = () => exportToExcel(filteredClients);
+  const handleExportCSV = () => exportToCSV(clients);
+  const handleExportExcel = () => exportToExcel(clients);
 
   const handleSaveClient = async () => {
     if (editingClient) {
@@ -111,7 +122,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
               onFiltersChange={updateFilters}
               onExportCSV={handleExportCSV}
               onExportExcel={handleExportExcel}
-              filteredClientsCount={filteredClients.length}
+              filteredClientsCount={clientStats.total}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               crmLevel={crmLevel}
@@ -127,7 +138,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                     <p className="text-muted-foreground">Cargando clientes...</p>
                   </div>
                 </div>
-              ) : filteredClients.length === 0 ? (
+              ) : clients.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <h3 className="text-lg font-medium mb-2">No hay clientes</h3>
@@ -141,7 +152,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
               ) : (
                 viewMode === 'grid' ? (
                   <div className="grid gap-3 sm:gap-4 p-3 sm:p-6">
-                    {filteredClients.map((client) => (
+                    {clients.map((client) => (
                       <ClientCard
                         key={client.id}
                         client={client}
@@ -154,7 +165,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                 ) : (
                   <div className="p-3 sm:p-6">
                     <ClientList
-                      clients={filteredClients}
+                      clients={clients}
                       onEdit={openEditDialog}
                       onStatusChange={updateClientStatus}
                       onDelete={deleteClient}
@@ -162,6 +173,22 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                     />
                   </div>
                 )
+              )}
+              {isFetchingMore && (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {hasMore && !isFetchingMore && !loading && clients.length > 0 && (
+                <div className="h-8" ref={(el) => {
+                  if (el) {
+                    const observer = new IntersectionObserver(([entry]) => {
+                      if (entry.isIntersecting) loadMore();
+                    }, { rootMargin: '100px' });
+                    observer.observe(el);
+                    return () => observer.disconnect();
+                  }
+                }} />
               )}
             </ScrollArea>
           </CardContent>

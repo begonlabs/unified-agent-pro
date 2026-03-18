@@ -6,15 +6,77 @@ export class CRMService {
   /**
    * Obtiene todos los clientes del usuario
    */
-  static async fetchClients(userId: string): Promise<Client[]> {
-    const { data } = await supabaseSelect(
-      supabase
-        .from('crm_clients')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-    );
+  static async fetchClients(
+    userId: string,
+    page: number = 0,
+    filters?: { searchTerm?: string; filterStatus?: string; filterSource?: string },
+    pageSize: number = 20
+  ): Promise<Client[]> {
+    let query = supabase
+      .from('crm_clients')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (filters) {
+      if (filters.filterStatus && filters.filterStatus !== 'all') {
+        query = query.eq('status', filters.filterStatus);
+      }
+      
+      if (filters.filterSource && filters.filterSource !== 'all') {
+        if (filters.filterSource === 'whatsapp') {
+          // @ts-ignore - Supabase type depth limit workaround
+          query = query.in('source', ['whatsapp', 'whatsapp_green_api']);
+        } else {
+          query = query.eq('source', filters.filterSource);
+        }
+      }
+
+      if (filters.searchTerm) {
+        query = query.or(`name.ilike.%${filters.searchTerm}%,email.ilike.%${filters.searchTerm}%,phone.ilike.%${filters.searchTerm}%`);
+      }
+    }
+
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('Error fetching clients:', error);
+      throw error;
+    }
+
     return (data as Client[]) || [];
+  }
+
+  /**
+   * Obtiene las estadísticas de clientes directamente desde la base de datos (Head Counts)
+   */
+  static async fetchClientStats(userId: string): Promise<{ total: number; leads: number; prospects: number; active: number; inactive: number }> {
+    const promises = [
+      supabase.from('crm_clients').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      supabase.from('crm_clients').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'lead'),
+      supabase.from('crm_clients').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'prospect'),
+      supabase.from('crm_clients').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'client'),
+      supabase.from('crm_clients').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'inactive')
+    ];
+
+    const results = await Promise.all(promises);
+
+    const errorResult = results.find(result => result.error);
+    if (errorResult && errorResult.error) {
+      throw errorResult.error;
+    }
+
+    return {
+      total: results[0].count || 0,
+      leads: results[1].count || 0,
+      prospects: results[2].count || 0,
+      active: results[3].count || 0,
+      inactive: results[4].count || 0,
+    };
   }
 
   /**
