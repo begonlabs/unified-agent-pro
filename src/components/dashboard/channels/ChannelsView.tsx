@@ -351,7 +351,8 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
         </ChannelCard>
       </div>
 
-      {/* Channel Status */}
+      {/* Channel Status (Oculto por redundancia visual, mantenido por si se requiere debug) */}
+      {/*
       <div className="flex justify-between items-center">
         <ChannelStatus
           channels={channels}
@@ -359,6 +360,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
           onHardDelete={handleHardDelete}
         />
       </div>
+      */}
       {/* Admin Only: Clear All Button (Hidden for regular users for safety) */}
       {isAdmin && (
         <div className="pt-8 border-t border-slate-100 mt-8">
