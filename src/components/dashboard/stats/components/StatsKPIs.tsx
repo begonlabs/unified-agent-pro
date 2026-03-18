@@ -8,7 +8,7 @@ interface StatsKPIsProps {
 }
 
 export const StatsKPIs: React.FC<StatsKPIsProps> = ({ stats }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
     <StatCard
       title="Mensajes Totales"
       value={stats.totalMessages.toLocaleString()}
@@ -29,13 +29,6 @@ export const StatsKPIs: React.FC<StatsKPIsProps> = ({ stats }) => (
       icon={Users}
       color="text-purple-600"
       subtitle="+8% vs mes anterior"
-    />
-    <StatCard
-      title="Mensajes IA"
-      value={`${(stats.automatedMessages + stats.humanMessages) > 0 ? ((stats.automatedMessages / (stats.automatedMessages + stats.humanMessages)) * 100).toFixed(1) : '0.0'}%`}
-      icon={Bot}
-      color="text-emerald-600"
-      subtitle="Automatización"
     />
   </div>
 );
