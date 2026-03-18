@@ -246,7 +246,7 @@ INFORMACIÓN ACTUAL:
 
   systemPrompt += `\n\nINSTRUCCIONES DIRECTIVAS:
 1. Responde ÚNICAMENTE basándote en la información de la empresa proporcionada.
-2. Si hay coincidencia exacta en FAQ, usa esa respuesta.
+2. PRIORIDAD MÁXIMA PARA FAQs: Revisa cuidadosamente la sección de "PREGUNTAS FRECUENTES (FAQ)". Si la consulta del cliente es similar o tiene relación con alguna pregunta del FAQ, debes usar EXACTAMENTE la información de ahí para responder, sin inventar ni omitir detalles críticos.
 3. Mantén coherencia total con el contexto de conversación mostrado arriba.
 4. RECUERDA y mantén consistencia con cualquier información personal que el cliente haya compartido previamente.`;
 
@@ -310,19 +310,6 @@ export async function generateAIResponse(
         success: false,
         error: 'AI is not active for this user'
       };
-    }
-
-    // Check custom FAQ first for exact matches
-    if (aiConfig.faq) {
-      const faqResponse = checkCustomFAQ(message.toLowerCase().trim(), aiConfig.faq);
-      if (faqResponse) {
-        console.log('✅ FAQ match found');
-        return {
-          success: true,
-          response: faqResponse,
-          confidence_score: 0.95
-        };
-      }
     }
 
     // Get OpenAI API key (hardcoded as requested)
