@@ -10,6 +10,7 @@ import { useDashboardOptimized } from '@/hooks/useDashboardOptimized';
 import { AutoPreloader } from '@/components/lazy/LazyComponents';
 import ResponsiveSidebarOptimized from '@/components/dashboard/sidebar/ResponsiveSidebarOptimized';
 import { ChannelAlertBanner } from '@/components/dashboard/channels/components/ChannelAlertBanner';
+import { ClientLimitModals } from '@/components/dashboard/ClientLimitModals';
 
 /**
  * Dashboard optimizado con lazy loading y gestión de estado mejorada
@@ -227,6 +228,9 @@ const DashboardOptimized: React.FC = () => {
 
       {/* Alertas Globales de Canales */}
       <ChannelAlertBanner />
+
+      {/* Alertas de Límite de Contactos (CRM) */}
+      <ClientLimitModals />
 
       {/* Contenido principal con lazy loading */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
