@@ -46,7 +46,7 @@ export const ChannelStatusSection: React.FC<ChannelStatusProps> = ({
   }
 
   return (
-    <div className={`p-2 sm:p-4 border-t bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5 ${isMobile ? 'p-2' : 'p-4'}`}>
+    <div className={`flex-shrink max-h-[25vh] overflow-y-auto p-2 sm:p-4 border-t bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5 ${isMobile ? 'p-2' : 'p-4'}`}>
       <h3 className={`font-semibold text-[#3a0caa] mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2 ${isMobile ? 'text-xs' : 'text-sm'
         }`}>
         <div className={`bg-gradient-to-r from-[#3a0caa] to-[#710db2] rounded-full ${isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'
@@ -67,13 +67,13 @@ export const ChannelStatusSection: React.FC<ChannelStatusProps> = ({
           </span>
         </div>
       ) : (
-        <div className={`space-y-1 sm:space-y-3 ${isMobile ? 'space-y-1' : 'space-y-3'}`}>
+        <div className={`space-y-0.5 sm:space-y-1`}>
           {channels.map((channel) => {
             const Icon = channel.icon;
             return (
               <div
                 key={channel.id}
-                className={`flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-lg hover:bg-[#3a0caa]/5 transition-colors duration-200 ${isMobile ? 'text-xs gap-2 p-1' : 'text-sm gap-3 p-2'
+                className={`flex items-center gap-1.5 sm:gap-2 p-0.5 sm:p-1 rounded-lg hover:bg-[#3a0caa]/5 transition-colors duration-200 ${isMobile ? 'text-[11px] gap-1.5 p-0.5' : 'text-xs gap-2 p-1'
                   }`}
               >
                 <Icon className={`${channel.color} ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />

@@ -14,16 +14,16 @@ export const SignOutButton: React.FC<SignOutButtonProps> = ({
   isCollapsed = false
 }) => {
   return (
-    <div className={`p-2 sm:p-4 border-t bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5 flex-shrink-0 ${isMobile ? 'p-2' : 'p-4'}`}>
+    <div className={`p-1.5 sm:p-3 border-t bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5 flex-shrink-0 ${isMobile ? 'p-1.5' : 'p-3'}`}>
       <Button
         variant="outline"
-        className={`w-full ${isCollapsed ? 'justify-center' : 'justify-start'} gap-2 sm:gap-3 text-[#3a0caa] hover:bg-[#3a0caa]/10 border-[#3a0caa]/20 hover:border-[#3a0caa]/30 transition-all duration-300 ${isMobile
-            ? 'text-sm h-9'
-            : 'text-base h-10'
+        className={`w-full ${isCollapsed ? 'justify-center' : 'justify-start'} gap-1.5 sm:gap-2 text-[#3a0caa] hover:bg-[#3a0caa]/10 border-[#3a0caa]/20 hover:border-[#3a0caa]/30 transition-all duration-300 ${isMobile
+            ? 'text-xs h-7 px-2'
+            : 'text-sm h-8 px-3'
           }`}
         onClick={onSignOut}
       >
-        <LogOut className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+        <LogOut className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
         {!isCollapsed && (
           <>
             <span className={isMobile ? 'hidden sm:inline' : ''}>

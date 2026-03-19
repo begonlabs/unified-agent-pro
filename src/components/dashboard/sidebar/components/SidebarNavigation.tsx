@@ -19,7 +19,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   const menuItems = SidebarService.getMenuItems();
 
   return (
-    <nav className={`flex-1 p-2 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto ${isMobile ? 'p-2' : 'p-4'}`}>
+    <nav className={`flex-1 overflow-y-auto p-2 sm:p-4 space-y-1 sm:space-y-2 ${isMobile ? 'p-2' : 'p-4'}`}>
       {menuItems.map((item) => {
         const Icon = item.icon;
         return (
