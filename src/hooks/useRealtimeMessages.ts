@@ -138,7 +138,7 @@ export const useRealtimeMessages = (
             );
             return msg.content === newData.content &&
                    msg.sender_type === newData.sender_type &&
-                   timeDiff < 3000; // 3 segundos
+                   timeDiff < 1000; // Reducido a 1 segundo para no perder mensajes consecutivos reales
           });
 
           if (duplicateByContent) {
@@ -321,6 +321,26 @@ export const useRealtimeMessages = (
       optimisticMessagesRef.current.clear();
     };
   }, [conversationId, userId, fetchMessages, setupRealtimeSubscription, cleanupSubscription]);
+
+  // Effect para reconexión silenciosa al volver a la pestaña (visibilidad)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && conversationId && userId) {
+        console.log('👁️ Tab visible again, silently resyncing messages...');
+        // Resync forzando la búsqueda para capturar cualquier mensaje perdido durante la suspensión
+        fetchMessages();
+        // Si la conexión se perdió, la reiniciamos
+        if (!channelRef.current || !isConnected) {
+          setupRealtimeSubscription();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [conversationId, userId, fetchMessages, setupRealtimeSubscription, isConnected]);
 
   return {
     messages,

@@ -224,23 +224,26 @@ export const useRealtimeConversations = (userId: string | null, debouncedSearch:
 
       const fullConversation = await fetchSingleConversation(recordId);
 
-      if (fullConversation) {
+      // Usar respuesta completa o datos básicos garantizados por el webhook como fallback
+      const conversationData = fullConversation || (record as Conversation);
+
+      if (conversationData) {
         setConversations(prevConversations => {
           // For INSERT: Add to top if not exists
           if (payload.eventType === 'INSERT') {
-            const exists = prevConversations.some(conv => conv.id === fullConversation.id);
+            const exists = prevConversations.some(conv => conv.id === conversationData.id);
             if (exists) return prevConversations;
-            console.log('➕ Adding fully populated conversation:', fullConversation.id);
-            return [fullConversation, ...prevConversations];
+            console.log('➕ Adding fully populated or partial conversation:', conversationData.id);
+            return [conversationData, ...prevConversations];
           }
 
           // For UPDATE: Update existing item
-          console.log('🔄 Updating fully populated conversation:', fullConversation.id);
+          console.log('🔄 Updating fully populated or partial conversation:', conversationData.id);
           return prevConversations.map(conv =>
-            conv.id === fullConversation.id
-              ? { ...conv, ...fullConversation }
+            conv.id === conversationData.id
+              ? { ...conv, ...conversationData }
               : conv
-          ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+          ).sort((a, b) => new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime());
         });
       }
       return;
@@ -452,6 +455,27 @@ export const useRealtimeConversations = (userId: string | null, debouncedSearch:
       cleanupSubscription();
     };
   }, [userId, setupRealtimeSubscription, cleanupSubscription]);
+
+  // Effect para reconexión silenciosa al volver a la pestaña (visibilidad)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && userId) {
+        console.log('👁️ Tab visible again, silently resyncing conversations...');
+        // Resync forzando la búsqueda para capturar cambios perdidos (silencioso si ya hay conversiones)
+        fetchConversations(conversations.length === 0);
+        
+        // Si la conexión WebSocket murió por inactividad de pestaña, forzar reinicio
+        if (!connectionStatus.isConnected || !channelRef.current) {
+          setupRealtimeSubscription();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [userId, fetchConversations, setupRealtimeSubscription, connectionStatus.isConnected, conversations.length]);
 
   return {
     conversations,

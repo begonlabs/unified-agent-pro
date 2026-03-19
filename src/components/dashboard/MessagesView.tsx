@@ -124,14 +124,7 @@ const MessagesView = () => {
     }
   };
 
-  // 🔄 Escuchar eventos de refresh de datos
-  useRefreshListener(
-    async () => {
-      console.log('🔄 MessagesView: Refreshing conversations data');
-      refreshConversations();
-    },
-    'messages'
-  );
+  // El listener de refresco fue movido más abajo para tener acceso a refreshMessages
 
   // Utilidad para formatear fechas estilo WhatsApp
   const formatMessageTime = (dateString: string) => {
@@ -224,6 +217,19 @@ const MessagesView = () => {
     sendOptimisticMessage,
     updateMessageStatus
   } = useRealtimeMessages(selectedConversation, user?.id || null);
+
+  // 🔄 Escuchar eventos de refresh de datos globales (incluye mensajes activos)
+  useRefreshListener(
+    async () => {
+      console.log('🔄 MessagesView: Refreshing conversations and active messages data');
+      refreshConversations();
+      // Si hay un chat abierto, refrescamos también sus mensajes
+      if (selectedConversation) {
+        refreshMessages();
+      }
+    },
+    'messages'
+  );
 
   const scrollToBottom = () => {
     // Scroll all anchors (covers both mobile and desktop views)
