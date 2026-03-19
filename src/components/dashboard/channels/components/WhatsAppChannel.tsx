@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Lock } from 'lucide-react';
+import { CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { Channel } from '../types';
 import { GreenApiConnect } from './green-api/GreenApiConnect';
 import { useAuth } from '@/hooks/useAuth';
@@ -167,7 +167,14 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
                     disabled={isDisconnecting !== null}
                     onClick={() => handleDisconnectWithLoading(channel.id)}
                   >
-                    {isDisconnecting === channel.id ? "Desconectando..." : "Desconectar"}
+                    {isDisconnecting === channel.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Desconectando...
+                      </>
+                    ) : (
+                      "Desconectar"
+                    )}
                   </Button>
                 </div>
               </div>
