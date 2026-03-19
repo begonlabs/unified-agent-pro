@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Facebook, Lock } from 'lucide-react';
+import { Facebook, Lock, CheckCircle } from 'lucide-react';
 import { Channel, FacebookConfig } from '../types';
 import { ChannelPermissions } from '@/lib/channelPermissions';
 import { Profile } from '@/components/dashboard/profile/types';
@@ -34,7 +34,7 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
   const connectionCheck = profile ? canConnectChannel(profile, 'facebook', facebookChannels.length, channels.length) : { allowed: true };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex-1 flex flex-col">
       {!isConnected ? (
         <div className="text-center space-y-4">
           {!connectionCheck.allowed ? (
@@ -73,21 +73,21 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1 flex flex-col">
           {facebookChannels.map((channel) => {
             const config = channel.channel_config as FacebookConfig;
             return (
-              <div key={channel.id} className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <Facebook className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-blue-900 text-sm sm:text-base">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-900 text-sm sm:text-base">
                       {config?.page_name || 'Página de Facebook'}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                     {channel.is_connected ? (
-                      <Badge variant="default" className="bg-blue-600 text-xs">
+                      <Badge variant="default" className="bg-green-600 text-xs hover:bg-green-700 whitespace-nowrap shrink-0">
                         En Línea
                       </Badge>
                     ) : (
@@ -97,18 +97,15 @@ export const FacebookChannel: React.FC<FacebookChannelProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="text-xs text-blue-800 space-y-1">
+                <div className="text-xs text-green-800 space-y-1">
                   <p>ID: {config?.page_id || 'N/A'}</p>
                   <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
-                  {config?.webhook_subscribed && (
-                    <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
-                  )}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-4">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-100 text-xs sm:text-sm"
+                    className="flex-1 text-green-700 border-green-300 hover:bg-green-100 text-xs sm:text-sm"
                     onClick={onReconnect}
                   >
                     Reconectar

@@ -85,7 +85,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
   const connectionCheck = profile ? canConnectChannel(profile, 'whatsapp', greenApiChannels.length, channels.length) : { allowed: true };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex-1 flex flex-col">
       {/* Case 1: No instance and no connection allowed (Upgrade required) */}
       {!isConnected && !unconnectedInstance && !connectionCheck.allowed && (
         <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
@@ -143,28 +143,27 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
 
       {/* Case 4: Connected instances list */}
       {isConnected && (
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1 flex flex-col">
           {greenApiChannels.filter(c => c.is_connected).map((channel) => {
             const config = channel.channel_config as any;
             return (
-              <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <div key={channel.id} className="bg-green-50 p-3 rounded-lg border border-green-200 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <span className="font-medium text-green-900 text-sm sm:text-base">
                       WhatsApp Business
                     </span>
                   </div>
-                  <Badge variant="default" className="bg-green-600 text-xs">
+                  <Badge variant="default" className="bg-green-600 text-xs hover:bg-green-700 whitespace-nowrap shrink-0">
                     En Línea
                   </Badge>
                 </div>
                 <div className="text-xs text-green-800 space-y-1">
                   <p>Instancia: {config?.idInstance || 'N/A'}</p>
                   <p>Conectado: {config?.connected_at ? new Date(config.connected_at).toLocaleDateString('es-ES') : 'N/A'}</p>
-                  <p className="text-green-700 font-medium">Recibiendo mensajes automáticamente</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-4">
                   <Button
                     variant="outline"
                     size="sm"

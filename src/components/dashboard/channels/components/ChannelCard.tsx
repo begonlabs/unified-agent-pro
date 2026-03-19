@@ -12,7 +12,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
   description,
   children
 }) => (
-  <Card className="h-full">
+  <Card className="h-full flex flex-col">
     <CardHeader className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -39,7 +39,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
         </Badge>
       </div>
     </CardHeader>
-    <CardContent className="p-4 sm:p-6 pt-0">
+    <CardContent className="p-4 sm:p-6 pt-0 flex-1 flex flex-col">
       {children}
     </CardContent>
   </Card>

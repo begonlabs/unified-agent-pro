@@ -218,7 +218,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
                 <span className="block sm:inline sm:ml-2 mt-1 sm:mt-0">
                   • {channels.length} canal{channels.length !== 1 ? 'es' : ''}
                   {channels.some(c => c.channel_type === 'instagram' && c.is_connected) && (
-                    <span className="ml-1 text-pink-600 font-medium flex items-center">
+                    <span className="ml-1 text-[#3a0caa] font-medium flex items-center">
                       <Smartphone className="h-3 w-3 mr-1" /> Instagram detectado
                     </span>
                   )}
@@ -264,11 +264,11 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
 
                     return (
                       <>
-                        <span className={`px-2 py-1 rounded-md ${uniqueTotal.size >= permissions.maxChannels && permissions.maxChannels !== -1 ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                        <span className={`px-2 py-1 rounded-md ${uniqueTotal.size >= permissions.maxChannels && permissions.maxChannels !== -1 ? 'bg-purple-100 text-purple-800' : 'bg-white text-blue-700'}`}>
                           Canales totales: {uniqueTotal.size} / {permissions.maxChannels === -1 ? 'Ilimitados' : permissions.maxChannels}
                         </span>
                         {permissions.maxWhatsappChannels !== -1 && (
-                          <span className={`px-2 py-1 rounded-md ${uniqueWhatsApp.size >= permissions.maxWhatsappChannels ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                          <span className={`px-2 py-1 rounded-md ${uniqueWhatsApp.size >= permissions.maxWhatsappChannels ? 'bg-purple-100 text-purple-800' : 'bg-white text-blue-700'}`}>
                             WhatsApp: {uniqueWhatsApp.size} / {permissions.maxWhatsappChannels}
                           </span>
                         )}
