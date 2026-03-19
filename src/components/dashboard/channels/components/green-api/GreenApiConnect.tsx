@@ -42,7 +42,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
-    const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
+    const [status, setStatus] = useState<'disconnected' | 'waiting' | 'connected' | 'disconnecting'>('disconnected');
     const [isStarting, setIsStarting] = useState(false);
     const [startingTimeLeft, setStartingTimeLeft] = useState(120);
     const [isInvalid, setIsInvalid] = useState(false);
@@ -274,15 +274,6 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                 console.log('Green API Status Response:', data);
 
                 if (data.stateInstance === 'authorized') {
-                    // Clear intervals
-                    if (qrRefreshInterval.current) clearInterval(qrRefreshInterval.current);
-                    if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
-
-                    setStatus('connected');
-                    setIsStarting(false);
-
-                    // Evitar bucles: Si acabamos de desconectar (en los últimos 45s), no auto-sincronizamos
-                    // Usamos localStorage porque las refs se pierden al recargar la página
                     const lastDisconnectKey = `last_disconnect_${idInstance}`;
                     const lastDisconnectTimeStr = localStorage.getItem(lastDisconnectKey);
                     const now = Date.now();
@@ -290,16 +281,32 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                         ? (now - parseInt(lastDisconnectTimeStr)) < 45000
                         : false;
 
-                    // Bloque de sincronización robusto
-                    if (!hasSynced && !isSyncing.current && !recentlyDisconnected) {
-                        // Sincronizamos si:
-                        // a) Estamos en flujo activo (waiting/starting)
-                        // b) Es el primer chequeo y no hay rastro de desconexión reciente (Auto-repair mount)
-                        const shouldSync = status === 'waiting' || isStarting || status === 'disconnected';
+                    if (recentlyDisconnected) {
+                        setStatus('disconnecting');
+                        setIsStarting(false);
+                        // Aseguramos que siga verificando hasta que muerea la conexión externamente
+                        if (!statusCheckInterval.current) {
+                            statusCheckInterval.current = setInterval(checkStatus, 3000);
+                        }
+                    } else {
+                        // Clear intervals
+                        if (qrRefreshInterval.current) clearInterval(qrRefreshInterval.current);
+                        if (statusCheckInterval.current) clearInterval(statusCheckInterval.current);
 
-                        if (shouldSync) {
-                            console.log('🔄 Sincronizando configuración y guardando conexión...');
-                            saveToSupabase();
+                        setStatus('connected');
+                        setIsStarting(false);
+
+                        // Bloque de sincronización robusto
+                        if (!hasSynced && !isSyncing.current) {
+                            // Sincronizamos si:
+                            // a) Estamos en flujo activo (waiting/starting)
+                            // b) Es el primer chequeo y no hay rastro de desconexión reciente (Auto-repair mount)
+                            const shouldSync = status === 'waiting' || isStarting || status === 'disconnected';
+
+                            if (shouldSync) {
+                                console.log('🔄 Sincronizando configuración y guardando conexión...');
+                                saveToSupabase();
+                            }
                         }
                     }
                 } else if (data.stateInstance === 'starting') {
@@ -312,6 +319,12 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     }
                 } else if (data.stateInstance === 'notAuthorized' || data.stateInstance === 'not_authorized') {
                     console.log('Instance is ready but not authorized. Triggering QR...');
+                    
+                    if (status === 'disconnecting' || localStorage.getItem(`last_disconnect_${idInstance}`)) {
+                        localStorage.removeItem(`last_disconnect_${idInstance}`);
+                        if (status === 'disconnecting') setStatus('disconnected');
+                    }
+                    
                     setIsStarting(false);
 
                     // Si venimos de un estado inicial o de "starting", pedimos el QR
@@ -571,6 +584,18 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                     </div>
                     <h3 className="text-xl font-bold mb-1">¡WhatsApp Conectado!</h3>
                     <p className="text-sm opacity-90">Ya puedes empezar a recibir y enviar mensajes.</p>
+                </div>
+            )}
+
+            {status === 'disconnecting' && (
+                <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-500">
+                    <Loader2 className="h-12 w-12 text-amber-600 mb-4 animate-spin" />
+                    <h4 className="font-bold text-amber-900 mb-2">
+                        Desvinculando Dispositivo...
+                    </h4>
+                    <p className="text-sm text-amber-700 max-w-xs leading-relaxed">
+                        Estamos cerrando la sesión de WhatsApp en el servidor. Esto puede tomar entre 10 y 30 segundos. Por favor, <strong>no recargues la página</strong>.
+                    </p>
                 </div>
             )}
         </div>

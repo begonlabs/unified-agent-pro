@@ -69,12 +69,8 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
       console.log(`⏳ Iniciando desconexión de canal: ${channelId}`);
       await onDisconnect(channelId);
 
-      // Tras desconectar, esperamos un tiempo Prudencial (2s) 
-      // para asegurar que los triggers de Supabase y el cache se sincronicen
-      console.log('✅ Desconexión procesada, esperando sincronización...');
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      console.log('✅ Desconexión en base de datos procesada.');
+      setIsDisconnecting(null);
     } catch (error) {
       console.error('Error in handleDisconnectWithLoading:', error);
       setIsDisconnecting(null);
