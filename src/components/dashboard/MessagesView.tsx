@@ -90,6 +90,7 @@ const MessagesView = () => {
   const debouncedSearchTerm = useDebounceValue(searchTerm, 500);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
+  const [sidebarWidth, setSidebarWidth] = useState(320); // Estado para el ancho redimensionable
 
   // Profile and Permissions
   const { profile } = useProfile(user);
@@ -684,8 +685,38 @@ const MessagesView = () => {
   return (
     <div className="h-screen flex bg-gray-50">
       <div className="flex flex-1 overflow-hidden">
-        {/* Mobile: Lista de conversaciones */}
-        <div className={`w-full sm:w-80 bg-white border-r flex flex-col ${mobileView === 'list' ? 'block' : 'hidden sm:flex'}`}>
+        {/* Mobile: Lista de conversaciones, Desktop: Contenedor redimensionable */}
+        <div 
+          className={`bg-white border-r flex flex-col shrink-0 relative w-full sm:w-[var(--sidebar-width)] ${mobileView === 'list' ? 'block' : 'hidden sm:flex'}`}
+          style={{ '--sidebar-width': `${sidebarWidth}px`, transition: 'width 0.05s ease-out' } as React.CSSProperties}
+        >
+          {/* Handler (Resizer) oculto en móvil, activo en desktop */}
+          <div
+            className="hidden sm:block absolute top-0 -right-1.5 w-3 h-full cursor-col-resize hover:bg-blue-400/20 active:bg-blue-500/40 z-[60] transition-colors"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startX = e.clientX;
+              const startWidth = sidebarWidth;
+              
+              const onMouseMove = (moveEvent: MouseEvent) => {
+                // Limitar entre 250px (apretado) y 800px (muy ancho)
+                const newWidth = Math.max(250, Math.min(800, startWidth + (moveEvent.clientX - startX)));
+                setSidebarWidth(newWidth);
+              };
+              
+              const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.style.cursor = '';
+              };
+              
+              // Evitar que el mouse cambie al mover rápido
+              document.body.style.cursor = 'col-resize';
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+            }}
+          />
+
           {/* Header fijo de conversaciones */}
           <div className="flex-shrink-0 bg-white border-b p-3 sm:p-4">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
