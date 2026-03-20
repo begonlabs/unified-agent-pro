@@ -157,22 +157,26 @@ serve(async (req) => {
         if (!payment) {
             console.error('Payment not found globally. Orphan payment:', dlocalgoPaymentId)
             // Si todo falla, metemos el pago como huérfano para no reventar el webhook y poder inspeccionarlo
-            await supabase.from('payments').insert({
-                user_id: '00000000-0000-0000-0000-000000000000', // invalid uuid will fail if constraint exists, better to not insert, or insert without user_id if nullable
-                currency: paymentData.currency || 'USD',
-                amount: paymentData.amount || 0,
-                status: 'approved',
-                dlocalgo_payment_id: dlocalgoPaymentId,
-                payment_data: paymentData,
-                plan_type: 'basico' // fallback
-            }).catch((e: any) => console.error('Failed to save orphan payment', e));
+            try {
+                await supabase.from('payments').insert({
+                    user_id: '00000000-0000-0000-0000-000000000000', // invalid uuid will fail if constraint exists
+                    currency: paymentData.currency || 'USD',
+                    amount: paymentData.amount || 0,
+                    status: 'approved',
+                    dlocalgo_payment_id: dlocalgoPaymentId,
+                    payment_data: paymentData,
+                    plan_type: 'basico' // fallback
+                });
+            } catch (e: any) {
+                console.error('Failed to save orphan payment', e);
+            }
 
             throw new Error('Payment not found in database')
         }
 
         // Map dLocalGo status to our status
         let newStatus = 'pending'
-        if (paymentData.status === 'PAID' || paymentData.status === 'APPROVED') {
+        if (paymentData.status === 'PAID' || paymentData.status === 'APPROVED' || (paymentData.invoiceId && paymentData.subscriptionId)) {
             newStatus = 'approved'
         } else if (paymentData.status === 'REJECTED' || paymentData.status === 'CANCELLED') {
             newStatus = 'rejected'
