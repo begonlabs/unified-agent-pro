@@ -157,14 +157,30 @@ export async function handleGreenApiEvent(event: GreenApiEvent & { stateInstance
                     console.log(`✅ Channel ${idInstance} marked as disconnected due to state: ${state}`);
                 }
             } else if (state === 'authorized') {
-                // Optionally auto-reconnect if it somehow reconnects, though unlikely without user action
-                const { error } = await supabase
+                // Fetch current config to merge the authorization timestamp
+                const { data: channelData } = await supabase
                     .from('communication_channels')
-                    .update({ is_connected: true })
+                    .select('channel_config')
                     .eq('channel_type', 'whatsapp_green_api')
-                    .eq('channel_config->>idInstance', idInstance);
-                    
-                if (!error) console.log(`✅ Channel ${idInstance} marked as reconnected`);
+                    .eq('channel_config->>idInstance', idInstance)
+                    .single();
+
+                if (channelData) {
+                    const newConfig = { 
+                        ...(typeof channelData.channel_config === 'object' ? channelData.channel_config : {}), 
+                        last_authorized_at: new Date().toISOString() 
+                    };
+                    // Remove manual disconnect flag if user re-authorized successfully
+                    delete (newConfig as any).manually_disconnected;
+
+                    const { error } = await supabase
+                        .from('communication_channels')
+                        .update({ is_connected: true, channel_config: newConfig })
+                        .eq('channel_type', 'whatsapp_green_api')
+                        .eq('channel_config->>idInstance', idInstance);
+                        
+                    if (!error) console.log(`✅ Channel ${idInstance} marked as authorized with updated timestamp`);
+                }
             }
             return; // Stop processing this event
         }

@@ -52,7 +52,21 @@ export const ChannelAlertBanner: React.FC = () => {
   const activeAlerts = disconnectedChannels.filter(c => {
     // Only alert for active primary channel platforms
     const isRelevantPlatform = ['facebook', 'instagram', 'instagram_legacy', 'whatsapp', 'whatsapp_green_api'].includes(c.channel_type);
-    return isRelevantPlatform && !dismissed[c.id];
+    
+    if (!isRelevantPlatform || dismissed[c.id]) {
+      return false;
+    }
+
+    // For WhatsApp Green API specifically, filter out false positives
+    // i.e cases where they manually disconnected or never finished connecting (no last_authorized_at)
+    if (c.channel_type === 'whatsapp_green_api') {
+      const config = c.channel_config as any;
+      if (config?.manually_disconnected || !config?.last_authorized_at) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   if (activeAlerts.length === 0) return null;

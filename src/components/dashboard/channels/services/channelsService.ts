@@ -203,17 +203,29 @@ export class ChannelsService {
         // This solves desync issues where orphans might still be 'is_connected: true'
         console.log(`📝 Marcando TODOS los canales de WhatsApp del usuario ${user.id} como desconectados`);
 
-        const { error } = await supabase
+        // Fetch them first to preserve config
+        const { data: channelsToUpdate } = await supabase
           .from('communication_channels')
-          .update({
-            is_connected: false
-          })
+          .select('*')
           .eq('user_id', user.id)
           .in('channel_type', ['whatsapp', 'whatsapp_green_api']);
 
-        if (error) {
-          console.error('❌ Error al actualizar is_connected en Supabase:', error);
-          throw error;
+        if (channelsToUpdate && channelsToUpdate.length > 0) {
+          for (const c of channelsToUpdate) {
+            const newConfig = { ...(c.channel_config as object || {}), manually_disconnected: true };
+            const { error } = await supabase
+              .from('communication_channels')
+              .update({
+                is_connected: false,
+                channel_config: newConfig
+              })
+              .eq('id', c.id);
+
+            if (error) {
+              console.error('❌ Error al actualizar is_connected en Supabase:', error);
+              throw error;
+            }
+          }
         }
       }
       console.log('✅ Canal de WhatsApp procesado correctamente');
