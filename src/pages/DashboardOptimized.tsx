@@ -23,6 +23,7 @@ const DashboardOptimized: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isPersisted, setIsPersisted] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // Refs para valores que no necesitan re-renderizar
   const authSubscriptionRef = useRef<any>(null);
@@ -150,6 +151,21 @@ const DashboardOptimized: React.FC = () => {
     };
   }, [initializeAuth, handleAuthStateChange, handlePersistenceChange]);
 
+  // Verifica si el trial ha expirado
+  useEffect(() => {
+    if (user?.id) {
+      ProfileService.fetchProfile(user.id).then(p => {
+        if (p) {
+          setProfileData(p);
+          const isExpired = p.is_trial && p.trial_end_date && new Date(p.trial_end_date) < new Date();
+          if (isExpired && p.plan_type !== 'none') {
+            supabase.functions.invoke('expire-trials', { body: { user_id: user.id } }).catch(console.error);
+          }
+        }
+      });
+    }
+  }, [user?.id]);
+
   /**
    * Effect para sincronizar la vista local/persistida con el estado global
    * Soluciona el error donde el contenido y el sidebar se descoordinan tras un refresh
@@ -239,22 +255,6 @@ const DashboardOptimized: React.FC = () => {
 
   const urlParams = new URL(window.location.href).searchParams;
   const isPlansView = currentView === 'profile' && urlParams.get('tab') === 'plans';
-
-  // Verifica si el trial ha expirado
-  const [profileData, setProfileData] = useState<any>(null);
-  useEffect(() => {
-    if (user?.id) {
-      ProfileService.fetchProfile(user.id).then(p => {
-        if (p) {
-          setProfileData(p);
-          const isExpired = p.is_trial && p.trial_end_date && new Date(p.trial_end_date) < new Date();
-          if (isExpired && p.plan_type !== 'none') {
-            supabase.functions.invoke('expire-trials', { body: { user_id: user.id } }).catch(console.error);
-          }
-        }
-      });
-    }
-  }, [user?.id]);
 
   const isTrialExpiredState = profileData?.is_trial && profileData?.trial_end_date && new Date(profileData.trial_end_date) < new Date();
 

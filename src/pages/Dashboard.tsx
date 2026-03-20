@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -109,6 +110,21 @@ const Dashboard = () => {
       checkProfileCompletion();
     }
   }, [user, loading, currentView, setCurrentView, toast]);
+
+  // Verifica si el trial ha expirado
+  useEffect(() => {
+    if (user?.id) {
+      ProfileService.fetchProfile(user.id).then(p => {
+        if (p) {
+          setProfileData(p);
+          const isExpired = p.is_trial && p.trial_end_date && new Date(p.trial_end_date) < new Date();
+          if (isExpired && p.plan_type !== 'none') {
+            supabase.functions.invoke('expire-trials', { body: { user_id: user.id } }).catch(console.error);
+          }
+        }
+      });
+    }
+  }, [user?.id]);
 
   // Handle success parameters for OAuth callbacks (URL params for view are handled in useViewFromUrlOrPersisted)
   useEffect(() => {
@@ -206,22 +222,6 @@ const Dashboard = () => {
 
   const urlParams = new URL(window.location.href).searchParams;
   const isPlansView = currentView === 'profile' && urlParams.get('tab') === 'plans';
-
-  // Verifica si el trial ha expirado
-  const [profileData, setProfileData] = useState<any>(null);
-  useEffect(() => {
-    if (user?.id) {
-      ProfileService.fetchProfile(user.id).then(p => {
-        if (p) {
-          setProfileData(p);
-          const isExpired = p.is_trial && p.trial_end_date && new Date(p.trial_end_date) < new Date();
-          if (isExpired && p.plan_type !== 'none') {
-            supabase.functions.invoke('expire-trials', { body: { user_id: user.id } }).catch(console.error);
-          }
-        }
-      });
-    }
-  }, [user?.id]);
 
   const isTrialExpiredState = profileData?.is_trial && profileData?.trial_end_date && new Date(profileData.trial_end_date) < new Date();
 
