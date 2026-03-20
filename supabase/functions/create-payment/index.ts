@@ -112,10 +112,10 @@ serve(async (req) => {
         }
 
         // Select the dLocal Go subscription link token based on the plan type
-        // Currently we only have the test one for 'basico'
+        // Currently we only have the test one for 'basico' (created via API to ensure webhooks)
         let planToken = '';
-        if (plan_type === 'basico' || plan_type === 'test') { // fallback for testing
-            planToken = 'VNX3PM57xAAdB8H0JINomXEM47F3Fwm1';
+        if (plan_type === 'basico' || (plan_type as string) === 'test') { // fallback for testing
+            planToken = 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp';
         } else {
             throw new Error('Suscripción no configurada para este plan en dLocal Go todavía.');
         }
