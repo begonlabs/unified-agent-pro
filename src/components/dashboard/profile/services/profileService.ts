@@ -117,11 +117,9 @@ export class ProfileService {
         price: '$49',
         description: 'Ideal para pequeños negocios',
         features: [
-          '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+          '3 canales',
           '10,000 mensajes/mes',
-          '200 clientes',
-          'CRM básico',
-          'Sin estadísticas',
+          '500 clientes',
           'Soporte bajo y normal'
         ],
         current: currentPlanType === 'basico',
