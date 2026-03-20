@@ -101,8 +101,28 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 p-3 sm:p-6">
-        <Card className="h-full flex flex-col">
+      <div className="flex-1 p-3 sm:p-6 relative">
+        {crmLevel === 'none' && (
+          <div className="absolute inset-x-3 inset-y-3 sm:inset-x-6 sm:inset-y-6 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] rounded-xl" />
+            <div className="relative bg-white p-6 md:p-8 rounded-xl shadow-xl border border-gray-200 max-w-md text-center m-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-200 ring-4 ring-gray-50">
+                <Lock className="w-8 h-8 text-gray-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">CRM Bloqueado</h3>
+              <p className="text-gray-600 mb-6 font-medium">
+                La gestión avanzada de clientes está disponible en planes superiores
+              </p>
+              <button
+                onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors w-full shadow-sm"
+              >
+                Mejorar Plan
+              </button>
+            </div>
+          </div>
+        )}
+        <Card className={`h-full flex flex-col ${crmLevel === 'none' ? 'pointer-events-none select-none opacity-60' : ''}`}>
           <CardHeader className="border-b p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>

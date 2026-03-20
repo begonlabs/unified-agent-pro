@@ -242,7 +242,7 @@ export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => 
     // Fallback basado en el plan (para usuarios existentes o errores de datos)
     switch (profile.plan_type) {
         case 'basico':
-            return 'basic';
+            return 'none';
         case 'avanzado':
         case 'pro':
         case 'empresarial':
