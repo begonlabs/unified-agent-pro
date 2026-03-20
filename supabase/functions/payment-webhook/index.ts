@@ -231,7 +231,7 @@ serve(async (req) => {
 
                 // Verify limits match expected values for the plan
                 const expectedLimits = {
-                    basico: { messages: 10000, clients: 200 },
+                    basico: { messages: 10000, clients: 500 },
                     avanzado: { messages: 30000, clients: 600 },
                     pro: { messages: 70000, clients: 2000 },
                     empresarial: { messages: 100000, clients: 3000 }
@@ -257,7 +257,7 @@ serve(async (req) => {
                                 messages_limit: expected.messages,
                                 clients_limit: expected.clients,
                                 has_statistics: payment.plan_type === 'avanzado' || payment.plan_type === 'pro' || payment.plan_type === 'empresarial',
-                                crm_level: payment.plan_type === 'basico' ? 'basic' : 'complete',
+                                crm_level: payment.plan_type === 'basico' ? 'none' : 'complete',
                                 updated_at: new Date().toISOString()
                             })
                             .eq('user_id', payment.user_id)
