@@ -48,56 +48,34 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
     return <AuthErrorState />;
   }
 
-  // Show restricted view if no access
-  if (!hasAccess) {
-    return (
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen flex items-center justify-center">
-        <Card className="max-w-2xl w-full shadow-lg border-blue-100">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="h-10 w-10 text-blue-600" />
-            </div>
 
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-gray-900">Estadísticas Avanzadas</h2>
-              <p className="text-gray-50 max-w-md mx-auto">
-                Obtén insights valiosos sobre tu rendimiento, actividad de canales y automatizaciones.
-                Esta función está disponible en los planes Avanzado, Pro y Empresarial.
-              </p>
+  return (
+    <div className="relative min-h-screen bg-gray-50 p-6">
+      {!hasAccess && (
+        <div className="absolute inset-0 z-50 flex items-start justify-center pt-[20vh] sm:pt-[30vh]">
+          <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px]" />
+          <div className="relative bg-white p-6 md:p-8 rounded-xl shadow-xl border border-gray-200 max-w-md text-center m-4">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 ring-4 ring-blue-50/50">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-lg mx-auto py-4">
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="text-sm font-medium">KPIs en tiempo real</span>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                <span className="text-sm font-medium">Gráficos de actividad</span>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <div className="h-2 w-2 rounded-full bg-purple-500" />
-                <span className="text-sm font-medium">Análisis de canales</span>
-              </div>
-            </div>
-
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Estadísticas Avanzadas</h3>
+            <p className="text-gray-600 mb-6 font-medium">
+              Obtén insights valiosos sobre tu rendimiento y canales. Esta función está disponible en planes superiores.
+            </p>
             <Button
               size="lg"
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md font-semibold"
               onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
             >
               <Lock className="h-4 w-4 mr-2" />
-              Actualizar Plan para Ver Estadísticas
+              Actualizar Plan
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+          </div>
+        </div>
+      )}
 
-  return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Header with time range selector */}
+      <div className={`space-y-6 ${!hasAccess ? 'pointer-events-none select-none opacity-60' : ''}`}>
+        {/* Header with time range selector */}
       <StatsHeader
         userEmail={user.email || 'Usuario'}
         timeRange={timeRange}
@@ -174,6 +152,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
           <DailyActivityChart dailyData={chartData.dailyData} />
         </div>
       )}
+      </div>
     </div>
   );
 };
