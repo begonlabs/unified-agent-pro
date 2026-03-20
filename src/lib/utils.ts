@@ -45,7 +45,7 @@ export const robustSignOut = async () => {
     
     // Paso 2: Intentar logout global
     try {
-      await supabase.auth.signOut({ scope: 'global' });
+      await supabase.auth.signOut({ scope: 'local' });
       console.log('Global sign out successful');
     } catch (err) {
       console.warn('Global sign out failed, continuing:', err);
@@ -71,7 +71,7 @@ export const prepareForSignIn = async () => {
   
   // Intentar logout por si hay sesión residual
   try {
-    await supabase.auth.signOut({ scope: 'global' });
+    await supabase.auth.signOut({ scope: 'local' });
   } catch (err) {
     console.warn('Pre-signin logout failed, continuing:', err);
   }
