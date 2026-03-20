@@ -1,23 +1,26 @@
-const apiKey = 'eYyxWqcFvMoYDiMIwdyLhQZRERseoYOs';
-const secretKey = 'IZ5bAeH4XS2v3oNsC6pgBAvTjHngeOVdbGUk1MDP';
-const authHeader = 'Basic ' + Buffer.from(`${apiKey}:${secretKey}`).toString('base64');
+const fs = require('fs');
 
-async function checkDLocal() {
-  console.log('Fetching recent payments from dLocal Go...');
-  let res = await fetch('https://api.dlocalgo.com/v1/payments', {
-    headers: { 'Authorization': authHeader }
-  });
-  let json = await res.json();
-  console.log('Recent Payments:');
-  console.log(JSON.stringify(json, null, 2).substring(0, 1500));
+const env = fs.readFileSync('.env', 'utf8').split('\n').reduce((acc, line) => {
+    const [key, ...val] = line.split('=');
+    if(key && val) acc[key.trim()] = val.join('=').trim();
+    return acc;
+}, {});
 
-  console.log('\nFetching subscriptions for Plan 18861...');
-  let res2 = await fetch('https://api.dlocalgo.com/v1/subscription/plan/18861/subscription/all', {
-    headers: { 'Authorization': authHeader }
-  });
-  let json2 = await res2.json();
-  console.log('Subscriptions for API Plan:');
-  console.log(JSON.stringify(json2, null, 2).substring(0, 1500));
+async function checkDlocal() {
+    const authString = `${env.DLOCALGO_API_KEY}:${env.DLOCALGO_SECRET_KEY}`;
+    const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+
+    console.log('Fetching subscriptions...');
+    const res = await fetch(`${env.DLOCALGO_API_URL}/v1/subscriptions`, {
+        headers: { 'Authorization': authHeader }
+    });
+    
+    if (res.ok) {
+        const data = await res.json();
+        console.log('Subscriptions:', JSON.stringify(data, null, 2));
+    } else {
+        console.log('Error fetching subscriptions:', await res.text());
+    }
 }
 
-checkDLocal();
+checkDlocal();

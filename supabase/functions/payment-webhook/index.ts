@@ -114,38 +114,35 @@ serve(async (req) => {
         if (paymentError || !payment) {
             console.log('Payment not found by dlocalgo_payment_id. Searching by email or external_id...', { buyerEmail, externalId });
             
-            let query = supabase
-                .from('payments')
-                .select('*')
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            // Fetch any pending payment for this user
-            const { data: pendingPayments } = await query;
+            let targetUserId = null;
             
-            // Asignamos el primero que corresponda (asumimos que el usuario solo tiene 1 intento activo)
-            // Idealmente deberíamos buscar el user_id usando el email, y luego ver los pending form that user
-            if (pendingPayments && pendingPayments.length > 0) {
-                // Validación adicional: si tenemos email, busquemos el perfil para matchear user_id
-                let targetUserId = pendingPayments[0].user_id;
-                
-                if (buyerEmail) {
-                    const { data: profileByEmail } = await supabase
-                        .from('profiles')
-                        .select('user_id')
-                        .eq('email', buyerEmail)
-                        .single();
-                        
-                    if (profileByEmail) {
-                         targetUserId = profileByEmail.user_id;
-                    }
+            if (externalId && externalId.length > 20) {
+                targetUserId = externalId;
+            } else if (buyerEmail) {
+                const { data: profileByEmail } = await supabase
+                    .from('profiles')
+                    .select('user_id')
+                    .eq('email', buyerEmail)
+                    .single();
+                    
+                if (profileByEmail) {
+                     targetUserId = profileByEmail.user_id;
                 }
+            }
+            
+            if (targetUserId) {
+                let query = supabase
+                    .from('payments')
+                    .select('*')
+                    .eq('status', 'pending')
+                    .eq('user_id', targetUserId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                    
+                const { data: pendingPayments } = await query;
                 
-                // Buscar el pending exacto de ese targetUserId
-                const exactPending = pendingPayments.find((p: any) => p.user_id === targetUserId);
-                if (exactPending) {
-                    payment = exactPending;
+                if (pendingPayments && pendingPayments.length > 0) {
+                    payment = pendingPayments[0];
                     console.log('Found matching pending payment:', payment.id);
                     
                     // Ligar el ID de la transacción al registro
