@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,11 @@ import { Separator } from '@/components/ui/separator';
 import {
   Shield,
   Key,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { ChangePasswordDialogProps } from '../types';
 import { MFASettings } from '@/components/auth/MFASettings';
 
@@ -20,6 +23,39 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
   onChangePasswordOpen,
   changePasswordOpen
 }) => {
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  const handleCancelPlan = async () => {
+    try {
+      setIsCanceling(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Sesión no encontrada. Por favor inicia sesión de nuevo.');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+        body: { user_id: session.user.id }
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Tu plan ha sido cancelado exitosamente de manera permanente.');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        throw new Error(data?.error || 'Error desconocido');
+      }
+    } catch (err: any) {
+      console.error('Error al cancelar el plan:', err);
+      toast.error(err.message || 'Ocurrió un error al intentar cancelar tu plan.');
+    } finally {
+      setIsCanceling(false);
+    }
+  };
   return (
     <TabsContent value="security" className="space-y-4 sm:space-y-6">
       <Card>
@@ -74,21 +110,49 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
               <AlertTriangle className="h-4 w-4" />
               Zona de Peligro
             </h4>
-            <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h5 className="font-medium text-red-900">Eliminar cuenta</h5>
-                  <p className="text-sm text-red-700 mt-1">
-                    Esta acción eliminará permanentemente tu cuenta y todos los datos asociados.
-                  </p>
-                  <p className="text-xs text-red-600 mt-2">
-                    Esta acción no se puede deshacer
-                  </p>
+            <div className="space-y-4">
+              {/* Cancelar Plan */}
+              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h5 className="font-medium text-red-900">Cancelar plan</h5>
+                    <p className="text-sm text-red-700 mt-1">
+                      Esta acción cancelará tu plan de manera permanente, no podrás hacer ninguna acción sobre la aplicación
+                    </p>
+                    <p className="text-xs text-red-600 mt-2">
+                      Esta acción no se puede deshacer
+                    </p>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="ml-4"
+                    onClick={handleCancelPlan}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <AlertTriangle className="h-4 w-4 mr-1" />}
+                    {isCanceling ? 'Cancelando...' : 'Cancelar'}
+                  </Button>
                 </div>
-                <Button variant="destructive" size="sm" className="ml-4">
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  Eliminar
-                </Button>
+              </div>
+
+              {/* Eliminar cuenta */}
+              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h5 className="font-medium text-red-900">Eliminar cuenta</h5>
+                    <p className="text-sm text-red-700 mt-1">
+                      Esta acción eliminará permanentemente tu cuenta y todos los datos asociados.
+                    </p>
+                    <p className="text-xs text-red-600 mt-2">
+                      Esta acción no se puede deshacer
+                    </p>
+                  </div>
+                  <Button variant="destructive" size="sm" className="ml-4">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
