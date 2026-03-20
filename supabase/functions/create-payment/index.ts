@@ -111,80 +111,26 @@ serve(async (req) => {
             throw new Error('Failed to create payment record: ' + paymentError.message)
         }
 
-        // Prepare dLocalGo subscription request
-        // Use user's country from profile, fallback to UY if not set
-        // Ensure country is 2 chars uppercase
-        let countryCode = (profile.country || 'UY').toUpperCase();
-        if (countryCode.length !== 2) {
-            countryCode = 'UY'; // Fallback if invalid
+        // Select the dLocal Go subscription link token based on the plan type
+        // Currently we only have the test one for 'basico'
+        let planToken = '';
+        if (plan_type === 'basico' || plan_type === 'test') { // fallback for testing
+            planToken = 'VNX3PM57xAAdB8H0JINomXEM47F3Fwm1';
+        } else {
+            throw new Error('Suscripción no configurada para este plan en dLocal Go todavía.');
         }
 
-        // Determine plan ID if available in config, otherwise try to use inline parameters if supported
-        // or fallback to a standard pattern.
-        // For dLocal Go, specific integrations might vary, but we'll try to use the standard recurring pattern.
-        // Assuming we are using a "subscription" mode.
+        // Generate the custom checkout URL with user data
+        // We pass external_id to identify the user when the webhook fires
+        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}`;
 
-        // Note: Ideally, we should have a Plan ID created in dLocal Go for each tier.
-        // Checking if we have them in config (not currently standard in env but good practice)
-        // const planId = config[`PLAN_${plan_type.toUpperCase()}_ID`];
+        console.log('Generated subscription link:', checkoutUrl);
 
-        const dlocalgoPayment = {
-            amount: amount,
-            currency: 'USD',
-            country: countryCode,
-            description: `Suscripción Mensual Plan ${plan_type.charAt(0).toUpperCase() + plan_type.slice(1)}`,
-            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`, // Redirect after success
-            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
-            payer: {
-                name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-                email: user.email!,
-                document: user.user_metadata?.document || '12345678', // Some regions require document
-            },
-            recurring: {
-                frequency: 'MONTHLY',
-                start_date: new Date().toISOString().split('T')[0], // Start today
-            }
-        };
-
-        // Create Basic Auth header
-        const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
-        const authHeader = `Basic ${btoa(authString)}`
-
-        // Use payments endpoint but with recurring object, OR subscriptions endpoint if known.
-        // Based on "dLC" (dLocal Go) typical simple integration, we send to /v1/payments with recurring info
-        // or effectively create a checkout session that is recurring.
-        // If the previous endpoint was /v1/payments, we stick with it but add recurring fields.
-        // However, if we must use /v1/subscriptions and a plan_id is mandatory, we might fail without it.
-        // Given instructions "we already have enabled that function in the api", we assume the API accepts it.
-
-        console.log('Sending subscription request to dLocal Go:', dlocalgoPayment);
-
-        // Create payment/subscription with dLocalGo
-        // We will try the same endpoint first with the new payload
-        const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': authHeader,
-            },
-            body: JSON.stringify(dlocalgoPayment),
-        })
-
-        if (!dlocalgoResponse.ok) {
-            const errorText = await dlocalgoResponse.text()
-            console.error('dLocalGo API error:', errorText)
-            throw new Error(`dLocalGo API error: ${errorText}`)
-        }
-
-        const dlocalgoData = await dlocalgoResponse.json()
-        console.log('dLocalGo response:', dlocalgoData)
-
-        // Update payment record with dLocalGo payment ID
+        // Update payment record with the expected info
         await supabase
             .from('payments')
             .update({
-                dlocalgo_payment_id: dlocalgoData.id,
-                payment_data: dlocalgoData,
+                payment_data: { type: 'subscription_link_generated', checkoutUrl },
             })
             .eq('id', payment.id)
 
@@ -193,8 +139,7 @@ serve(async (req) => {
             JSON.stringify({
                 success: true,
                 payment_id: payment.id,
-                payment_url: dlocalgoData.redirect_url || dlocalgoData.payment_url,
-                dlocalgo_payment_id: dlocalgoData.id,
+                payment_url: checkoutUrl,
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

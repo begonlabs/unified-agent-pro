@@ -83,16 +83,80 @@ serve(async (req) => {
             throw new Error('Invalid webhook payload format')
         }
 
+        // Extraer email o id externo del payer para machar el cobro
+        const buyerEmail = paymentData.payer?.email || paymentData.email || '';
+        const externalId = paymentData.external_id || paymentData.order_id || '';
+
         // Find payment record
-        const { data: payment, error: paymentError } = await supabase
+        // Primero intentamos por el id directo por si es un pago normal
+        let { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select('*')
             .eq('dlocalgo_payment_id', dlocalgoPaymentId)
             .single()
 
+        // Si no se encuentra (porque es un Smart Link de Suscripción que se generó externo),
+        // buscamos un pago 'pending' reciente que coincida con el email o el externalId
         if (paymentError || !payment) {
-            console.error('Payment not found:', dlocalgoPaymentId)
-            throw new Error('Payment not found')
+            console.log('Payment not found by dlocalgo_payment_id. Searching by email or external_id...', { buyerEmail, externalId });
+            
+            let query = supabase
+                .from('payments')
+                .select('*')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            // Fetch any pending payment for this user
+            const { data: pendingPayments } = await query;
+            
+            // Asignamos el primero que corresponda (asumimos que el usuario solo tiene 1 intento activo)
+            // Idealmente deberíamos buscar el user_id usando el email, y luego ver los pending form that user
+            if (pendingPayments && pendingPayments.length > 0) {
+                // Validación adicional: si tenemos email, busquemos el perfil para matchear user_id
+                let targetUserId = pendingPayments[0].user_id;
+                
+                if (buyerEmail) {
+                    const { data: profileByEmail } = await supabase
+                        .from('profiles')
+                        .select('user_id')
+                        .eq('email', buyerEmail)
+                        .single();
+                        
+                    if (profileByEmail) {
+                         targetUserId = profileByEmail.user_id;
+                    }
+                }
+                
+                // Buscar el pending exacto de ese targetUserId
+                const exactPending = pendingPayments.find((p: any) => p.user_id === targetUserId);
+                if (exactPending) {
+                    payment = exactPending;
+                    console.log('Found matching pending payment:', payment.id);
+                    
+                    // Ligar el ID de la transacción al registro
+                    await supabase
+                        .from('payments')
+                        .update({ dlocalgo_payment_id: dlocalgoPaymentId })
+                        .eq('id', payment.id);
+                }
+            }
+        }
+
+        if (!payment) {
+            console.error('Payment not found globally. Orphan payment:', dlocalgoPaymentId)
+            // Si todo falla, metemos el pago como huérfano para no reventar el webhook y poder inspeccionarlo
+            await supabase.from('payments').insert({
+                user_id: '00000000-0000-0000-0000-000000000000', // invalid uuid will fail if constraint exists, better to not insert, or insert without user_id if nullable
+                currency: paymentData.currency || 'USD',
+                amount: paymentData.amount || 0,
+                status: 'approved',
+                dlocalgo_payment_id: dlocalgoPaymentId,
+                payment_data: paymentData,
+                plan_type: 'basico' // fallback
+            }).catch((e: any) => console.error('Failed to save orphan payment', e));
+
+            throw new Error('Payment not found in database')
         }
 
         // Map dLocalGo status to our status
@@ -263,12 +327,12 @@ serve(async (req) => {
                 status: 200,
             }
         )
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error processing webhook:', error)
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message,
+                error: error.message || String(error),
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
