@@ -168,7 +168,7 @@ serve(async (req) => {
                     plan_type: 'basico' // fallback
                 });
             } catch (e: any) {
-                console.error('Failed to save orphan payment', e);
+                console.error('Failed to save orphan payment safely', e);
             }
 
             throw new Error('Payment not found in database')
