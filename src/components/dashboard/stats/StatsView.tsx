@@ -60,7 +60,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Estadísticas Avanzadas</h3>
             <p className="text-gray-600 mb-6 font-medium">
-              Obtén insights valiosos sobre tu rendimiento y canales. Esta función está disponible en planes superiores.
+              Obtén datos valiosos sobre tu rendimiento y canales. Esta función está disponible en planes superiores.
             </p>
             <Button
               size="lg"
