@@ -78,6 +78,10 @@ echo -e "${YELLOW}   → Copiando payment-webhook...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/payment-webhook"
 sudo cp -r supabase/functions/payment-webhook "$FUNCTIONS_VOLUME/"
 
+echo -e "${YELLOW}   → Copiando cancel-subscription...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/cancel-subscription"
+sudo cp -r supabase/functions/cancel-subscription "$FUNCTIONS_VOLUME/"
+
 echo -e "${YELLOW}   → Copiando verify-subscription...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/verify-subscription"
 sudo cp -r supabase/functions/verify-subscription "$FUNCTIONS_VOLUME/"

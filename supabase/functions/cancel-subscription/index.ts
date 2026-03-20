@@ -42,36 +42,81 @@ serve(async (req) => {
             throw new Error('Profile not found')
         }
 
-        // 2. Here we would call dLocal Go API if we had the subscription ID
-        // Since we are using "recurring" payments initiated via /payments, 
-        // managing cancellation usually requires the "Subscription ID" or "Recurring Token" returned by dLocal
-        // which should be stored in 'payments' or 'subscriptions' table.
-        // For this version, we will focus on updating the LOCAL status to prevent future access
-        // and LOG the action so admins can manually verify in dLocal if needed until better API integration is confirmed.
+        // 2. Call dLocal Go API to cancel the subscription
+        console.log('Fetching dLocal Go subscriptions to find active match...')
+        const DLOCALGO_PLANS: Record<string, number> = {
+            'basico': 18861,
+            'avanzado': 18848,
+            'pro': 18849,
+            'empresarial': 18850,
+            'test': 18861
+        };
 
-        console.log('TODO: Call dLocal Go API to cancel recurring payment if applicable.')
+        const planId = DLOCALGO_PLANS[profile.plan_type] || 18861;
+        const authString = btoa(`${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`);
+        const authHeader = `Basic ${authString}`;
+
+        try {
+            const dlocalUrl = `${DLOCALGO_API_URL}/v1/subscription/plan/${planId}/subscription/all`;
+            const subsResponse = await fetch(dlocalUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': authHeader,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (subsResponse.ok) {
+                const subsData = await subsResponse.json();
+                const userEmail = profile.email;
+
+                // Match by email and active status
+                const activeSub = subsData.data?.find((sub: any) => 
+                    sub.client_email === userEmail && sub.active === true && (sub.status === 'CONFIRMED' || sub.status === 'ACTIVE')
+                );
+
+                if (activeSub) {
+                    console.log('Found active subscription in dLocal:', activeSub.id);
+                    const cancelUrl = `${DLOCALGO_API_URL}/v1/subscription/plan/${planId}/subscription/${activeSub.id}/cancel`;
+                    const cancelResponse = await fetch(cancelUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': authHeader,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!cancelResponse.ok) {
+                        const err = await cancelResponse.text();
+                        console.error('Failed to cancel in dLocal directly (POST /cancel):', err);
+                        // Fallback to PATCH /deactivate just in case the endpoint name varies
+                        const deactivateUrl = `${DLOCALGO_API_URL}/v1/subscription/plan/${planId}/subscription/${activeSub.id}/deactivate`;
+                        await fetch(deactivateUrl, {
+                            method: 'PATCH',
+                            headers: {
+                                'Authorization': authHeader,
+                                'Content-Type': 'application/json'
+                            }
+                        }).catch(e => console.error('Fallback deactivate failed:', e));
+                    } else {
+                        console.log('Successfully cancelled subscription in dLocal Go API');
+                    }
+                } else {
+                    console.log('No active subscription found in dLocal API. Proceeding with local cancellation.');
+                }
+            } else {
+                console.error('Failed to fetch subscriptions from dLocal API', await subsResponse.text());
+            }
+        } catch (dlocalError) {
+            console.error('Error interacting with dLocal API during cancellation:', dlocalError);
+            // We do not throw here to ensure the user is not trapped if dLocal API is down
+        }
 
         // 3. Update local profile status
-        // We set payment_status to 'cancelled' so verify-subscription will deny access/features if logic dictates,
-        // or just stop renewal.
-        // Usually, we want them to keep access until subscription_end_date.
-        // So we might need an 'auto_renew' flag. For now, we'll mark as cancelled but logic needs to handle grace period.
-        // The verify-subscription function checks: if (profile.payment_status === 'active') ...
-        // If we change it to 'cancelled' immediately, they lose access.
-
-        // Better approach: Set auto_renew to false (if column exists) or just log it.
-        // Given user request is simple "cancel option", let's update status to 'cancelled' 
-        // BUT we should respect the paid period.
-        // Let's check verify-subscription logic in a separate step if we want to support grace period.
-        // For now, to be safe and immediate:
         const { error: updateError } = await supabase
             .from('profiles')
             .update({
                 payment_status: 'cancelled',
-                // subscription_end is already set, so even if status is cancelled, 
-                // sophisticated logic uses subscription_end to determine access.
-                // Revisiting verify-subscription logic:
-                // "else if (profile.payment_status === 'active')" -> this means they lose access immediately if we verify strictly on this field.
             })
             .eq('user_id', user_id)
 
@@ -96,7 +141,7 @@ serve(async (req) => {
                 status: 200,
             }
         )
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error cancelling subscription:', error)
         return new Response(
             JSON.stringify({
