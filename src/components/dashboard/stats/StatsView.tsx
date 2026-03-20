@@ -52,24 +52,22 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
   return (
     <div className="relative min-h-screen bg-gray-50 p-6">
       {!hasAccess && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center pt-[20vh] sm:pt-[30vh]">
-          <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px]" />
+        <div className="absolute inset-x-3 inset-y-3 sm:inset-x-6 sm:inset-y-6 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] rounded-xl" />
           <div className="relative bg-white p-6 md:p-8 rounded-xl shadow-xl border border-gray-200 max-w-md text-center m-4">
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 ring-4 ring-blue-50/50">
-              <BarChart3 className="w-8 h-8 text-blue-600" />
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-200 ring-4 ring-gray-50">
+              <Lock className="w-8 h-8 text-gray-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Estadísticas Avanzadas</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Estadísticas Bloqueadas</h3>
             <p className="text-gray-600 mb-6 font-medium">
               Obtén datos valiosos sobre tu rendimiento y canales. Esta función está disponible en planes superiores.
             </p>
-            <Button
-              size="lg"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md font-semibold"
+            <button
               onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors w-full shadow-sm"
             >
-              <Lock className="h-4 w-4 mr-2" />
-              Actualizar Plan
-            </Button>
+              Mejorar Plan
+            </button>
           </div>
         </div>
       )}
