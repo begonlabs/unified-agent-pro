@@ -10,7 +10,7 @@ export interface ChannelPermissions {
 
 export const PLAN_LIMITS: Record<string, { messages: number; clients: number }> = {
     free: { messages: 0, clients: 0 },
-    basico: { messages: 10000, clients: 200 },
+    basico: { messages: 10000, clients: 500 },
     avanzado: { messages: 30000, clients: 600 },
     pro: { messages: 70000, clients: 2000 },
     empresarial: { messages: 100000, clients: 3000 }
@@ -51,7 +51,7 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
                 facebook: true,
                 instagram: true,
                 maxWhatsappChannels: 1,
-                maxChannels: 1, // Plan Básico: Solo 1 canal activo en total (de cualquier tipo)
+                maxChannels: 3, // Plan Básico: 3 canales en total
             };
         case 'avanzado':
         case 'pro':
