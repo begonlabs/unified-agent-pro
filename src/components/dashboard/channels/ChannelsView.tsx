@@ -246,29 +246,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ user }) => {
                 {profile.is_trial && <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">Prueba</span>}
               </AlertTitle>
               <AlertDescription className="text-blue-700 mt-1">
-                <p className="mb-2">{getPermissionsDescription(profile)}</p>
-                <div className="flex flex-wrap gap-2 text-sm">
-                  {(() => {
-                    const uniqueTotal = new Set();
-                    const uniqueWhatsApp = new Set();
-
-                    channels.forEach(c => {
-                      const type = c.channel_type === 'whatsapp_green_api' ? 'whatsapp' : c.channel_type;
-                      const id = c.channel_type === 'whatsapp_green_api'
-                        ? (c.channel_config as any)?.idInstance
-                        : c.id;
-
-                      uniqueTotal.add(`${type}_${id}`);
-                      if (type === 'whatsapp') uniqueWhatsApp.add(id);
-                    });
-
-                    return (
-                      <span className={`px-2 py-1 rounded-md ${uniqueTotal.size >= permissions.maxChannels && permissions.maxChannels !== -1 ? 'bg-purple-100 text-purple-800' : 'bg-white text-blue-700'}`}>
-                        Canales totales: {uniqueTotal.size} / {permissions.maxChannels === -1 ? 'Ilimitados' : permissions.maxChannels}
-                      </span>
-                    );
-                  })()}
-                </div>
+                <p>{getPermissionsDescription(profile)}</p>
               </AlertDescription>
             </div>
             <Button
