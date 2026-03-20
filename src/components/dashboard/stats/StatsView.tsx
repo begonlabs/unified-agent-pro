@@ -50,7 +50,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
 
 
   return (
-    <div className="relative min-h-screen bg-gray-50 p-6">
+    <div className={`relative bg-gray-50 p-6 ${!hasAccess ? 'h-[calc(100vh-4rem)] overflow-hidden' : 'min-h-screen'}`}>
       {!hasAccess && (
         <div className="absolute inset-x-3 inset-y-3 sm:inset-x-6 sm:inset-y-6 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] rounded-xl" />
