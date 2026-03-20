@@ -79,20 +79,24 @@ serve(async (req) => {
             // Full format: { type: "...", data: { ... } }
             paymentData = webhookPayload.data
             dlocalgoPaymentId = paymentData.id
-        } else if (webhookPayload.id && webhookPayload.status) {
-            // Direct object format (Subscription/Raw Webhooks)
-            console.log('Received direct format webhook.')
-            paymentData = webhookPayload
-            dlocalgoPaymentId = webhookPayload.id
+        } else if (webhookPayload.invoiceId && webhookPayload.subscriptionId) {
+            // DLocal Go Subscription Invoice Webhook
+            console.log('Received subscription invoice webhook:', webhookPayload.invoiceId);
+            paymentData = webhookPayload;
+            dlocalgoPaymentId = webhookPayload.invoiceId;
         } else {
             // DEBUG: Save rogue payload to logs/payments just in case
-            await supabase.from('payments').insert({
-                user_id: '602d4d36-517d-4cbf-93e0-10a36f92c8ef',
-                status: 'failed',
-                currency: 'HCK',
-                payment_data: webhookPayload,
-                plan_type: 'basico'
-            }).catch(() => {});
+            try {
+                await supabase.from('payments').insert({
+                    user_id: '00000000-0000-0000-0000-000000000000', // invalid to ensure it falls through
+                    status: 'failed',
+                    currency: 'HCK',
+                    payment_data: webhookPayload,
+                    plan_type: 'basico'
+                });
+            } catch (e) {
+                console.error('Failed to log rogue payload', e);
+            }
 
             throw new Error('Invalid webhook payload format')
         }
