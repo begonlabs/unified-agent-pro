@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, LogOut } from 'lucide-react';
+import { Lock, LogOut, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface GlobalAccountLockProps {
@@ -20,6 +20,18 @@ export const GlobalAccountLock: React.FC<GlobalAccountLockProps> = ({ onSignOut 
           Tu plan ha sido cancelado. Ya no tienes acceso a las funciones de la plataforma. Para restablecer el servicio puedes iniciar sesión con otra cuenta corporativa.
         </p>
         <div className="space-y-3">
+          <Button 
+            className="w-full bg-green-600 hover:bg-green-700 text-white" 
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('view', 'profile');
+              url.searchParams.set('tab', 'plans');
+              window.location.href = url.toString();
+            }}
+          >
+            <CreditCard className="w-4 h-4 mr-2" />
+            Renovar Plan
+          </Button>
           <Button 
             className="w-full bg-red-600 hover:bg-red-700 text-white" 
             onClick={onSignOut}

@@ -237,7 +237,10 @@ const DashboardOptimized: React.FC = () => {
     return null; // Se redirigirá a /auth
   }
 
-  if (isLocked) {
+  const urlParams = new URL(window.location.href).searchParams;
+  const isPlansView = currentView === 'profile' && urlParams.get('tab') === 'plans';
+
+  if (isLocked && !isPlansView) {
     return <GlobalAccountLock onSignOut={handleSignOut} />;
   }
 
