@@ -45,7 +45,7 @@ export const InstagramChannel: React.FC<InstagramChannelProps> = ({
                 <Button
                   variant="link"
                   className="p-0 h-auto ml-2 text-amber-800 underline font-semibold"
-                  onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+                  onClick={() => window.location.href = '/dashboard?view=profile&tab=plans'}
                 >
                   Mejorar Plan
                 </Button>

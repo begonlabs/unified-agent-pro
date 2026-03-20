@@ -91,7 +91,7 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
             <Button
               variant="link"
               className="p-0 h-auto ml-2 text-red-800 underline font-semibold"
-              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+              onClick={() => window.location.href = '/dashboard?view=profile&tab=plans'}
             >
               Mejorar Plan
             </Button>

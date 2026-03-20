@@ -91,7 +91,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
               <span>{clientCheck.reason || "Has alcanzado el límite de clientes de tu plan."}</span>
               <button
                 className="underline font-semibold hover:text-red-900"
-                onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+                onClick={() => window.location.href = '/dashboard?view=profile&tab=plans'}
               >
                 Mejorar Plan
               </button>
@@ -114,7 +114,7 @@ const CRMView: React.FC<CRMViewProps> = ({ user: propUser }) => {
                 La gestión avanzada de clientes está disponible en planes superiores
               </p>
               <button
-                onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+                onClick={() => window.location.href = '/dashboard?view=profile&tab=plans'}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors w-full shadow-sm"
               >
                 Mejorar Plan

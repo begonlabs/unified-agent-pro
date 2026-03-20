@@ -63,7 +63,7 @@ const StatsView: React.FC<StatsViewProps> = ({ user: propUser }) => {
               Obtén datos valiosos sobre tu rendimiento y canales. Esta función está disponible en planes superiores.
             </p>
             <button
-              onClick={() => window.location.href = '/dashboard?view=profile&tab=subscription'}
+              onClick={() => window.location.href = '/dashboard?view=profile&tab=plans'}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors w-full shadow-sm"
             >
               Mejorar Plan
