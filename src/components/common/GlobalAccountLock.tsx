@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 
 interface GlobalAccountLockProps {
   onSignOut: () => void;
+  isTrialExpired?: boolean;
 }
 
-export const GlobalAccountLock: React.FC<GlobalAccountLockProps> = ({ onSignOut }) => {
+export const GlobalAccountLock: React.FC<GlobalAccountLockProps> = ({ onSignOut, isTrialExpired }) => {
   return (
     <div className="fixed inset-0 z-[9999] bg-white/75 backdrop-blur-md flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white border border-red-100 rounded-2xl shadow-2xl p-8 text-center">
@@ -14,10 +15,12 @@ export const GlobalAccountLock: React.FC<GlobalAccountLockProps> = ({ onSignOut 
           <Lock className="w-8 h-8" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Suscripción Inactiva
+          {isTrialExpired ? "Prueba Gratuita Finalizada" : "Suscripción Inactiva"}
         </h2>
         <p className="text-gray-600 mb-6">
-          Tu plan ha sido cancelado. Ya no tienes acceso a las funciones de la plataforma.
+          {isTrialExpired 
+            ? "Tu plan gratuito ya venció. Por favor contrata un plan de pago para continuar usando la plataforma."
+            : "Tu plan ha sido cancelado. Ya no tienes acceso a las funciones de la plataforma."}
         </p>
         <div className="space-y-3">
           <Button 

@@ -98,6 +98,10 @@ echo -e "${YELLOW}   → Copiando delete-green-api-instance...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/delete-green-api-instance"
 sudo cp -r supabase/functions/delete-green-api-instance "$FUNCTIONS_VOLUME/"
 
+echo -e "${YELLOW}   → Copiando expire-trials...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/expire-trials"
+sudo cp -r supabase/functions/expire-trials "$FUNCTIONS_VOLUME/"
+
 echo -e "${YELLOW}   → Reiniciando Supabase Edge Runtime...${NC}"
 docker restart supabase-edge-functions
 

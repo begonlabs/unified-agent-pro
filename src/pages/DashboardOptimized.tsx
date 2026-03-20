@@ -240,8 +240,26 @@ const DashboardOptimized: React.FC = () => {
   const urlParams = new URL(window.location.href).searchParams;
   const isPlansView = currentView === 'profile' && urlParams.get('tab') === 'plans';
 
-  if (isLocked && !isPlansView) {
-    return <GlobalAccountLock onSignOut={handleSignOut} />;
+  // Verifica si el trial ha expirado
+  const [profileData, setProfileData] = useState<any>(null);
+  useEffect(() => {
+    if (user?.id) {
+      ProfileService.fetchProfile(user.id).then(p => {
+        if (p) {
+          setProfileData(p);
+          const isExpired = p.is_trial && p.trial_end_date && new Date(p.trial_end_date) < new Date();
+          if (isExpired && p.plan_type !== 'none') {
+            supabase.functions.invoke('expire-trials', { body: { user_id: user.id } }).catch(console.error);
+          }
+        }
+      });
+    }
+  }, [user?.id]);
+
+  const isTrialExpiredState = profileData?.is_trial && profileData?.trial_end_date && new Date(profileData.trial_end_date) < new Date();
+
+  if ((isLocked || isTrialExpiredState) && !isPlansView) {
+    return <GlobalAccountLock onSignOut={handleSignOut} isTrialExpired={!!isTrialExpiredState} />;
   }
 
   return (
