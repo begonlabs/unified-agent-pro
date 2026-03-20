@@ -103,7 +103,7 @@ serve(async (req) => {
 
         // Extraer email o id externo del payer para machar el cobro
         const buyerEmail = paymentData.payer?.email || paymentData.email || '';
-        const externalId = paymentData.external_id || paymentData.order_id || '';
+        const externalId = paymentData.external_id || paymentData.externalId || paymentData.order_id || '';
 
         // Find payment record
         // Primero intentamos por el id directo por si es un pago normal
