@@ -14,7 +14,8 @@ import {
   NotificationsTab,
   SecurityTab,
   ChangePasswordDialog,
-  ProfileViewProps
+  ProfileViewProps,
+  SubscriptionContent
 } from './index';
 import { ProfileService } from './services/profileService';
 
@@ -90,6 +91,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
           onProfileDataChange={setProfileData}
         />
 
+        <TabsContent value="plans" className="space-y-4 sm:space-y-6">
+          <SubscriptionContent profile={profile} />
+        </TabsContent>
 
         <NotificationsTab
           notifications={notifications}

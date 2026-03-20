@@ -27,6 +27,10 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ children }) => {
           <Shield className="h-4 w-4" />
           <span className="text-xs sm:text-sm">Seguridad</span>
         </TabsTrigger>
+        <TabsTrigger value="plans" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#3a0caa]/10 data-[state=active]:to-[#710db2]/10 data-[state=active]:text-[#3a0caa] py-3 sm:py-2">
+          <CreditCard className="h-4 w-4" />
+          <span className="text-xs sm:text-sm">Planes</span>
+        </TabsTrigger>
       </TabsList>
       {children}
     </Tabs>
