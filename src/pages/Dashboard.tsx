@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useViewFromUrlOrPersisted } from '@/hooks/usePersistedState';
 import { useDataRefresh, useViewChangeDetector } from '@/hooks/useDataRefresh';
 import { GlobalNotificationListener } from '@/components/dashboard/GlobalNotificationListener';
+import { GlobalAccountLock } from '@/components/common/GlobalAccountLock';
 import {
   ResponsiveSidebar,
   MessagesView,
@@ -22,6 +23,7 @@ import {
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -77,6 +79,10 @@ const Dashboard = () => {
         try {
           const profile = await ProfileService.fetchProfile(user.id);
           if (profile) {
+            if (profile.plan_type === 'none' || profile.payment_status === 'cancelled') {
+              setIsLocked(true);
+            }
+
             const isProfileIncomplete = !profile.first_name || !profile.last_name || !profile.country;
 
             // If profile is incomplete and we are not already on the profile view
@@ -196,6 +202,10 @@ const Dashboard = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  if (isLocked) {
+    return <GlobalAccountLock onSignOut={handleSignOut} />;
   }
 
   return (

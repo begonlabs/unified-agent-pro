@@ -117,6 +117,7 @@ serve(async (req) => {
             .from('profiles')
             .update({
                 payment_status: 'cancelled',
+                plan_type: 'none'
             })
             .eq('user_id', user_id)
 

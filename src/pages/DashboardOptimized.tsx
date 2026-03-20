@@ -11,6 +11,8 @@ import { AutoPreloader } from '@/components/lazy/LazyComponents';
 import ResponsiveSidebarOptimized from '@/components/dashboard/sidebar/ResponsiveSidebarOptimized';
 import { ChannelAlertBanner } from '@/components/dashboard/channels/components/ChannelAlertBanner';
 import { ClientLimitModals } from '@/components/dashboard/ClientLimitModals';
+import { ProfileService } from '@/components/dashboard/profile/services/profileService';
+import { GlobalAccountLock } from '@/components/common/GlobalAccountLock';
 
 /**
  * Dashboard optimizado con lazy loading y gestión de estado mejorada
@@ -20,6 +22,7 @@ const DashboardOptimized: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPersisted, setIsPersisted] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   // Refs para valores que no necesitan re-renderizar
   const authSubscriptionRef = useRef<any>(null);
@@ -114,6 +117,22 @@ const DashboardOptimized: React.FC = () => {
 
     // Inicializar autenticación
     initializeAuth();
+
+    // Setup user profile lock checking
+    const checkLockStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const profile = await ProfileService.fetchProfile(session.user.id);
+          if (profile && (profile.plan_type === 'none' || profile.payment_status === 'cancelled')) {
+            setIsLocked(true);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking profile lock:', err);
+      }
+    };
+    checkLockStatus();
 
     // Configurar suscripción de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
@@ -216,6 +235,10 @@ const DashboardOptimized: React.FC = () => {
 
   if (!user) {
     return null; // Se redirigirá a /auth
+  }
+
+  if (isLocked) {
+    return <GlobalAccountLock onSignOut={handleSignOut} />;
   }
 
   return (
