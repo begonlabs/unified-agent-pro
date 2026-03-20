@@ -17,7 +17,7 @@ export const GlobalAccountLock: React.FC<GlobalAccountLockProps> = ({ onSignOut 
           Suscripción Inactiva
         </h2>
         <p className="text-gray-600 mb-6">
-          Tu plan ha sido cancelado. Ya no tienes acceso a las funciones de la plataforma. Para restablecer el servicio puedes iniciar sesión con otra cuenta corporativa.
+          Tu plan ha sido cancelado. Ya no tienes acceso a las funciones de la plataforma.
         </p>
         <div className="space-y-3">
           <Button 

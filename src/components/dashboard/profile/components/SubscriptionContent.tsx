@@ -50,7 +50,11 @@ interface SubscriptionContentProps {
 }
 
 export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profile }) => {
-    const plans = ProfileService.getPlans(profile.plan_type);
+    const isInactive = profile.plan_type === 'none' || profile.payment_status === 'cancelled';
+    const plans = ProfileService.getPlans(profile.plan_type).filter(p => {
+        if (isInactive && p.name === 'Gratuito') return false;
+        return true;
+    });
     const currentPlan = plans.find(p => p.current);
     const PlanIcon = ProfileService.getPlanIcon(profile.plan_type);
 
@@ -140,8 +144,9 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
     return (
         <div className="space-y-4 sm:space-y-6">
             {/* Plan Actual */}
-            <Card>
-                <CardHeader className="p-4 sm:p-6">
+            {!isInactive && (
+                <Card>
+                    <CardHeader className="p-4 sm:p-6">
                     <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                         <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                         Tu Plan Actual
@@ -291,6 +296,7 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                     </div>
                 </CardContent>
             </Card>
+            )}
 
             {/* Cambiar Plan */}
             <Card>
