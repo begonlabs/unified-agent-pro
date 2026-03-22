@@ -103,7 +103,14 @@ const Auth = () => {
         }
 
         // No MFA or already verified -> Go to dashboard
-        navigate('/dashboard');
+        const createdAt = session?.user?.created_at;
+        const isNewUser = createdAt && (new Date().getTime() - new Date(createdAt).getTime() < 60000);
+        
+        if (isNewUser) {
+          navigate('/dashboard?view=profile&tab=plans');
+        } else {
+          navigate('/dashboard');
+        }
       } catch (error) {
         console.error('Error checking MFA status:', error);
         // Fallback to dashboard if check fails (fail open or closed decision)
@@ -294,13 +301,13 @@ const Auth = () => {
         title: "¡Registro exitoso!",
         description: needsConfirmation
           ? "Te has registrado correctamente. Revisa tu email para confirmar tu cuenta."
-          : "Te has registrado correctamente. Puedes iniciar sesión ahora.",
+          : "Te has registrado correctamente. Preparando tu espacio de trabajo...",
       });
 
-      // Si no necesita confirmación, mandar al login view
+      // Si no necesita confirmación, enviar directo al panel de planes en perfil
       if (!needsConfirmation) {
         setTimeout(() => {
-          setSearchParams({ view: 'login' });
+          window.location.href = '/dashboard?view=profile&tab=plans';
         }, 1000);
       }
 
