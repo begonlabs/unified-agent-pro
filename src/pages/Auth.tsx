@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import {
   MessageSquare,
   Bot,
@@ -20,7 +23,10 @@ import {
   Building,
   Eye,
   EyeOff,
-  ArrowLeft
+  ArrowLeft,
+  MapPin,
+  ChevronsUpDown,
+  Check
 } from 'lucide-react';
 import logoWhite from '@/assets/logo_white.png';
 import { useToast } from '@/hooks/use-toast';
@@ -29,11 +35,36 @@ import { Link } from 'react-router-dom';
 import { Verify2FA } from '@/components/auth/Verify2FA';
 import { MFAService } from '@/services/mfaService';
 
+const LATAM_COUNTRIES = [
+  { value: "ar", label: "Argentina" },
+  { value: "bo", label: "Bolivia" },
+  { value: "br", label: "Brasil" },
+  { value: "cl", label: "Chile" },
+  { value: "co", label: "Colombia" },
+  { value: "cr", label: "Costa Rica" },
+  { value: "cu", label: "Cuba" },
+  { value: "ec", label: "Ecuador" },
+  { value: "sv", label: "El Salvador" },
+  { value: "gt", label: "Guatemala" },
+  { value: "hn", label: "Honduras" },
+  { value: "mx", label: "México" },
+  { value: "ni", label: "Nicaragua" },
+  { value: "pa", label: "Panamá" },
+  { value: "py", label: "Paraguay" },
+  { value: "pe", label: "Perú" },
+  { value: "pr", label: "Puerto Rico" },
+  { value: "do", label: "República Dominicana" },
+  { value: "uy", label: "Uruguay" },
+  { value: "ve", label: "Venezuela" }
+];
+
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [country, setCountry] = useState('');
+  const [openCountry, setOpenCountry] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -248,6 +279,15 @@ const Auth = () => {
     e.preventDefault();
     console.log('Attempting sign up with email:', email, 'company:', companyName);
 
+    if (!country) {
+      toast({
+        title: "País requerido",
+        description: "Por favor selecciona tu país",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate password confirmation
     if (password !== confirmPassword) {
       toast({
@@ -283,6 +323,7 @@ const Auth = () => {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             company_name: companyName,
+            country: country,
           }
         }
       });
@@ -760,6 +801,58 @@ const Auth = () => {
                             required
                           />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Popover open={openCountry} onOpenChange={setOpenCountry}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={openCountry}
+                              className={cn(
+                                "w-full justify-between h-12 border-gray-200 focus:border-purple-400 font-normal",
+                                !country && "text-muted-foreground"
+                              )}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
+                                {country
+                                  ? LATAM_COUNTRIES.find((c) => c.value === country)?.label
+                                  : "Selecciona tu país"}
+                              </div>
+                              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Buscar país..." />
+                              <CommandList>
+                                <CommandEmpty>No se encontró el país.</CommandEmpty>
+                                <CommandGroup>
+                                  {LATAM_COUNTRIES.map((c) => (
+                                    <CommandItem
+                                      key={c.value}
+                                      value={c.label}
+                                      onSelect={() => {
+                                        setCountry(c.value);
+                                        setOpenCountry(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          country === c.value ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {c.label}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
