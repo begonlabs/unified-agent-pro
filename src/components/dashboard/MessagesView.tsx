@@ -113,7 +113,7 @@ const MessagesView = () => {
     connectionStatus,
     refreshConversations,
     loadMore
-  } = useRealtimeConversations(user?.id || null, debouncedSearchTerm);
+  } = useRealtimeConversations(user?.id || null, debouncedSearchTerm, filterStatus, filterChannel);
 
   // 🖱️ Manejar scroll infinito
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -528,17 +528,8 @@ const MessagesView = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv => {
-    const matchesSearch = conv.crm_clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      conv.channel.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' ||
-      (filterStatus === 'unread' && (conv.unread_count || 0) > 0) ||
-      (filterStatus === 'read' && (conv.unread_count || 0) === 0) ||
-      (filterStatus === 'advisor' && conv.crm_clients?.tags?.includes('Asesor Requerido'));
-    const matchesChannel = filterChannel === 'all' || conv.channel === filterChannel;
-
-    return matchesSearch && matchesStatus && matchesChannel;
-  });
+  // Filtro delegado al servidor (base de datos)
+  const filteredConversations = conversations;
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
 

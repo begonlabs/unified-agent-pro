@@ -43,7 +43,12 @@ interface UseRealtimeConversationsReturn {
   error: string | null;
 }
 
-export const useRealtimeConversations = (userId: string | null, debouncedSearch: string = ''): UseRealtimeConversationsReturn => {
+export const useRealtimeConversations = (
+  userId: string | null,
+  debouncedSearch: string = '',
+  filterStatus: string = 'all',
+  filterChannel: string = 'all'
+): UseRealtimeConversationsReturn => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,19 +93,37 @@ export const useRealtimeConversations = (userId: string | null, debouncedSearch:
 
       console.log(`🔍 Fetching conversations for user: ${userId}, Range: ${from}-${to}, Search: ${debouncedSearch}`);
 
-      // 2-step search logic if debouncedSearch exists
+      // 2-step search logic if debouncedSearch or filterStatus === 'advisor' exists
       let clientIdsToMatch: string[] = [];
-      if (debouncedSearch) {
-        // Step 1: Find matching clients
-        const { data: clientsData } = await supabase
-          .from('crm_clients')
-          .select('id')
-          .eq('user_id', userId)
-          .ilike('name', `%${debouncedSearch}%`);
+      let hasClientFilter = false;
+
+      if (debouncedSearch || filterStatus === 'advisor') {
+        hasClientFilter = true;
+        let clientQuery = supabase.from('crm_clients').select('id').eq('user_id', userId);
+        
+        if (debouncedSearch) {
+          clientQuery = clientQuery.ilike('name', `%${debouncedSearch}%`);
+        }
+        
+        if (filterStatus === 'advisor') {
+          clientQuery = clientQuery.contains('tags', ['Asesor Requerido']);
+        }
+
+        const { data: clientsData } = await clientQuery;
           
         if (clientsData && clientsData.length > 0) {
           clientIdsToMatch = clientsData.map(c => c.id);
         }
+      }
+
+      // If there's a client filter but no clients matched, we can return empty early
+      if (hasClientFilter && clientIdsToMatch.length === 0 && !debouncedSearch) {
+          setConversations(isInitial ? [] : prev => prev);
+          setHasMore(false);
+          setLoading(false);
+          setIsFetchingMore(false);
+          isFetchingRef.current = false;
+          return;
       }
 
       let query = supabase
@@ -119,13 +142,28 @@ export const useRealtimeConversations = (userId: string | null, debouncedSearch:
         `)
         .eq('user_id', userId);
 
+      // Apply Channel Filter
+      if (filterChannel !== 'all') {
+        query = query.eq('channel', filterChannel);
+      }
+
+      // Apply Status Filter
+      if (filterStatus === 'unread') {
+        query = query.gt('unread_count', 0);
+      } else if (filterStatus === 'read') {
+        query = query.or('unread_count.eq.0,unread_count.is.null');
+      }
+
+      // Apply Search / Client Filter
       if (debouncedSearch) {
-        // Step 2: filter based on channel or found clients
         if (clientIdsToMatch.length > 0) {
            query = query.or(`channel.ilike.%${debouncedSearch}%,client_id.in.(${clientIdsToMatch.join(',')})`);
         } else {
            query = query.ilike('channel', `%${debouncedSearch}%`);
         }
+      } else if (hasClientFilter && clientIdsToMatch.length > 0) {
+        // Purely filterStatus === 'advisor'
+        query = query.in('client_id', clientIdsToMatch);
       }
 
       const { data, error: fetchError } = await query
@@ -172,7 +210,7 @@ export const useRealtimeConversations = (userId: string | null, debouncedSearch:
       setIsFetchingMore(false);
       isFetchingRef.current = false;
     }
-  }, [userId, page, toast, debouncedSearch]);
+  }, [userId, page, toast, debouncedSearch, filterStatus, filterChannel]);
 
   // Función para cargar más (Paginación)
   const loadMore = useCallback(async () => {
@@ -438,7 +476,7 @@ export const useRealtimeConversations = (userId: string | null, debouncedSearch:
     // Cargar conversaciones iniciales
     fetchConversations(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, debouncedSearch]);
+  }, [userId, debouncedSearch, filterStatus, filterChannel]);
 
   // Effect for realtime subscription lifecycle
   useEffect(() => {
