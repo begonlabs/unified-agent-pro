@@ -116,7 +116,7 @@ RUN touch /var/run/nginx.pid && \
     chown -R nextjs:nodejs /var/run/nginx.pid
 
 # Cambiar a usuario no-root
-USER nextjs
+# USER nextjs
 
 # Exponer puerto
 EXPOSE 3000
