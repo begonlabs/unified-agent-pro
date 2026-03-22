@@ -120,9 +120,12 @@ serve(async (req) => {
             throw new Error('Suscripción no configurada para este plan en dLocal Go todavía.');
         }
 
+        // Extract the user's registered country code if available, default to 'UY' (Uruguay) if missing
+        const userCountry = user.user_metadata?.country || 'UY';
+
         // Generate the custom checkout URL with user data
-        // We pass external_id to identify the user when the webhook fires
-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&lang=es&locale=es`;
+        // We pass external_id to identify the user when the webhook fires, and country to force localization
+        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}`;
 
         console.log('Generated subscription link:', checkoutUrl);
 
