@@ -10,9 +10,10 @@ import {
   Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { ChangePasswordDialogProps } from '../types';
 import { MFASettings } from '@/components/auth/MFASettings';
+import { Input } from '@/components/ui/input';
 
 interface SecurityTabProps {
   onChangePasswordOpen: (open: boolean) => void;
@@ -24,6 +25,10 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
   changePasswordOpen
 }) => {
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+  const { toast } = useToast();
 
   const handleCancelPlan = async () => {
     try {
@@ -31,7 +36,11 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        toast.error('Sesión no encontrada. Por favor inicia sesión de nuevo.');
+        toast({
+          title: 'Sesión no encontrada',
+          description: 'Por favor inicia sesión de nuevo.',
+          variant: 'destructive'
+        });
         return;
       }
 
@@ -42,7 +51,10 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Tu plan ha sido cancelado exitosamente de manera permanente.');
+        toast({
+          title: 'Plan cancelado',
+          description: 'Tu plan ha sido cancelado exitosamente de manera permanente.',
+        });
         setTimeout(() => {
           window.location.reload();
         }, 2000);
@@ -51,9 +63,49 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
       }
     } catch (err: any) {
       console.error('Error al cancelar el plan:', err);
-      toast.error(err.message || 'Ocurrió un error al intentar cancelar tu plan.');
+      toast({
+        title: 'Error de cancelación',
+        description: err.message || 'Ocurrió un error al intentar cancelar tu plan.',
+        variant: 'destructive'
+      });
     } finally {
       setIsCanceling(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteInput !== 'eliminar') {
+      toast({
+        title: 'Confirmación inválida',
+        description: 'Debes escribir "eliminar" exactamente para confirmar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const { error } = await supabase.rpc('delete_current_user' as any);
+
+      if (error) throw error;
+      
+      toast({
+        title: 'Cuenta eliminada',
+        description: 'Tu cuenta y datos han sido borrados de forma irreversible.'
+      });
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/';
+      }, 1500);
+      
+    } catch (err: any) {
+      console.error('Error al eliminar cuenta:', err);
+      toast({
+        title: 'Fallo al eliminar',
+        description: err.message || 'No se pudo eliminar la cuenta.',
+        variant: 'destructive'
+      });
+      setIsDeleting(false);
     }
   };
   return (
@@ -138,8 +190,8 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
 
               {/* Eliminar cuenta */}
               <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div className="flex-1">
                     <h5 className="font-medium text-red-900">Eliminar cuenta</h5>
                     <p className="text-sm text-red-700 mt-1">
                       Esta acción eliminará permanentemente tu cuenta y todos los datos asociados.
@@ -148,10 +200,53 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
                       Esta acción no se puede deshacer
                     </p>
                   </div>
-                  <Button variant="destructive" size="sm" className="ml-4">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Eliminar
-                  </Button>
+                  {!showDeleteConfirm ? (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      Eliminar
+                    </Button>
+                  ) : (
+                    <div className="bg-white p-3 rounded-md border border-red-200 shadow-sm w-full sm:w-auto">
+                      <p className="text-xs font-medium text-red-800 mb-2">
+                        Escribe <strong className="font-bold">eliminar</strong> para confirmar
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          value={deleteInput}
+                          onChange={(e) => setDeleteInput(e.target.value)}
+                          placeholder="eliminar"
+                          className="h-8 text-sm focus-visible:ring-red-500 border-red-200"
+                        />
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 h-8"
+                            onClick={() => {
+                              setShowDeleteConfirm(false);
+                              setDeleteInput('');
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="flex-1 h-8"
+                            onClick={handleDeleteAccount}
+                            disabled={isDeleting || deleteInput !== 'eliminar'}
+                          >
+                            {isDeleting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                            Confirmar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

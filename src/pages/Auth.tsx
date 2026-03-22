@@ -41,6 +41,9 @@ const Auth = () => {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [showMFAVerification, setShowMFAVerification] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentView = searchParams.get('view') || 'login';
@@ -294,28 +297,109 @@ const Auth = () => {
 
       console.log('Sign up successful');
 
-      // Mensaje diferente dependiendo si necesita confirmación
-      const needsConfirmation = !data.user?.email_confirmed_at;
+      // Verificar si necesita confirmación (Supabase devuelve user sin email_confirmed_at o con identity sin verificar)
+      const needsConfirmation = data.user && !data.user.email_confirmed_at;
+
+      if (needsConfirmation) {
+        setRegisteredEmail(email);
+        setShowOtpVerification(true);
+        toast({
+          title: "¡Código enviado!",
+          description: "Hemos enviado un código de 6 dígitos a tu correo. Tienes 60 segundos para ingresarlo.",
+        });
+        setLoading(false);
+        return;
+      }
 
       toast({
         title: "¡Registro exitoso!",
-        description: needsConfirmation
-          ? "Te has registrado correctamente. Revisa tu email para confirmar tu cuenta."
-          : "Te has registrado correctamente. Preparando tu espacio de trabajo...",
+        description: "Te has registrado correctamente. Preparando tu espacio de trabajo...",
       });
 
-      // Si no necesita confirmación, enviar directo al panel de planes en perfil
-      if (!needsConfirmation) {
-        setTimeout(() => {
-          window.location.href = '/dashboard?view=profile&tab=plans';
-        }, 1000);
-      }
+      // Si no necesita confirmación, redirigir directo
+      setTimeout(() => {
+        window.location.href = '/dashboard?view=profile&tab=plans';
+      }, 1000);
 
     } catch (error: unknown) {
       console.error('Sign up catch block:', error);
       toast({
         title: "Error en el registro",
         description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
+      if (!showOtpVerification) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) {
+      toast({
+        title: "Código inválido",
+        description: "El código debe tener 6 dígitos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: registeredEmail,
+        token: otpCode,
+        type: 'signup'
+      });
+
+      if (error) {
+        throw new Error(error.message.includes('Token has expired or is invalid') 
+          ? "El código es inválido o ha expirado (60s). Intenta de nuevo." 
+          : error.message);
+      }
+
+      toast({
+        title: "¡Email verificado!",
+        description: "Tu cuenta ha sido activada correctamente.",
+      });
+
+      setTimeout(() => {
+        window.location.href = '/dashboard?view=profile&tab=plans';
+      }, 500);
+
+    } catch (error: any) {
+      toast({
+        title: "Error al verificar código",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: registeredEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+      
+      toast({
+        title: "Código reenviado",
+        description: "Revisa tu bandeja de entrada o spam.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error al reenviar",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -561,6 +645,75 @@ const Auth = () => {
                         </div>
                       </form>
                     )}
+                  </div>
+                ) : showOtpVerification ? (
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <div className="mx-auto w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                        <Mail className="h-6 w-6 text-[#3a0caa]" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900">Revisa tu correo</h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Hemos enviado un código a <span className="font-semibold text-gray-700">{registeredEmail}</span>
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleVerifyOtp} className="space-y-6">
+                      <div className="space-y-2">
+                        <Input
+                          type="text"
+                          placeholder="000000"
+                          maxLength={6}
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                          className="text-center text-3xl tracking-widest h-16 border-gray-300 focus:border-purple-400 font-mono"
+                          required
+                        />
+                        <p className="text-xs text-center text-gray-500">
+                          El código expira en 60 segundos
+                        </p>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 bg-gradient-to-r from-[#710db2] to-[#3a0caa] hover:from-[#2b0a63] hover:to-[#270a59] text-white font-semibold"
+                        disabled={loading || otpCode.length !== 6}
+                      >
+                        {loading ? (
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Verificando...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Verificar Código
+                          </div>
+                        )}
+                      </Button>
+
+                      <div className="flex flex-col gap-2 items-center mt-6">
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          disabled={loading}
+                          className="text-sm text-[#3a0caa] hover:text-[#710db2] font-medium"
+                        >
+                          Reenviar código
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowOtpVerification(false);
+                            setOtpCode('');
+                          }}
+                          className="text-sm text-gray-500 hover:text-gray-700 mt-2"
+                        >
+                          <ArrowLeft className="h-4 w-4 inline mr-1" />
+                          Volver al registro
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 ) : (
                   <div className="space-y-4">
