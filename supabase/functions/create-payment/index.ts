@@ -122,7 +122,7 @@ serve(async (req) => {
 
         // Generate the custom checkout URL with user data
         // We pass external_id to identify the user when the webhook fires
-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}`;
+        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&lang=es&locale=es`;
 
         console.log('Generated subscription link:', checkoutUrl);
 
