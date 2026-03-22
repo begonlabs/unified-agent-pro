@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +42,8 @@ const Auth = () => {
   const [showMFAVerification, setShowMFAVerification] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentView = searchParams.get('view') || 'login';
   const { toast } = useToast();
 
   // Password validation functions
@@ -295,11 +297,10 @@ const Auth = () => {
           : "Te has registrado correctamente. Puedes iniciar sesión ahora.",
       });
 
-      // Si no necesita confirmación, cambiar a tab de login
+      // Si no necesita confirmación, mandar al login view
       if (!needsConfirmation) {
         setTimeout(() => {
-          const signInTab = document.querySelector('[value="signin"]') as HTMLElement;
-          signInTab?.click();
+          setSearchParams({ view: 'login' });
         }, 1000);
       }
 
@@ -458,25 +459,18 @@ const Auth = () => {
                   </Badge>
                 </div>
                 <CardTitle className="text-2xl font-bold text-gray-900">
-                  Comienza ahora
+                  {currentView === 'login' ? 'Bienvenido de vuelta' : 'Comienza ahora'}
                 </CardTitle>
                 <CardDescription className="text-gray-600">
-                  7 días gratis • No se requiere tarjeta de crédito
+                  {currentView === 'login' 
+                    ? 'Ingresa tus credenciales para continuar'
+                    : '7 días gratis • No se requiere tarjeta de crédito'}
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-6">
-                <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-100">
-                    <TabsTrigger value="signin" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Iniciar Sesión
-                    </TabsTrigger>
-                    <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Registrarse
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="signin" className="space-y-4 mt-6">
+                {currentView === 'login' ? (
+                  <div className="space-y-4">
                     {showMFAVerification && mfaFactorId ? (
                       <Verify2FA
                         factorId={mfaFactorId}
@@ -548,11 +542,21 @@ const Auth = () => {
                             </div>
                           )}
                         </Button>
+                        
+                        <div className="text-center mt-6">
+                            <button
+                              type="button"
+                              onClick={() => setSearchParams({ view: 'signup' })}
+                              className="text-sm text-gray-600 hover:text-gray-900"
+                            >
+                              ¿No tienes cuenta? <span className="text-[#3a0caa] font-semibold">Crea una gratis aquí</span>
+                            </button>
+                        </div>
                       </form>
                     )}
-                  </TabsContent>
-
-                  <TabsContent value="signup" className="space-y-4 mt-6">
+                  </div>
+                ) : (
+                  <div className="space-y-4">
                     <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
                         <div className="relative">
@@ -691,9 +695,19 @@ const Auth = () => {
                           </div>
                         )}
                       </Button>
+                      
+                      <div className="text-center mt-6">
+                          <button
+                            type="button"
+                            onClick={() => setSearchParams({ view: 'login' })}
+                            className="text-sm text-gray-600 hover:text-gray-900"
+                          >
+                            ¿Ya tienes cuenta? <span className="text-[#3a0caa] font-semibold">Inicia Sesión aquí</span>
+                          </button>
+                      </div>
                     </form>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                )}
 
                 {/* Trust indicators */}
                 <div className="pt-4 border-t border-gray-100">
