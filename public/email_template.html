@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmar email en OndAI</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9f9f9;">
+  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333333;">
+    <div style="background-color: #3a0caa; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+      <img src="https://app.ondai.ai/logo_white.png" alt="OndAI Logo" style="width: 140px; height: auto; display: inline-block;" />
+    </div>
+    <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+      <h2 style="color: #3a0caa; font-size: 26px; margin-top: 0; margin-bottom: 20px;">Te damos la bienvenida a OndAI</h2>
+      <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin-bottom: 30px;">
+        Tu c&oacute;digo para registrarte es:
+      </p>
+      <div style="margin: 0 auto 30px auto; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #710db2; max-width: 250px; text-align: center;">
+        {{ .Token }}
+      </div>
+      <p style="font-size: 15px; margin-top: 40px; color: #6b7280; border-top: 1px solid #eee; padding-top: 20px;">
+        Saludos del equipo de OndAI
+      </p>
+    </div>
+  </div>
+</body>
+</html>
