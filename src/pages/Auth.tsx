@@ -44,6 +44,7 @@ const Auth = () => {
   const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [otpTimer, setOtpTimer] = useState(60);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentView = searchParams.get('view') || 'login';
@@ -66,6 +67,17 @@ const Auth = () => {
 
     return { score, requirements };
   };
+
+  // Timer para OTP
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (showOtpVerification && otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showOtpVerification, otpTimer]);
 
   const getPasswordStrengthColor = (score: number) => {
     if (score <= 2) return 'bg-red-500';
@@ -303,6 +315,7 @@ const Auth = () => {
       if (needsConfirmation) {
         setRegisteredEmail(email);
         setShowOtpVerification(true);
+        setOtpTimer(60);
         toast({
           title: "¡Código enviado!",
           description: "Hemos enviado un código de 6 dígitos a tu correo. Tienes 60 segundos para ingresarlo.",
@@ -392,6 +405,8 @@ const Auth = () => {
       });
       if (error) throw error;
       
+      setOtpTimer(60);
+      setOtpCode('');
       toast({
         title: "Código reenviado",
         description: "Revisa tu bandeja de entrada o spam.",
@@ -668,16 +683,17 @@ const Auth = () => {
                           onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                           className="text-center text-3xl tracking-widest h-16 border-gray-300 focus:border-purple-400 font-mono"
                           required
+                          disabled={otpTimer === 0}
                         />
-                        <p className="text-xs text-center text-gray-500">
-                          El código expira en 60 segundos
+                        <p className={`text-xs text-center font-medium ${otpTimer > 0 ? "text-gray-500" : "text-red-500"}`}>
+                          {otpTimer > 0 ? `El código expira en ${otpTimer} segundos` : "El código ha expirado. Por favor solicita uno nuevo."}
                         </p>
                       </div>
 
                       <Button
                         type="submit"
                         className="w-full h-12 bg-gradient-to-r from-[#710db2] to-[#3a0caa] hover:from-[#2b0a63] hover:to-[#270a59] text-white font-semibold"
-                        disabled={loading || otpCode.length !== 6}
+                        disabled={loading || otpCode.length !== 6 || otpTimer === 0}
                       >
                         {loading ? (
                           <div className="flex items-center gap-2">
@@ -696,10 +712,10 @@ const Auth = () => {
                         <button
                           type="button"
                           onClick={handleResendOtp}
-                          disabled={loading}
-                          className="text-sm text-[#3a0caa] hover:text-[#710db2] font-medium"
+                          disabled={loading || otpTimer > 0}
+                          className={`text-sm font-medium transition-colors ${otpTimer > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-[#3a0caa] hover:text-[#710db2]'}`}
                         >
-                          Reenviar código
+                          Reenviar código {otpTimer > 0 && `(${otpTimer}s)`}
                         </button>
                         <button
                           type="button"
