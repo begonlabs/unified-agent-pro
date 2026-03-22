@@ -11,9 +11,9 @@ export interface ChannelPermissions {
 export const PLAN_LIMITS: Record<string, { messages: number; clients: number }> = {
     free: { messages: 0, clients: 0 },
     basico: { messages: 10000, clients: 500 },
-    avanzado: { messages: 30000, clients: 600 },
-    pro: { messages: 70000, clients: 2000 },
-    empresarial: { messages: 100000, clients: 3000 }
+    avanzado: { messages: 30000, clients: 1500 },
+    pro: { messages: 70000, clients: 4000 },
+    empresarial: { messages: 100000, clients: 7000 }
 };
 
 /**

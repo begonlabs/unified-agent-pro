@@ -134,7 +134,7 @@ export class ProfileService {
         features: [
           '3 canales (1 FB + 1 IG + 1 WhatsApp)',
           '30,000 mensajes/mes',
-          '600 clientes',
+          '1,500 clientes',
           'CRM completo',
           'Estadísticas',
           'Soporte bajo y normal'
@@ -151,7 +151,7 @@ export class ProfileService {
         features: [
           '3 canales (1 FB + 1 IG + 1 WhatsApp)',
           '70,000 mensajes/mes',
-          '2,000 clientes',
+          '4,000 clientes',
           'CRM completo',
           'Estadísticas',
           'Soporte: Bajo, Normal, Alta, Urgente'
@@ -168,7 +168,7 @@ export class ProfileService {
         features: [
           '3 canales (1 FB + 1 IG + 1 WhatsApp)',
           '100,000 mensajes/mes',
-          '3,000 clientes',
+          '7,000 clientes',
           'CRM completo',
           'Estadísticas',
           'Soporte: Bajo, Normal, Alta, Urgente',

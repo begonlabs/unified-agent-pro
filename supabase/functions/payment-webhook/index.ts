@@ -237,9 +237,9 @@ serve(async (req) => {
                 // Verify limits match expected values for the plan
                 const expectedLimits = {
                     basico: { messages: 10000, clients: 500 },
-                    avanzado: { messages: 30000, clients: 600 },
-                    pro: { messages: 70000, clients: 2000 },
-                    empresarial: { messages: 100000, clients: 3000 }
+                    avanzado: { messages: 30000, clients: 1500 },
+                    pro: { messages: 70000, clients: 4000 },
+                    empresarial: { messages: 100000, clients: 7000 }
                 }
 
                 const expected = expectedLimits[payment.plan_type as keyof typeof expectedLimits]
