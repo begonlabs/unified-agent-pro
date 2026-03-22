@@ -153,6 +153,7 @@ const App: React.FC = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/auth/reset-password" element={<ResetPassword />} />
                   <Route path="/oauth/callback" element={<OAuthCallback />} />
                   
                   {/* Rutas del dashboard */}
