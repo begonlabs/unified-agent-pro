@@ -32,7 +32,7 @@ const DashboardOptimized: React.FC = () => {
   // Hooks optimizados
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentView, setCurrentView] = useViewFromUrlOrPersisted('messages');
+  const [currentView, setCurrentView] = useViewFromUrlOrPersisted('ai-agent');
   const { refreshGlobalData, refreshViewData } = useDataRefresh();
   const { detectViewChange } = useViewChangeDetector();
 

@@ -90,7 +90,7 @@ export function usePersistedState<T>(
 /**
  * Hook especializado para persistir la vista actual del dashboard
  */
-export function usePersistedDashboardView(defaultView: string = 'messages') {
+export function usePersistedDashboardView(defaultView: string = 'ai-agent') {
   // Validador para asegurar que la vista sea válida
   const validViews = ['messages', 'crm', 'stats', 'channels', 'profile', 'support', 'ai-agent'];
   
@@ -121,7 +121,7 @@ export function usePersistedDashboardView(defaultView: string = 'messages') {
 /**
  * Hook para manejar URL parameters con fallback a estado persistido
  */
-export function useViewFromUrlOrPersisted(defaultView: string = 'messages') {
+export function useViewFromUrlOrPersisted(defaultView: string = 'ai-agent') {
   const [persistedView, setPersistedView] = usePersistedDashboardView(defaultView);
   const [urlView, setUrlView] = useState<string | null>(null);
 

@@ -13,7 +13,7 @@ export const cleanupAuthState = () => {
   try {
     // Limpiar localStorage
     Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-') || key === 'dashboard-current-view') {
         localStorage.removeItem(key);
         console.log('Removed from localStorage:', key);
       }

@@ -112,17 +112,17 @@ export const WhatsAppChannel: React.FC<WhatsAppChannelProps> = ({
 
       {/* Caso 3: Instancia asignada pero no conectada (Mostrar QR directamente) */}
       {!isConnected && unconnectedInstance && user && (
-        <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-xl animate-in fade-in zoom-in-95 duration-500">
-          <div className="flex items-center gap-4 mb-8 bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100">
-            <div className="bg-emerald-500 p-2.5 rounded-full shadow-sm">
-              <CheckCircle className="h-6 w-6 text-white" />
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-md animate-in fade-in zoom-in-95 duration-500 flex-1 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-4 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 mx-auto w-full">
+            <div className="bg-emerald-500 p-1.5 rounded-full shadow-sm shrink-0">
+              <CheckCircle className="h-5 w-5 text-white" />
             </div>
             <div>
               <p className="text-sm text-emerald-900 font-bold">
                 ¡Tu línea ha sido activada!
               </p>
-              <p className="text-xs text-emerald-700 opacity-80">
-                Escanea el código QR abajo para empezar a recibir mensajes con IA.
+              <p className="text-[11px] text-emerald-700 opacity-80 leading-tight">
+                Escanea el código QR abajo para empezar.
               </p>
             </div>
           </div>

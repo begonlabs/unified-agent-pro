@@ -547,19 +547,19 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
             )}
 
             {status === 'waiting' && qrCode && (
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg flex flex-col items-center">
-                    <div className="mb-4 text-center">
-                        <h4 className="font-bold text-slate-900">Escanea el Código QR</h4>
-                        <p className="text-xs text-slate-500">Abre WhatsApp en tu teléfono {`>`} Ajustes {`>`} Dispositivos vinculados</p>
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
+                    <div className="mb-2 text-center">
+                        <h4 className="font-bold text-slate-900 text-sm">Escanea el Código QR</h4>
+                        <p className="text-[10px] text-slate-500">Abre WhatsApp en tu teléfono {`>`} Ajustes {`>`} Dispositivos vinculados</p>
                     </div>
-                    <div className="bg-white p-4 rounded-xl border-2 border-emerald-500 mb-6 shadow-inner">
+                    <div className="bg-white p-2 rounded-xl border-2 border-emerald-500 mb-3 shadow-inner">
                         <img
                             src={`data:image/png;base64,${qrCode}`}
                             alt="QR Code"
-                            className="w-64 h-64 object-contain"
+                            className="w-48 h-48 object-contain"
                         />
                     </div>
-                    <div className="flex flex-col items-center gap-3 w-full">
+                    <div className="flex flex-col items-center gap-2 w-full">
                         <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             Esperando sincronización...
@@ -571,7 +571,7 @@ export const GreenApiConnect: React.FC<GreenApiConnectProps> = ({
                             onClick={refreshQR}
                         >
                             <RefreshCw className="h-3 w-3 mr-1.5" />
-                            Actualizar código manually
+                            Actualizar código manualmente
                         </Button>
                     </div>
                 </div>

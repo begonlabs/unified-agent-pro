@@ -29,7 +29,7 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   // Nuevo sistema de persistencia de vistas
-  const [currentView, setCurrentView] = useViewFromUrlOrPersisted('messages');
+  const [currentView, setCurrentView] = useViewFromUrlOrPersisted('ai-agent');
   const { refreshGlobalData, refreshViewData } = useDataRefresh();
   const { detectViewChange } = useViewChangeDetector();
 
