@@ -59,9 +59,10 @@ const ResetPassword = () => {
   };
 
   useEffect(() => {
-    // Verificar si hay parámetros de acceso en la URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
+    // Verificar si hay parámetros de acceso en la URL (los de recuperación de contraseña llegan en el #hash por defecto de Supabase GotoTrue)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
     
     if (accessToken && refreshToken) {
       // Establecer la sesión con los tokens de recuperación
