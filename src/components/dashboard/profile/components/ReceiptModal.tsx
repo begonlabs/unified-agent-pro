@@ -62,14 +62,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl p-0 h-[90vh] overflow-y-auto bg-white" hideCloseButton>
+            <DialogContent className="max-w-3xl p-0 h-[90vh] overflow-y-auto bg-white [&>button]:hidden" aria-describedby={undefined}>
+                <DialogTitle className="sr-only">Recibo de pago</DialogTitle>
                 {/* Modal Header Actions */}
                 <div className="sticky top-0 right-0 p-4 flex justify-end gap-2 bg-white/80 backdrop-blur-sm z-10 border-b">
-                    <Button variant="outline" size="sm" onClick={handlePrint} className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handlePrint} className="flex gap-2 bg-white text-gray-900 border-gray-300 hover:bg-gray-100 hover:text-gray-900">
                         <Download className="h-4 w-4" />
                         Descargar PDF / Imprimir
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-gray-900 hover:bg-gray-100 hover:text-gray-900">
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
