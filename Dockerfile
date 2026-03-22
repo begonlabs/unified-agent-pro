@@ -101,22 +101,8 @@ RUN echo "=== Verificando favicon en producción ===" && \
       fi; \
     fi
 
-# Crear usuario no-root para seguridad
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 -G nodejs
+# Using standard root execution for the nginx master process
 
-# Cambiar permisos
-RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
-    chown -R nextjs:nodejs /var/cache/nginx && \
-    chown -R nextjs:nodejs /var/log/nginx && \
-    chown -R nextjs:nodejs /etc/nginx/conf.d
-
-# Crear directorios necesarios
-RUN touch /var/run/nginx.pid && \
-    chown -R nextjs:nodejs /var/run/nginx.pid
-
-# Cambiar a usuario no-root
-# USER nextjs
 
 # Exponer puerto
 EXPOSE 3000
