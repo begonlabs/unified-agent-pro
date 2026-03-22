@@ -52,7 +52,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
         if (receiptRef.current) {
             const printContent = receiptRef.current.innerHTML;
             const originalContent = document.body.innerHTML;
-            
+
             document.body.innerHTML = printContent;
             window.print();
             document.body.innerHTML = originalContent;
@@ -62,15 +62,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl p-0 h-[90vh] overflow-y-auto bg-white [&>button]:hidden" aria-describedby={undefined}>
-                <DialogTitle className="sr-only">Recibo de pago</DialogTitle>
+            <DialogContent className="max-w-3xl p-0 h-[90vh] overflow-y-auto bg-white" hideCloseButton>
                 {/* Modal Header Actions */}
                 <div className="sticky top-0 right-0 p-4 flex justify-end gap-2 bg-white/80 backdrop-blur-sm z-10 border-b">
-                    <Button variant="outline" size="sm" onClick={handlePrint} className="flex gap-2 bg-white text-gray-900 border-gray-300 hover:bg-gray-100 hover:text-gray-900">
+                    <Button variant="outline" size="sm" onClick={handlePrint} className="flex gap-2">
                         <Download className="h-4 w-4" />
                         Descargar PDF / Imprimir
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-gray-900 hover:bg-gray-100 hover:text-gray-900">
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
@@ -86,9 +85,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
                         <div className="flex items-center gap-2">
                             {/* Logo representation similar to screenshot */}
                             <svg width="24" height="24" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-blue-600">
-                                <path d="M40 0C17.909 0 0 17.909 0 40C0 62.091 17.909 80 40 80C62.091 80 80 62.091 80 40C80 17.909 62.091 0 40 0Z" fill="currentColor"/>
-                                <path d="M20 20L60 20L60 60L20 60L20 20Z" fill="#3a0caa"/>
-                                <path d="M30 30L50 30L50 50L30 50L30 30Z" fill="#710db2"/>
+                                <path d="M40 0C17.909 0 0 17.909 0 40C0 62.091 17.909 80 40 80C62.091 80 80 62.091 80 40C80 17.909 62.091 0 40 0Z" fill="currentColor" />
+                                <path d="M20 20L60 20L60 60L20 60L20 20Z" fill="#3a0caa" />
+                                <path d="M30 30L50 30L50 50L30 50L30 30Z" fill="#710db2" />
                             </svg>
                             <span className="text-2xl font-bold tracking-tight text-gray-900">OndAI</span>
                         </div>
@@ -131,7 +130,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
                                 {formatCurrency(payment.amount, payment.currency)}
                             </p>
                             <p className="text-xs text-gray-500 max-w-[250px]">
-                                {payment.status === 'approved' 
+                                {payment.status === 'approved'
                                     ? 'El pago se ha procesado correctamente para su cuenta de OndAI.'
                                     : 'Existen problemas con el procesamiento del pago, por favor revise.'}
                             </p>
@@ -144,7 +143,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
                     <div className="mb-8">
                         <h2 className="text-lg font-bold text-gray-900 mb-4">Planes</h2>
                         <Separator className="bg-gray-200" />
-                        
+
                         <div className="py-4">
                             <div className="flex justify-between items-start mb-2">
                                 <div>
