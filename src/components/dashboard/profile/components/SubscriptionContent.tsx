@@ -30,6 +30,7 @@ import {
 import { Profile, Plan } from '../types';
 import { ProfileService } from '../services/profileService';
 import { PaymentModal } from './PaymentModal';
+import { ReceiptModal } from './ReceiptModal';
 import { Progress } from '@/components/ui/progress';
 import { getMessageUsagePercentage, PLAN_LIMITS } from '@/lib/channelPermissions';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +60,9 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
     const PlanIcon = ProfileService.getPlanIcon(profile.plan_type);
 
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [receiptModalOpen, setReceiptModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+    const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<PaymentHistoryItem | null>(null);
     const [payments, setPayments] = useState<PaymentHistoryItem[]>([]);
     const [loadingPayments, setLoadingPayments] = useState(true);
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -435,7 +438,15 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                                 </Badge>
                                             </td>
                                             <td className="py-3 text-right">
-                                                <Button variant="ghost" size="sm" className="h-8">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="h-8"
+                                                    onClick={() => {
+                                                        setSelectedPaymentForReceipt(payment);
+                                                        setReceiptModalOpen(true);
+                                                    }}
+                                                >
                                                     Ver
                                                 </Button>
                                             </td>
@@ -484,6 +495,14 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                     );
                 })()
             }
+
+            {/* Receipt Modal */}
+            <ReceiptModal 
+                open={receiptModalOpen}
+                onOpenChange={setReceiptModalOpen}
+                payment={selectedPaymentForReceipt}
+                profile={profile}
+            />
 
             <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
                 <AlertDialogContent>
