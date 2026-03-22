@@ -111,13 +111,31 @@ serve(async (req) => {
             throw new Error('Failed to create payment record: ' + paymentError.message)
         }
 
+        // =====================================================================
+        // CONFIGURACIÓN DE PLANES Y TOKENS DE DLOCAL GO
+        // =====================================================================
+        const IS_TEST_MODE = true; // Cambiar a 'false' al momento de lanzar a producción real
+
+        const TEST_PLAN_TOKENS = {
+            basico: 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp', // Plan de prueba actual (1 USD)
+            avanzado: '7uuNsz8mSBHsTNqzSA9m2c6wHH0Oh2oc', // API Test Plan (1 USD)
+            pro: 'nTPVxuGRB0khYVXvuCQ1iQqC3242qCvB',      // API Test Plan (1 USD)
+            empresarial: 'PuoD9OzTE6YFnZ3Sp0cRg22wc01zx1Me', // API Test Plan (1 USD)
+        }
+
+        const PROD_PLAN_TOKENS = {
+            basico: 'TODO_BASICO_PROD_TOKEN',          // TODO: Crear comerciales con precios reales
+            avanzado: 'TODO_AVANZADO_PROD_TOKEN',
+            pro: 'TODO_PRO_PROD_TOKEN',
+            empresarial: 'TODO_EMPRESARIAL_PROD_TOKEN',
+        }
+
         // Select the dLocal Go subscription link token based on the plan type
-        // Currently we only have the test one for 'basico' (created via API to ensure webhooks)
-        let planToken = '';
-        if (plan_type === 'basico' || (plan_type as string) === 'test') { // fallback for testing
-            planToken = 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp';
-        } else {
-            throw new Error('Suscripción no configurada para este plan en dLocal Go todavía.');
+        const activeTokens = IS_TEST_MODE ? TEST_PLAN_TOKENS : PROD_PLAN_TOKENS;
+        const planToken = activeTokens[plan_type as keyof typeof activeTokens];
+
+        if (!planToken || planToken.startsWith('TODO_')) {
+            throw new Error(`Suscripción no configurada (Token faltante) para el plan: ${plan_type} en modo ${IS_TEST_MODE ? 'Pruebas' : 'Producción'}.`);
         }
 
         // Extract the user's registered country code if available, default to 'UY' (Uruguay) if missing
