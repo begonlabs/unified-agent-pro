@@ -103,7 +103,7 @@ sudo rm -rf "$FUNCTIONS_VOLUME/expire-trials"
 sudo cp -r supabase/functions/expire-trials "$FUNCTIONS_VOLUME/"
 
 echo -e "${YELLOW}   → Reiniciando Supabase Edge Runtime...${NC}"
-docker restart supabase-edge-functions
+docker restart $(docker ps -q --filter name=edge)
 
 echo -e "${GREEN}✅ Edge Functions desplegadas${NC}"
 echo ""
