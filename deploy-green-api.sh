@@ -67,6 +67,10 @@ echo -e "${YELLOW}   → Copiando send-email...${NC}"
 sudo rm -rf "$FUNCTIONS_VOLUME/send-email"
 sudo cp -r supabase/functions/send-email "$FUNCTIONS_VOLUME/"
 
+echo -e "${YELLOW}   → Copiando notify-admin-signup...${NC}"
+sudo rm -rf "$FUNCTIONS_VOLUME/notify-admin-signup"
+sudo cp -r supabase/functions/notify-admin-signup "$FUNCTIONS_VOLUME/"
+
 
 
 # Funciones de pago
