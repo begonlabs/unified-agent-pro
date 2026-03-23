@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Download, X } from 'lucide-react';
 import { Profile } from '../types';
+import brandLogo from '@/assets/brand.png';
 
 interface PaymentHistoryItem {
     id: string;
@@ -83,13 +84,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
                             <p className="text-sm text-gray-500 mt-1">Identificador de cuenta: {profile.id}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            {/* Logo representation similar to screenshot */}
-                            <svg width="24" height="24" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-blue-600">
-                                <path d="M40 0C17.909 0 0 17.909 0 40C0 62.091 17.909 80 40 80C62.091 80 80 62.091 80 40C80 17.909 62.091 0 40 0Z" fill="currentColor" />
-                                <path d="M20 20L60 20L60 60L20 60L20 20Z" fill="#3a0caa" />
-                                <path d="M30 30L50 30L50 50L30 50L30 30Z" fill="#710db2" />
-                            </svg>
-                            <span className="text-2xl font-bold tracking-tight text-gray-900">OndAI</span>
+                            <img src={brandLogo} alt="OndAI Logo" className="h-8 w-auto" />
                         </div>
                     </div>
 
