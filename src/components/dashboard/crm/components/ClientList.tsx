@@ -88,9 +88,13 @@ export const ClientList: React.FC<ClientListProps> = ({
                         <TableRow key={client.id} className="hover:bg-gray-50">
                             <TableCell>
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage referrerPolicy="no-referrer" src={client.avatar_url} alt={client.name} />
-                                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm">
-                                        {client.name.substring(0, 2).toUpperCase()}
+                                    <AvatarImage referrerPolicy="no-referrer" src={client.avatar_url} alt={client.name || 'Cliente'} />
+                                    <AvatarFallback className={`${(!client.name || /user|usuario|anónimo|cliente/i.test(client.name)) ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-600' : 'bg-gradient-to-br from-green-500 to-blue-600 text-white'} flex items-center justify-center text-sm font-semibold`}>
+                                        {(!client.name || /user|usuario|anónimo|cliente/i.test(client.name)) ? (
+                                            <User className="h-1/2 w-1/2 opacity-70" />
+                                        ) : (
+                                            client.name.substring(0, 2).toUpperCase()
+                                        )}
                                     </AvatarFallback>
                                 </Avatar>
                             </TableCell>

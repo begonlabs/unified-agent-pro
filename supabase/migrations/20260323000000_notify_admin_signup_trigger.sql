@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS pg_net;
 CREATE OR REPLACE FUNCTION public.trigger_admin_signup_notification()
 RETURNS TRIGGER AS $$
 DECLARE
-  webhook_url text := 'http://supabase-kong:8000/functions/v1/notify-admin-signup';
+  webhook_url text := 'https://supabase.ondai.ai/functions/v1/notify-admin-signup';
   request_body jsonb;
   request_headers jsonb := '{"Content-Type": "application/json"}'::jsonb;
 BEGIN

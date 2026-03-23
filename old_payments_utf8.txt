@@ -1,0 +1,952 @@
+﻿commit 0094c9d4b8349b9e4b76c2d710c24d2851bd9dc0
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Tue Mar 24 01:43:48 2026 +0400
+
+    feat(ui): add avatar fallbacks & update billing test token
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 7a50696..24c3302 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -124,7 +124,7 @@ serve(async (req) => {
+         }
+ 
+         const PROD_PLAN_TOKENS = {
+-            basico: 'XLVQJpVkppEbf9uwknRCtq0bptgZb8Zt',
++            basico: 'r59qoqpxgHD9eOMUkIvNYKhGBHL2Ya5F', // Plan de prueba redirecci├│n 1 USD
+             avanzado: 'KS95pSSHXEzaUamZNHKogMeNQlicurJC',
+             pro: '9hLZVKvxwnNfOPCw2CcBx4wJSsvBS5cV',
+             empresarial: 'EeVAHdeOyo28CHNhXmMYQhGcuBBOB0fF',
+@@ -143,7 +143,8 @@ serve(async (req) => {
+ 
+         // Generate the custom checkout URL with user data
+         // We pass external_id to identify the user when the webhook fires, and country to force localization
+-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}&lang=es`;
++        const returnUrl = encodeURIComponent(`${PUBLIC_URL}/dashboard?view=profile&tab=plans`);
++        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}&lang=es&callback_url=${returnUrl}&success_url=${returnUrl}&back_url=${returnUrl}`;
+ 
+         console.log('Generated subscription link:', checkoutUrl);
+ 
+
+commit bea38370642886812965fdf89184755ebaec784a
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Mon Mar 23 23:16:03 2026 +0400
+
+    Update DLocal Go Production Plan Tokens & localization
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 90e1041..7a50696 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -114,7 +114,7 @@ serve(async (req) => {
+         // =====================================================================
+         // CONFIGURACI├ôN DE PLANES Y TOKENS DE DLOCAL GO
+         // =====================================================================
+-        const IS_TEST_MODE = true; // Cambiar a 'false' al momento de lanzar a producci├│n real
++        const IS_TEST_MODE = false; // Modo Producci├│n Activado con Planes Reales
+ 
+         const TEST_PLAN_TOKENS = {
+             basico: 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp', // Plan de prueba actual (1 USD)
+@@ -124,10 +124,10 @@ serve(async (req) => {
+         }
+ 
+         const PROD_PLAN_TOKENS = {
+-            basico: 'TODO_BASICO_PROD_TOKEN',          // TODO: Crear comerciales con precios reales
+-            avanzado: 'TODO_AVANZADO_PROD_TOKEN',
+-            pro: 'TODO_PRO_PROD_TOKEN',
+-            empresarial: 'TODO_EMPRESARIAL_PROD_TOKEN',
++            basico: 'XLVQJpVkppEbf9uwknRCtq0bptgZb8Zt',
++            avanzado: 'KS95pSSHXEzaUamZNHKogMeNQlicurJC',
++            pro: '9hLZVKvxwnNfOPCw2CcBx4wJSsvBS5cV',
++            empresarial: 'EeVAHdeOyo28CHNhXmMYQhGcuBBOB0fF',
+         }
+ 
+         // Select the dLocal Go subscription link token based on the plan type
+@@ -143,7 +143,7 @@ serve(async (req) => {
+ 
+         // Generate the custom checkout URL with user data
+         // We pass external_id to identify the user when the webhook fires, and country to force localization
+-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}`;
++        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}&lang=es`;
+ 
+         console.log('Generated subscription link:', checkoutUrl);
+ 
+
+commit de3d704544984121599755c82dac8969511cb0e2
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Sun Mar 22 21:47:03 2026 +0400
+
+    feat: populate all 1 USD dlocal go test subscriptions for tier evaluation
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index c059a56..90e1041 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -111,13 +111,31 @@ serve(async (req) => {
+             throw new Error('Failed to create payment record: ' + paymentError.message)
+         }
+ 
++        // =====================================================================
++        // CONFIGURACI├ôN DE PLANES Y TOKENS DE DLOCAL GO
++        // =====================================================================
++        const IS_TEST_MODE = true; // Cambiar a 'false' al momento de lanzar a producci├│n real
++
++        const TEST_PLAN_TOKENS = {
++            basico: 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp', // Plan de prueba actual (1 USD)
++            avanzado: '7uuNsz8mSBHsTNqzSA9m2c6wHH0Oh2oc', // API Test Plan (1 USD)
++            pro: 'nTPVxuGRB0khYVXvuCQ1iQqC3242qCvB',      // API Test Plan (1 USD)
++            empresarial: 'PuoD9OzTE6YFnZ3Sp0cRg22wc01zx1Me', // API Test Plan (1 USD)
++        }
++
++        const PROD_PLAN_TOKENS = {
++            basico: 'TODO_BASICO_PROD_TOKEN',          // TODO: Crear comerciales con precios reales
++            avanzado: 'TODO_AVANZADO_PROD_TOKEN',
++            pro: 'TODO_PRO_PROD_TOKEN',
++            empresarial: 'TODO_EMPRESARIAL_PROD_TOKEN',
++        }
++
+         // Select the dLocal Go subscription link token based on the plan type
+-        // Currently we only have the test one for 'basico' (created via API to ensure webhooks)
+-        let planToken = '';
+-        if (plan_type === 'basico' || (plan_type as string) === 'test') { // fallback for testing
+-            planToken = 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp';
+-        } else {
+-            throw new Error('Suscripci├│n no configurada para este plan en dLocal Go todav├¡a.');
++        const activeTokens = IS_TEST_MODE ? TEST_PLAN_TOKENS : PROD_PLAN_TOKENS;
++        const planToken = activeTokens[plan_type as keyof typeof activeTokens];
++
++        if (!planToken || planToken.startsWith('TODO_')) {
++            throw new Error(`Suscripci├│n no configurada (Token faltante) para el plan: ${plan_type} en modo ${IS_TEST_MODE ? 'Pruebas' : 'Producci├│n'}.`);
+         }
+ 
+         // Extract the user's registered country code if available, default to 'UY' (Uruguay) if missing
+
+commit 4ec9e6f76e4a90c34dd4ccee374cf8294dcb67cb
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Sun Mar 22 21:23:43 2026 +0400
+
+    feat: dynamically inject user country into dlocal checkout to enforce local language rendering
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index c332d99..c059a56 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -120,9 +120,12 @@ serve(async (req) => {
+             throw new Error('Suscripci├│n no configurada para este plan en dLocal Go todav├¡a.');
+         }
+ 
++        // Extract the user's registered country code if available, default to 'UY' (Uruguay) if missing
++        const userCountry = user.user_metadata?.country || 'UY';
++
+         // Generate the custom checkout URL with user data
+-        // We pass external_id to identify the user when the webhook fires
+-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&lang=es&locale=es`;
++        // We pass external_id to identify the user when the webhook fires, and country to force localization
++        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}`;
+ 
+         console.log('Generated subscription link:', checkoutUrl);
+ 
+
+commit a95621a6125a38c0a39572ee6dab4bc61d853d65
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Sun Mar 22 21:11:41 2026 +0400
+
+    fix: force dlocal go checkout pages to render in spanish
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index ef4b42c..c332d99 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -122,7 +122,7 @@ serve(async (req) => {
+ 
+         // Generate the custom checkout URL with user data
+         // We pass external_id to identify the user when the webhook fires
+-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}`;
++        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&lang=es&locale=es`;
+ 
+         console.log('Generated subscription link:', checkoutUrl);
+ 
+
+commit a029b360d2c1e6ad1f135085c474b42eeb667cdb
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Fri Mar 20 16:21:43 2026 +0400
+
+    fix(payments): update to api-generated smart link with webhook binding
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index d5137ed..ef4b42c 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -112,10 +112,10 @@ serve(async (req) => {
+         }
+ 
+         // Select the dLocal Go subscription link token based on the plan type
+-        // Currently we only have the test one for 'basico'
++        // Currently we only have the test one for 'basico' (created via API to ensure webhooks)
+         let planToken = '';
+-        if (plan_type === 'basico' || plan_type === 'test') { // fallback for testing
+-            planToken = 'VNX3PM57xAAdB8H0JINomXEM47F3Fwm1';
++        if (plan_type === 'basico' || (plan_type as string) === 'test') { // fallback for testing
++            planToken = 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp';
+         } else {
+             throw new Error('Suscripci├│n no configurada para este plan en dLocal Go todav├¡a.');
+         }
+
+commit 50fc1a34f200b888db9b6e2f79f520145654772f
+Author: Sarkis Panosian <sarkispanosian@gmail.com>
+Date:   Fri Mar 20 15:30:38 2026 +0400
+
+    feat(payments): migrate to dlocal go subscription smart links
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 40703b8..d5137ed 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -111,80 +111,26 @@ serve(async (req) => {
+             throw new Error('Failed to create payment record: ' + paymentError.message)
+         }
+ 
+-        // Prepare dLocalGo subscription request
+-        // Use user's country from profile, fallback to UY if not set
+-        // Ensure country is 2 chars uppercase
+-        let countryCode = (profile.country || 'UY').toUpperCase();
+-        if (countryCode.length !== 2) {
+-            countryCode = 'UY'; // Fallback if invalid
++        // Select the dLocal Go subscription link token based on the plan type
++        // Currently we only have the test one for 'basico'
++        let planToken = '';
++        if (plan_type === 'basico' || plan_type === 'test') { // fallback for testing
++            planToken = 'VNX3PM57xAAdB8H0JINomXEM47F3Fwm1';
++        } else {
++            throw new Error('Suscripci├│n no configurada para este plan en dLocal Go todav├¡a.');
+         }
+ 
+-        // Determine plan ID if available in config, otherwise try to use inline parameters if supported
+-        // or fallback to a standard pattern.
+-        // For dLocal Go, specific integrations might vary, but we'll try to use the standard recurring pattern.
+-        // Assuming we are using a "subscription" mode.
+-
+-        // Note: Ideally, we should have a Plan ID created in dLocal Go for each tier.
+-        // Checking if we have them in config (not currently standard in env but good practice)
+-        // const planId = config[`PLAN_${plan_type.toUpperCase()}_ID`];
+-
+-        const dlocalgoPayment = {
+-            amount: amount,
+-            currency: 'USD',
+-            country: countryCode,
+-            description: `Suscripci├│n Mensual Plan ${plan_type.charAt(0).toUpperCase() + plan_type.slice(1)}`,
+-            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`, // Redirect after success
+-            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+-            payer: {
+-                name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+-                email: user.email!,
+-                document: user.user_metadata?.document || '12345678', // Some regions require document
+-            },
+-            recurring: {
+-                frequency: 'MONTHLY',
+-                start_date: new Date().toISOString().split('T')[0], // Start today
+-            }
+-        };
+-
+-        // Create Basic Auth header
+-        const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+-        const authHeader = `Basic ${btoa(authString)}`
+-
+-        // Use payments endpoint but with recurring object, OR subscriptions endpoint if known.
+-        // Based on "dLC" (dLocal Go) typical simple integration, we send to /v1/payments with recurring info
+-        // or effectively create a checkout session that is recurring.
+-        // If the previous endpoint was /v1/payments, we stick with it but add recurring fields.
+-        // However, if we must use /v1/subscriptions and a plan_id is mandatory, we might fail without it.
+-        // Given instructions "we already have enabled that function in the api", we assume the API accepts it.
+-
+-        console.log('Sending subscription request to dLocal Go:', dlocalgoPayment);
+-
+-        // Create payment/subscription with dLocalGo
+-        // We will try the same endpoint first with the new payload
+-        const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
+-            method: 'POST',
+-            headers: {
+-                'Content-Type': 'application/json',
+-                'Authorization': authHeader,
+-            },
+-            body: JSON.stringify(dlocalgoPayment),
+-        })
+-
+-        if (!dlocalgoResponse.ok) {
+-            const errorText = await dlocalgoResponse.text()
+-            console.error('dLocalGo API error:', errorText)
+-            throw new Error(`dLocalGo API error: ${errorText}`)
+-        }
++        // Generate the custom checkout URL with user data
++        // We pass external_id to identify the user when the webhook fires
++        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}`;
+ 
+-        const dlocalgoData = await dlocalgoResponse.json()
+-        console.log('dLocalGo response:', dlocalgoData)
++        console.log('Generated subscription link:', checkoutUrl);
+ 
+-        // Update payment record with dLocalGo payment ID
++        // Update payment record with the expected info
+         await supabase
+             .from('payments')
+             .update({
+-                dlocalgo_payment_id: dlocalgoData.id,
+-                payment_data: dlocalgoData,
++                payment_data: { type: 'subscription_link_generated', checkoutUrl },
+             })
+             .eq('id', payment.id)
+ 
+@@ -193,8 +139,7 @@ serve(async (req) => {
+             JSON.stringify({
+                 success: true,
+                 payment_id: payment.id,
+-                payment_url: dlocalgoData.redirect_url || dlocalgoData.payment_url,
+-                dlocalgo_payment_id: dlocalgoData.id,
++                payment_url: checkoutUrl,
+             }),
+             {
+                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+commit eceab01e77badb91823c75d47a25e0927bc8e993
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Sat Jan 10 15:14:29 2026 +0100
+
+    feat: implement recurring subscriptions by default
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 428cbfb..40703b8 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -111,7 +111,7 @@ serve(async (req) => {
+             throw new Error('Failed to create payment record: ' + paymentError.message)
+         }
+ 
+-        // Prepare dLocalGo payment request
++        // Prepare dLocalGo subscription request
+         // Use user's country from profile, fallback to UY if not set
+         // Ensure country is 2 chars uppercase
+         let countryCode = (profile.country || 'UY').toUpperCase();
+@@ -119,28 +119,48 @@ serve(async (req) => {
+             countryCode = 'UY'; // Fallback if invalid
+         }
+ 
+-        const dlocalgoPayment: DLocalGoPaymentRequest = {
++        // Determine plan ID if available in config, otherwise try to use inline parameters if supported
++        // or fallback to a standard pattern.
++        // For dLocal Go, specific integrations might vary, but we'll try to use the standard recurring pattern.
++        // Assuming we are using a "subscription" mode.
++
++        // Note: Ideally, we should have a Plan ID created in dLocal Go for each tier.
++        // Checking if we have them in config (not currently standard in env but good practice)
++        // const planId = config[`PLAN_${plan_type.toUpperCase()}_ID`];
++
++        const dlocalgoPayment = {
+             amount: amount,
+             currency: 'USD',
+             country: countryCode,
+-            payment_method_id: 'CARD',
+-            payment_method_flow: 'REDIRECT',
++            description: `Suscripci├│n Mensual Plan ${plan_type.charAt(0).toUpperCase() + plan_type.slice(1)}`,
++            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`, // Redirect after success
++            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+             payer: {
+-                name: '',
++                name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                 email: user.email!,
++                document: user.user_metadata?.document || '12345678', // Some regions require document
+             },
+-            order_id: orderId,
+-            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+-            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
+-            // Add fallback parameters for different dLocal integrations
+-            success_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
+-            back_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`
+-        } as any; // Cast to any to allow extra params without changing interface definition everywhere
++            recurring: {
++                frequency: 'MONTHLY',
++                start_date: new Date().toISOString().split('T')[0], // Start today
++            }
++        };
++
+         // Create Basic Auth header
+         const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+         const authHeader = `Basic ${btoa(authString)}`
+ 
+-        // Create payment with dLocalGo
++        // Use payments endpoint but with recurring object, OR subscriptions endpoint if known.
++        // Based on "dLC" (dLocal Go) typical simple integration, we send to /v1/payments with recurring info
++        // or effectively create a checkout session that is recurring.
++        // If the previous endpoint was /v1/payments, we stick with it but add recurring fields.
++        // However, if we must use /v1/subscriptions and a plan_id is mandatory, we might fail without it.
++        // Given instructions "we already have enabled that function in the api", we assume the API accepts it.
++
++        console.log('Sending subscription request to dLocal Go:', dlocalgoPayment);
++
++        // Create payment/subscription with dLocalGo
++        // We will try the same endpoint first with the new payload
+         const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
+             method: 'POST',
+             headers: {
+
+commit ffbd44591af5628009559f9d0c43df1ee3580cc6
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Wed Dec 10 05:43:43 2025 +0100
+
+    fix: update payment redirect url to app.ondai.ai
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index ac2f86a..428cbfb 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -131,10 +131,10 @@ serve(async (req) => {
+             },
+             order_id: orderId,
+             notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+-            callback_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
++            callback_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
+             // Add fallback parameters for different dLocal integrations
+-            success_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
+-            back_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`
++            success_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`,
++            back_url: `https://app.ondai.ai/dashboard?tab=profile&payment_success=true`
+         } as any; // Cast to any to allow extra params without changing interface definition everywhere
+         // Create Basic Auth header
+         const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+
+commit aa31151af500d19402e73aec0cefad0b325bf2dd
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Wed Dec 10 05:33:20 2025 +0100
+
+    fix(payment): resolve webhook database conflicts and redirect URL
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index af46632..ac2f86a 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -132,11 +132,10 @@ serve(async (req) => {
+             order_id: orderId,
+             notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+             callback_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
+-        }
+-
+-
+-        console.log('Creating dLocalGo payment:', dlocalgoPayment)
+-
++            // Add fallback parameters for different dLocal integrations
++            success_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
++            back_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`
++        } as any; // Cast to any to allow extra params without changing interface definition everywhere
+         // Create Basic Auth header
+         const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+         const authHeader = `Basic ${btoa(authString)}`
+
+commit b952d25ffd32714f024f5e8c26983850f55cf767
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Mon Dec 8 13:24:38 2025 +0100
+
+    fix: remove auto-fill of payer name in payment form
+    
+    - Set payer name to empty string
+    - User will manually enter their full name and last name in payment form
+    - Simpler approach that avoids name/surname splitting issues
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index ec81760..af46632 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -126,7 +126,7 @@ serve(async (req) => {
+             payment_method_id: 'CARD',
+             payment_method_flow: 'REDIRECT',
+             payer: {
+-                name: profile.name || user.email?.split('@')[0] || 'Customer',
++                name: '',
+                 email: user.email!,
+             },
+             order_id: orderId,
+
+commit 16200ac306b33cf6378b489d2805fd11ed43624c
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Mon Dec 8 13:22:10 2025 +0100
+
+    fix: use user's name instead of company name in payment form
+    
+    - Changed payer name from company_name to profile.name
+    - Now payment form will show user's first and last name from profile
+    - Falls back to email username if name is not set
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 00c0c42..ec81760 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -126,7 +126,7 @@ serve(async (req) => {
+             payment_method_id: 'CARD',
+             payment_method_flow: 'REDIRECT',
+             payer: {
+-                name: profile.company_name || user.email?.split('@')[0] || 'Customer',
++                name: profile.name || user.email?.split('@')[0] || 'Customer',
+                 email: user.email!,
+             },
+             order_id: orderId,
+
+commit 67c27b19f72b5fac154aa41c1b1bcad39d39883c
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Fri Dec 5 05:49:04 2025 +0100
+
+    feat: Implement Basic plan channel restriction, Profile customization, and Message limits
+    
+    - Restrict Basic plan to 1 active channel (any type)
+    - Add Name and Surname fields to Profile and Database
+    - Restrict country list to Latin America
+    - Redirect incomplete profiles to Profile view
+    - Fix message limits to apply only to AI responses
+    - Update webhooks to respect message limits
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 4ed44d5..00c0c42 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -8,7 +8,7 @@ const corsHeaders = {
+ }
+ 
+ interface PaymentRequest {
+-    plan_type: 'basico' | 'avanzado' | 'pro'
++    plan_type: 'basico' | 'avanzado' | 'pro' | 'empresarial'
+     user_id: string
+ }
+ 
+@@ -51,11 +51,20 @@ serve(async (req) => {
+         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+ 
+         // Parse request body
+-        const { plan_type, user_id }: PaymentRequest = await req.json()
++        let body;
++        try {
++            body = await req.json();
++        } catch (e) {
++            throw new Error('Invalid JSON body');
++        }
++
++        const { plan_type, user_id }: PaymentRequest = body;
++
++        console.log('Payment request received:', { plan_type, user_id });
+ 
+         // Validate plan type
+-        if (!['basico', 'avanzado', 'pro'].includes(plan_type)) {
+-            throw new Error('Invalid plan type')
++        if (!['basico', 'avanzado', 'pro', 'empresarial'].includes(plan_type)) {
++            throw new Error(`Invalid plan type: ${plan_type}`)
+         }
+ 
+         // Get user profile
+@@ -66,6 +75,7 @@ serve(async (req) => {
+             .single()
+ 
+         if (profileError || !profile) {
++            console.error('Profile error:', profileError);
+             throw new Error('User profile not found')
+         }
+ 
+@@ -73,6 +83,7 @@ serve(async (req) => {
+         const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(user_id)
+ 
+         if (userError || !user) {
++            console.error('User error:', userError);
+             throw new Error('User not found')
+         }
+ 
+@@ -97,19 +108,25 @@ serve(async (req) => {
+ 
+         if (paymentError) {
+             console.error('Error creating payment record:', paymentError)
+-            throw new Error('Failed to create payment record')
++            throw new Error('Failed to create payment record: ' + paymentError.message)
+         }
+ 
+         // Prepare dLocalGo payment request
+         // Use user's country from profile, fallback to UY if not set
++        // Ensure country is 2 chars uppercase
++        let countryCode = (profile.country || 'UY').toUpperCase();
++        if (countryCode.length !== 2) {
++            countryCode = 'UY'; // Fallback if invalid
++        }
++
+         const dlocalgoPayment: DLocalGoPaymentRequest = {
+             amount: amount,
+             currency: 'USD',
+-            country: profile.country || 'UY', // Use profile country or default to Uruguay
++            country: countryCode,
+             payment_method_id: 'CARD',
+             payment_method_flow: 'REDIRECT',
+             payer: {
+-                name: profile.company_name,
++                name: profile.company_name || user.email?.split('@')[0] || 'Customer',
+                 email: user.email!,
+             },
+             order_id: orderId,
+@@ -165,12 +182,13 @@ serve(async (req) => {
+                 status: 200,
+             }
+         )
+-    } catch (error) {
++    } catch (error: any) {
+         console.error('Error in create-payment function:', error)
+         return new Response(
+             JSON.stringify({
+                 success: false,
+-                error: error.message,
++                error: error.message || 'Unknown error',
++                details: error.toString()
+             }),
+             {
+                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+commit c2881985f800141696a260042c97c31861189086
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Tue Dec 2 22:30:34 2025 +0100
+
+    fix: Update payment prices for new plan structure
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index c00ec71..4ed44d5 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -30,7 +30,8 @@ interface DLocalGoPaymentRequest {
+ const PLAN_PRICES = {
+     basico: 49,
+     avanzado: 139,
+-    pro: 399,
++    pro: 299,
++    empresarial: 399,
+ }
+ 
+ const DLOCALGO_API_KEY = config.DLOCALGO_API_KEY
+
+commit 8639c926af3b491f5f3752dfb3f512937bb4705b
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Tue Dec 2 21:41:12 2025 +0100
+
+    fix: Change callback URL to redirect to dashboard directly
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 3e2ad79..c00ec71 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -113,7 +113,7 @@ serve(async (req) => {
+             },
+             order_id: orderId,
+             notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+-            callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
++            callback_url: `${PUBLIC_URL}/dashboard?tab=profile&payment_success=true`,
+         }
+ 
+ 
+
+commit b59cbeacc0c1b67c11d19bc20e6b264423f4fbdd
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Tue Dec 2 21:31:53 2025 +0100
+
+    feat: Add payment success page and fix webhook URL
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 4dc9e99..3e2ad79 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -112,7 +112,7 @@ serve(async (req) => {
+                 email: user.email!,
+             },
+             order_id: orderId,
+-            notification_url: `${PUBLIC_URL}/functions/v1/payment-webhook`,
++            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+             callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
+         }
+ 
+
+commit 781d8cca1be4de343c3c848794bd4d499e24efd4
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Mon Dec 1 23:50:02 2025 +0100
+
+    fix: Use user profile country for payment processing
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 8333ae2..4dc9e99 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -100,10 +100,11 @@ serve(async (req) => {
+         }
+ 
+         // Prepare dLocalGo payment request
++        // Use user's country from profile, fallback to UY if not set
+         const dlocalgoPayment: DLocalGoPaymentRequest = {
+             amount: amount,
+             currency: 'USD',
+-            country: profile.country || 'US',
++            country: profile.country || 'UY', // Use profile country or default to Uruguay
+             payment_method_id: 'CARD',
+             payment_method_flow: 'REDIRECT',
+             payer: {
+
+commit 21a4b6530ac966a105d6f929e4bbb005e7d622d6
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Mon Dec 1 19:04:40 2025 +0100
+
+    fix: Use Basic Auth for dLocalGo API
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index fd1a138..8333ae2 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -115,15 +115,19 @@ serve(async (req) => {
+             callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
+         }
+ 
++
+         console.log('Creating dLocalGo payment:', dlocalgoPayment)
+ 
++        // Create Basic Auth header
++        const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
++        const authHeader = `Basic ${btoa(authString)}`
++
+         // Create payment with dLocalGo
+         const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
+             method: 'POST',
+             headers: {
+                 'Content-Type': 'application/json',
+-                'X-Api-Key': DLOCALGO_API_KEY,
+-                'X-Secret-Key': DLOCALGO_SECRET_KEY,
++                'Authorization': authHeader,
+             },
+             body: JSON.stringify(dlocalgoPayment),
+         })
+
+commit 52212df6d1181503738dd150c485ad11672a4101
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Mon Dec 1 18:57:35 2025 +0100
+
+    fix: Update Edge Functions to use shared config file
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+index 108f823..fd1a138 100644
+--- a/supabase/functions/create-payment/index.ts
++++ b/supabase/functions/create-payment/index.ts
+@@ -1,5 +1,6 @@
+ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
++import { config } from '../_shared/config.ts'
+ 
+ const corsHeaders = {
+     'Access-Control-Allow-Origin': '*',
+@@ -32,12 +33,12 @@ const PLAN_PRICES = {
+     pro: 399,
+ }
+ 
+-const DLOCALGO_API_KEY = Deno.env.get('DLOCALGO_API_KEY')!
+-const DLOCALGO_SECRET_KEY = Deno.env.get('DLOCALGO_SECRET_KEY')!
+-const DLOCALGO_API_URL = Deno.env.get('DLOCALGO_API_URL') || 'https://api-sbx.dlocalgo.com'
+-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+-const PUBLIC_URL = Deno.env.get('PUBLIC_URL') || 'https://your-app.com'
++const DLOCALGO_API_KEY = config.DLOCALGO_API_KEY
++const DLOCALGO_SECRET_KEY = config.DLOCALGO_SECRET_KEY
++const DLOCALGO_API_URL = config.DLOCALGO_API_URL
++const SUPABASE_URL = config.SUPABASE_URL
++const SUPABASE_SERVICE_ROLE_KEY = config.SUPABASE_SERVICE_ROLE_KEY
++const PUBLIC_URL = config.PUBLIC_URL
+ 
+ serve(async (req) => {
+     // Handle CORS preflight requests
+
+commit 3bf9aca05f552a1cea24ae474319ded217a29fec
+Author: nerdcuba <nerdcuba@gmail.com>
+Date:   Mon Dec 1 18:06:30 2025 +0100
+
+    feat: Implementar sistema de pagos con dLocalGo
+    
+    - Agregar per├¡odo de prueba gratuito de 7 d├¡as (FB e IG, sin WhatsApp)
+    - Implementar tres planes de pago: B├ísico (), Avanzado (), Pro ()
+    - Crear migraci├│n de base de datos con tablas payments y subscriptions
+    - Agregar Edge Functions: create-payment, payment-webhook, verify-subscription
+    - Actualizar frontend con modal de pago y contador de trial
+    - Implementar sistema de permisos de canales seg├║n plan
+    - Actualizar deploy-green-api.sh para incluir funciones de pago
+    - Agregar documentaci├│n completa de despliegue manual
+
+diff --git a/supabase/functions/create-payment/index.ts b/supabase/functions/create-payment/index.ts
+new file mode 100644
+index 0000000..108f823
+--- /dev/null
++++ b/supabase/functions/create-payment/index.ts
+@@ -0,0 +1,174 @@
++import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
++import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
++
++const corsHeaders = {
++    'Access-Control-Allow-Origin': '*',
++    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
++}
++
++interface PaymentRequest {
++    plan_type: 'basico' | 'avanzado' | 'pro'
++    user_id: string
++}
++
++interface DLocalGoPaymentRequest {
++    amount: number
++    currency: string
++    country: string
++    payment_method_id: string
++    payment_method_flow: string
++    payer: {
++        name: string
++        email: string
++    }
++    order_id: string
++    notification_url: string
++    callback_url: string
++}
++
++const PLAN_PRICES = {
++    basico: 49,
++    avanzado: 139,
++    pro: 399,
++}
++
++const DLOCALGO_API_KEY = Deno.env.get('DLOCALGO_API_KEY')!
++const DLOCALGO_SECRET_KEY = Deno.env.get('DLOCALGO_SECRET_KEY')!
++const DLOCALGO_API_URL = Deno.env.get('DLOCALGO_API_URL') || 'https://api-sbx.dlocalgo.com'
++const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
++const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
++const PUBLIC_URL = Deno.env.get('PUBLIC_URL') || 'https://your-app.com'
++
++serve(async (req) => {
++    // Handle CORS preflight requests
++    if (req.method === 'OPTIONS') {
++        return new Response('ok', { headers: corsHeaders })
++    }
++
++    try {
++        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
++
++        // Parse request body
++        const { plan_type, user_id }: PaymentRequest = await req.json()
++
++        // Validate plan type
++        if (!['basico', 'avanzado', 'pro'].includes(plan_type)) {
++            throw new Error('Invalid plan type')
++        }
++
++        // Get user profile
++        const { data: profile, error: profileError } = await supabase
++            .from('profiles')
++            .select('*')
++            .eq('user_id', user_id)
++            .single()
++
++        if (profileError || !profile) {
++            throw new Error('User profile not found')
++        }
++
++        // Get user auth data
++        const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(user_id)
++
++        if (userError || !user) {
++            throw new Error('User not found')
++        }
++
++        // Calculate amount
++        const amount = PLAN_PRICES[plan_type]
++
++        // Generate unique order ID
++        const orderId = `order_${user_id}_${Date.now()}`
++
++        // Create payment record in database
++        const { data: payment, error: paymentError } = await supabase
++            .from('payments')
++            .insert({
++                user_id,
++                plan_type,
++                amount,
++                currency: 'USD',
++                status: 'pending',
++            })
++            .select()
++            .single()
++
++        if (paymentError) {
++            console.error('Error creating payment record:', paymentError)
++            throw new Error('Failed to create payment record')
++        }
++
++        // Prepare dLocalGo payment request
++        const dlocalgoPayment: DLocalGoPaymentRequest = {
++            amount: amount,
++            currency: 'USD',
++            country: profile.country || 'US',
++            payment_method_id: 'CARD',
++            payment_method_flow: 'REDIRECT',
++            payer: {
++                name: profile.company_name,
++                email: user.email!,
++            },
++            order_id: orderId,
++            notification_url: `${PUBLIC_URL}/functions/v1/payment-webhook`,
++            callback_url: `${PUBLIC_URL}/payment-success?payment_id=${payment.id}`,
++        }
++
++        console.log('Creating dLocalGo payment:', dlocalgoPayment)
++
++        // Create payment with dLocalGo
++        const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
++            method: 'POST',
++            headers: {
++                'Content-Type': 'application/json',
++                'X-Api-Key': DLOCALGO_API_KEY,
++                'X-Secret-Key': DLOCALGO_SECRET_KEY,
++            },
++            body: JSON.stringify(dlocalgoPayment),
++        })
++
++        if (!dlocalgoResponse.ok) {
++            const errorText = await dlocalgoResponse.text()
++            console.error('dLocalGo API error:', errorText)
++            throw new Error(`dLocalGo API error: ${errorText}`)
++        }
++
++        const dlocalgoData = await dlocalgoResponse.json()
++        console.log('dLocalGo response:', dlocalgoData)
++
++        // Update payment record with dLocalGo payment ID
++        await supabase
++            .from('payments')
++            .update({
++                dlocalgo_payment_id: dlocalgoData.id,
++                payment_data: dlocalgoData,
++            })
++            .eq('id', payment.id)
++
++        // Return payment URL for redirect
++        return new Response(
++            JSON.stringify({
++                success: true,
++                payment_id: payment.id,
++                payment_url: dlocalgoData.redirect_url || dlocalgoData.payment_url,
++                dlocalgo_payment_id: dlocalgoData.id,
++            }),
++            {
++                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
++                status: 200,
++            }
++        )
++    } catch (error) {
++        console.error('Error in create-payment function:', error)
++        return new Response(
++            JSON.stringify({
++                success: false,
++                error: error.message,
++            }),
++            {
++                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
++                status: 400,
++            }
++        )
++    }
++})

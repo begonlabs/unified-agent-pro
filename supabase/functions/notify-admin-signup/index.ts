@@ -47,27 +47,27 @@ serve(async (req) => {
       }
     });
 
-    const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h2 style="color: #3a0caa;">🎉 ¡Nuevo Cliente Registrado en OndAI!</h2>
-        <p>Se acaba de registrar un nuevo usuario en la plataforma. Aquí están los detalles:</p>
-        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
-          <p><strong>👤 Nombre:</strong> ${name}</p>
-          <p><strong>✉️ Correo:</strong> ${email || 'No proporcionado'}</p>
-          <p><strong>🌎 País:</strong> ${country || 'No especificado'}</p>
-          <p><strong>📦 Plan Activado:</strong> ${plan_type ? plan_type.toUpperCase() : 'Básico'}</p>
-          <p><strong>🕒 Hora (UY):</strong> ${uruguayTime}</p>
-        </div>
-        <p>Saludos,<br>El sistema automatizado de OndAI</p>
-      </div>
-    `;
+    const plainTextBody = `
+🎉 ¡Nuevo Cliente Registrado en OndAI!
+
+Se acaba de registrar un nuevo usuario en la plataforma. Aquí están los detalles:
+
+👤 Nombre: ${name}
+✉️ Correo: ${email || 'No proporcionado'}
+🌎 País: ${country || 'No especificado'}
+📦 Plan Activado: ${plan_type ? plan_type.toUpperCase() : 'Básico'}
+🕒 Hora (UY): ${uruguayTime}
+
+Saludos,
+El sistema automatizado de OndAI
+`;
 
     // Enviar correo a los dos administradores
     await transporter.sendMail({
       from: `"Notificaciones OndAI" <${Deno.env.get('SMTP_USER') || 'noreply@ondai.ai'}>`,
       to: 'info@agenciatutak.uy, sarkispanosian@gmail.com',
       subject: `Nuevo Registro: ${name} (${plan_type || 'basico'})`,
-      html: htmlBody,
+      text: plainTextBody,
     });
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -784,18 +784,19 @@ const MessagesView = () => {
                       <div className="p-3 sm:p-4">
                         <div className="flex items-start gap-3">
                           <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
-                            {conversation.crm_clients?.avatar_url ? (
-                              <img
-                                referrerPolicy="no-referrer"
-                                src={conversation.crm_clients.avatar_url}
-                                alt={conversation.crm_clients.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm sm:text-base font-semibold">
-                                {conversation.crm_clients?.name?.substring(0, 2).toUpperCase() || 'CL'}
-                              </AvatarFallback>
-                            )}
+                            <AvatarImage 
+                              referrerPolicy="no-referrer"
+                              src={conversation.crm_clients?.avatar_url}
+                              alt={conversation.crm_clients?.name || 'Cliente'}
+                              className="object-cover"
+                            />
+                            <AvatarFallback className={`${(!conversation.crm_clients?.name || /user|usuario|anónimo|cliente/i.test(conversation.crm_clients.name)) ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-600' : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'} flex items-center justify-center text-sm sm:text-base font-semibold`}>
+                              {(!conversation.crm_clients?.name || /user|usuario|anónimo|cliente/i.test(conversation.crm_clients.name)) ? (
+                                <User className="h-1/2 w-1/2 opacity-70" />
+                              ) : (
+                                conversation.crm_clients.name.substring(0, 2).toUpperCase()
+                              )}
+                            </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             {/* Nombre del cliente - línea completa */}

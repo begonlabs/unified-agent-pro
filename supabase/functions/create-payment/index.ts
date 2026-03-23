@@ -28,7 +28,7 @@ interface DLocalGoPaymentRequest {
 }
 
 const PLAN_PRICES = {
-    basico: 49,
+    basico: 1, // Reducido temporalmente a 1 USD para pruebas de redirección
     avanzado: 139,
     pro: 299,
     empresarial: 399,
@@ -112,46 +112,73 @@ serve(async (req) => {
         }
 
         // =====================================================================
-        // CONFIGURACIÓN DE PLANES Y TOKENS DE DLOCAL GO
+        // GENERACIÓN DINÁMICA DE SUSCRIPCIONES (V1/PAYMENTS)
+        // Restaura el funcionamiento original de redirección dinámica.
         // =====================================================================
-        const IS_TEST_MODE = false; // Modo Producción Activado con Planes Reales
 
-        const TEST_PLAN_TOKENS = {
-            basico: 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp', // Plan de prueba actual (1 USD)
-            avanzado: '7uuNsz8mSBHsTNqzSA9m2c6wHH0Oh2oc', // API Test Plan (1 USD)
-            pro: 'nTPVxuGRB0khYVXvuCQ1iQqC3242qCvB',      // API Test Plan (1 USD)
-            empresarial: 'PuoD9OzTE6YFnZ3Sp0cRg22wc01zx1Me', // API Test Plan (1 USD)
+        // Extract the user's registered country code.
+        // DLocal Go strictly requires ISO 3166-1 alpha-2 (e.g., "AR", "CO", "UY").
+        // If the database has a full name like "Argentina", fallback to UY to prevent 400 Bad Request.
+        let rawCountry = (user.user_metadata?.country || 'UY').toUpperCase().trim();
+        const userCountry = rawCountry.length === 2 ? rawCountry : 'UY';
+
+        const dlocalgoPayment = {
+            amount: amount,
+            currency: 'USD',
+            country: userCountry,
+            description: `Suscripción Mensual Plan ${plan_type.charAt(0).toUpperCase() + plan_type.slice(1)}`,
+            callback_url: `https://app.ondai.ai/dashboard?view=profile&tab=plans`, // Redirect after success cleanly
+            notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+            payer: {
+                name: profile.name || user.email?.split('@')[0] || 'Customer',
+                email: user.email!,
+                document: user.user_metadata?.document || '12345678', // Required for some regions
+            },
+            order_id: orderId,
+            recurring: {
+                frequency: 'MONTHLY',
+                start_date: new Date().toISOString().split('T')[0], // Start today
+            }
+        };
+
+        // Create Basic Auth header
+        const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+        const authHeader = `Basic ${btoa(authString)}`
+
+        console.log('Sending subscription request to dLocal Go API:', dlocalgoPayment);
+
+        const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': authHeader,
+            },
+            body: JSON.stringify(dlocalgoPayment),
+        });
+
+        if (!dlocalgoResponse.ok) {
+            const errorText = await dlocalgoResponse.text()
+            console.error('dLocalGo API error:', errorText)
+            throw new Error(`dLocalGo API error: ${errorText}`)
         }
 
-        const PROD_PLAN_TOKENS = {
-            basico: 'XLVQJpVkppEbf9uwknRCtq0bptgZb8Zt',
-            avanzado: 'KS95pSSHXEzaUamZNHKogMeNQlicurJC',
-            pro: '9hLZVKvxwnNfOPCw2CcBx4wJSsvBS5cV',
-            empresarial: 'EeVAHdeOyo28CHNhXmMYQhGcuBBOB0fF',
-        }
+        const dlocalgoData = await dlocalgoResponse.json()
+        console.log('dLocalGo API response:', dlocalgoData);
 
-        // Select the dLocal Go subscription link token based on the plan type
-        const activeTokens = IS_TEST_MODE ? TEST_PLAN_TOKENS : PROD_PLAN_TOKENS;
-        const planToken = activeTokens[plan_type as keyof typeof activeTokens];
+        // Enforce Spanish Language Interface upon the generated redirect URL natively
+        const rawRedirectUrl = dlocalgoData.redirect_url || dlocalgoData.payment_url;
+        const checkoutUrl = rawRedirectUrl.includes('?') 
+            ? `${rawRedirectUrl}&lang=es` 
+            : `${rawRedirectUrl}?lang=es`;
 
-        if (!planToken || planToken.startsWith('TODO_')) {
-            throw new Error(`Suscripción no configurada (Token faltante) para el plan: ${plan_type} en modo ${IS_TEST_MODE ? 'Pruebas' : 'Producción'}.`);
-        }
-
-        // Extract the user's registered country code if available, default to 'UY' (Uruguay) if missing
-        const userCountry = user.user_metadata?.country || 'UY';
-
-        // Generate the custom checkout URL with user data
-        // We pass external_id to identify the user when the webhook fires, and country to force localization
-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}&lang=es`;
-
-        console.log('Generated subscription link:', checkoutUrl);
+        console.log('Final Redirect URL with localized constraints:', checkoutUrl);
 
         // Update payment record with the expected info
         await supabase
             .from('payments')
             .update({
-                payment_data: { type: 'subscription_link_generated', checkoutUrl },
+                dlocalgo_payment_id: dlocalgoData.id,
+                payment_data: { type: 'api_payment_generated', checkoutUrl, api_response: dlocalgoData },
             })
             .eq('id', payment.id)
 
