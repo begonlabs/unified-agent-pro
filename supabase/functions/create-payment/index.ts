@@ -114,7 +114,7 @@ serve(async (req) => {
         // =====================================================================
         // CONFIGURACIÓN DE PLANES Y TOKENS DE DLOCAL GO
         // =====================================================================
-        const IS_TEST_MODE = true; // Cambiar a 'false' al momento de lanzar a producción real
+        const IS_TEST_MODE = false; // Modo Producción Activado con Planes Reales
 
         const TEST_PLAN_TOKENS = {
             basico: 'OQEWtkzyuGSX8DIDikUdrotOVdvkLAnp', // Plan de prueba actual (1 USD)
@@ -124,10 +124,10 @@ serve(async (req) => {
         }
 
         const PROD_PLAN_TOKENS = {
-            basico: 'TODO_BASICO_PROD_TOKEN',          // TODO: Crear comerciales con precios reales
-            avanzado: 'TODO_AVANZADO_PROD_TOKEN',
-            pro: 'TODO_PRO_PROD_TOKEN',
-            empresarial: 'TODO_EMPRESARIAL_PROD_TOKEN',
+            basico: 'XLVQJpVkppEbf9uwknRCtq0bptgZb8Zt',
+            avanzado: 'KS95pSSHXEzaUamZNHKogMeNQlicurJC',
+            pro: '9hLZVKvxwnNfOPCw2CcBx4wJSsvBS5cV',
+            empresarial: 'EeVAHdeOyo28CHNhXmMYQhGcuBBOB0fF',
         }
 
         // Select the dLocal Go subscription link token based on the plan type
@@ -143,7 +143,7 @@ serve(async (req) => {
 
         // Generate the custom checkout URL with user data
         // We pass external_id to identify the user when the webhook fires, and country to force localization
-        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}`;
+        const checkoutUrl = `https://checkout.dlocalgo.com/validate/subscription/${planToken}?email=${encodeURIComponent(user.email || '')}&external_id=${user_id}&country=${userCountry}&lang=es`;
 
         console.log('Generated subscription link:', checkoutUrl);
 
