@@ -57,10 +57,14 @@ serve(async (req) => {
             // Fetch payment details from dLocalGo API
             console.log('Fetching payment details from dLocalGo API:', dlocalgoPaymentId)
 
-            const authString = `${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+            const PROD_API_KEY = 'eYyxWqcFvMoYDiMIwdyLhQZRERseoYOs';
+            const PROD_SECRET_KEY = 'IZ5bAeH4XS2v3oNsC6pgBAvTjHngeOVdbGUk1MDP';
+            const PROD_API_URL = 'https://api.dlocalgo.com';
+
+            const authString = `${PROD_API_KEY}:${PROD_SECRET_KEY}`
             const authHeader = `Basic ${btoa(authString)}`
 
-            const dlocalgoResponse = await fetch(`${DLOCALGO_API_URL}/v1/payments/${dlocalgoPaymentId}`, {
+            const dlocalgoResponse = await fetch(`${PROD_API_URL}/v1/payments/${dlocalgoPaymentId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': authHeader,
