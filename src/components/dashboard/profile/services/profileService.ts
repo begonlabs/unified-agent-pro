@@ -93,8 +93,8 @@ export class ProfileService {
   /**
    * Obtiene los planes disponibles
    */
-  static getPlans(currentPlanType: string): Plan[] {
-    return [
+  static getPlans(currentPlanType: string, userEmail?: string): Plan[] {
+    const plans: Plan[] = [
       {
         name: 'Gratuito',
         price: '$0',
@@ -180,6 +180,27 @@ export class ProfileService {
         bgColor: 'bg-emerald-50'
       }
     ];
+
+    const developerEmails = ['sarkispanosian@gmail.com', 'aramdermarkarian@gmail.com'];
+    if (userEmail && developerEmails.includes(userEmail.toLowerCase())) {
+        plans.push({
+            name: 'Desarrollo',
+            price: '$1',
+            description: 'Plan exclusivo para equipo de desarrollo',
+            features: [
+              '3 canales',
+              '10,000 mensajes/mes',
+              '500 clientes',
+              'Soporte bajo y normal'
+            ],
+            current: currentPlanType === 'desarrollo',
+            icon: Zap,
+            color: 'text-stone-500',
+            bgColor: 'bg-stone-50'
+        });
+    }
+
+    return plans;
   }
 
   /**

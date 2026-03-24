@@ -52,7 +52,7 @@ interface SubscriptionContentProps {
 
 export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profile }) => {
     const isInactive = profile.plan_type === 'none' || profile.payment_status === 'cancelled';
-    const plans = ProfileService.getPlans(isInactive ? 'none' : profile.plan_type).filter(p => {
+    const plans = ProfileService.getPlans(isInactive ? 'none' : profile.plan_type, profile.email).filter(p => {
         if (isInactive && p.name === 'Gratuito') return false;
         return true;
     });
@@ -473,12 +473,13 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
             {
                 selectedPlan && (() => {
                     // Normalize plan name to match expected types
-                    const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' | 'empresarial' => {
+                    const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' | 'empresarial' | 'desarrollo' => {
                         const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                         if (normalized === 'basico') return 'basico';
                         if (normalized === 'avanzado') return 'avanzado';
                         if (normalized === 'pro') return 'pro';
                         if (normalized === 'empresarial') return 'empresarial';
+                        if (normalized === 'desarrollo') return 'desarrollo';
                         return 'basico'; // fallback
                     };
 
