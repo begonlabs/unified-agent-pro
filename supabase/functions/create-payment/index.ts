@@ -132,10 +132,12 @@ serve(async (req) => {
 
         const returnUrl = `https://app.ondai.ai/dashboard?view=profile&tab=plans&verifying_payment=true`;
 
+        const userCountry = user.user_metadata?.country?.toUpperCase() || 'UY';
+
         const dlocalgoPayment: any = {
             amount: amount,
             currency: 'USD',
-            // Omitimos country deliberadamente para que el usuario pueda seleccionarlo en la interfaz final de Dlocal
+            country: userCountry,
             payment_method_id: 'CARD', // Solo cobros por tarjeta
             payment_method_flow: 'REDIRECT', // Obliga el rebote a OndAI
             description: `Suscripción Mensual Plan ${plan_type.charAt(0).toUpperCase() + plan_type.slice(1)}`,
