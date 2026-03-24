@@ -19,7 +19,7 @@ interface PaymentModalProps {
     onOpenChange: (open: boolean) => void;
     planName: string;
     planPrice: string;
-    planType: 'basico' | 'avanzado' | 'pro';
+    planType: 'basico' | 'avanzado' | 'pro' | 'empresarial';
     planFeatures: string[];
     planIcon: React.ComponentType<{ className?: string }>;
     planColor: string;

@@ -473,11 +473,12 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
             {
                 selectedPlan && (() => {
                     // Normalize plan name to match expected types
-                    const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' => {
+                    const normalizePlanType = (name: string): 'basico' | 'avanzado' | 'pro' | 'empresarial' => {
                         const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                         if (normalized === 'basico') return 'basico';
                         if (normalized === 'avanzado') return 'avanzado';
                         if (normalized === 'pro') return 'pro';
+                        if (normalized === 'empresarial') return 'empresarial';
                         return 'basico'; // fallback
                     };
 
