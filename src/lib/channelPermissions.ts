@@ -242,7 +242,12 @@ export const canCreateClient = (
  * Obtiene el nivel de CRM del usuario
  */
 export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => {
-    // Si tiene un nivel asignado explícitamente, usarlo
+    // Bloqueo duro: El plan Básico NO tiene acceso al CRM en absoluto.
+    if (['basico', 'desarrollo_basico'].includes(profile.plan_type)) {
+        return 'none';
+    }
+
+    // Si tiene un nivel asignado explícitamente, usarlo (para administradores de planes especiales avanzados)
     if (profile.crm_level && profile.crm_level !== 'none') {
         return profile.crm_level as 'none' | 'basic' | 'complete';
     }
