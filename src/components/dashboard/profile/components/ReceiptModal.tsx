@@ -39,8 +39,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ open, onOpenChange, 
         minute: 'numeric',
     }).format(new Date(payment.created_at));
 
-    const planName = payment.plan_type === 'basico' ? 'Plan Básico' :
-        payment.plan_type === 'avanzado' ? 'Plan Avanzado' : 'Plan Pro';
+    const planName = payment.plan_type ? payment.plan_type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Desconocido';
 
     const formatCurrency = (amount: number, currency: string) => {
         return new Intl.NumberFormat('es-UY', {

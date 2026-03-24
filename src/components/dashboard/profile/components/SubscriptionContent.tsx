@@ -415,8 +415,7 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
                                                 {new Date(payment.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="py-3">
-                                                {payment.plan_type === 'basico' ? 'Plan Básico' :
-                                                    payment.plan_type === 'avanzado' ? 'Plan Avanzado' : 'Plan Pro'}
+                                                {`Plan ${payment.plan_type ? payment.plan_type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Desconocido'}`}
                                                 <span className="text-xs text-gray-400 ml-1">
                                                     ({payment.payment_method || 'Tarjeta'})
                                                 </span>
