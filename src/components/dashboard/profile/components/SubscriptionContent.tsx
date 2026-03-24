@@ -25,7 +25,8 @@ import {
     Globe,
     Clock,
     AlertTriangle,
-    Bot
+    Bot,
+    Loader2
 } from 'lucide-react';
 import { Profile, Plan } from '../types';
 import { ProfileService } from '../services/profileService';
@@ -67,6 +68,47 @@ export const SubscriptionContent: React.FC<SubscriptionContentProps> = ({ profil
     const [loadingPayments, setLoadingPayments] = useState(true);
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+
+    const [isVerifying, setIsVerifying] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('verifying_payment') === 'true';
+        }
+        return false;
+    });
+
+    React.useEffect(() => {
+        if (isVerifying) {
+            // Wait 4.5 seconds to give DLocal Webhook and Supabase Triggers time to process
+            const timer = setTimeout(() => {
+                // Clear the parameter from the URL cleanly
+                const newUrl = window.location.pathname + '?view=profile&tab=plans';
+                window.history.replaceState({}, '', newUrl);
+                // Hard reload the browser to guarantee fresh global state (limits, plan_type, history)
+                window.location.reload();
+            }, 4500);
+            return () => clearTimeout(timer);
+        }
+    }, [isVerifying]);
+
+    if (isVerifying) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 animate-in fade-in zoom-in duration-500">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
+                    <div className="relative bg-white rounded-full p-5 shadow-xl border border-blue-50">
+                        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                    </div>
+                </div>
+                <div className="text-center space-y-3">
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Verificando tu pago</h2>
+                    <p className="text-gray-500 max-w-sm mx-auto">
+                        Por favor aguarda unos instantes mientras conectamos con tu banco y sincronizamos tus beneficios.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     React.useEffect(() => {
         const fetchPayments = async () => {

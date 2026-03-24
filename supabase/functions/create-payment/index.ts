@@ -130,7 +130,7 @@ serve(async (req) => {
         // Restaura el funcionamiento original de redirección dinámica.
         // =====================================================================
 
-        const returnUrl = `https://app.ondai.ai/dashboard?view=profile&tab=plans`;
+        const returnUrl = `https://app.ondai.ai/dashboard?view=profile&tab=plans&verifying_payment=true`;
 
         const dlocalgoPayment: any = {
             amount: amount,
