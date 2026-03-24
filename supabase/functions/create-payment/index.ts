@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 interface PaymentRequest {
-    plan_type: 'basico' | 'avanzado' | 'pro' | 'empresarial'
+    plan_type: 'basico' | 'avanzado' | 'pro' | 'empresarial' | 'desarrollo_basico' | 'desarrollo_avanzado' | 'desarrollo_pro' | 'desarrollo_empresarial'
     user_id: string
 }
 
@@ -28,10 +28,14 @@ interface DLocalGoPaymentRequest {
 }
 
 const PLAN_PRICES = {
-    basico: 49, // Restaurado de prueba 1 USD al precio MSRP estándar oficial
+    basico: 49,
     avanzado: 139,
     pro: 299,
     empresarial: 399,
+    desarrollo_basico: 1,
+    desarrollo_avanzado: 1,
+    desarrollo_pro: 1,
+    desarrollo_empresarial: 1,
 }
 
 const DLOCALGO_API_KEY = config.DLOCALGO_API_KEY
@@ -63,7 +67,8 @@ serve(async (req) => {
         console.log('Payment request received:', { plan_type, user_id });
 
         // Validate plan type
-        if (!['basico', 'avanzado', 'pro', 'empresarial'].includes(plan_type)) {
+        const validPlans = ['basico', 'avanzado', 'pro', 'empresarial', 'desarrollo_basico', 'desarrollo_avanzado', 'desarrollo_pro', 'desarrollo_empresarial'];
+        if (!validPlans.includes(plan_type)) {
             throw new Error(`Invalid plan type: ${plan_type}`)
         }
 
@@ -85,6 +90,15 @@ serve(async (req) => {
         if (userError || !user) {
             console.error('User error:', userError);
             throw new Error('User not found')
+        }
+
+        // Security check for $1 developer plans
+        if (plan_type.startsWith('desarrollo_')) {
+            const authorizedEmails = ['sarkispanosian@gmail.com', 'aramdermarkarian@gmail.com', 'paidmediatutak@gmail.com'];
+            if (!user.email || !authorizedEmails.includes(user.email.toLowerCase())) {
+                console.warn(`Unauthorized attempt to purchase developer plan by ${user.email}`);
+                throw new Error('No estás autorizado para acceder a este plan de desarrollo.');
+            }
         }
 
         // Calculate amount

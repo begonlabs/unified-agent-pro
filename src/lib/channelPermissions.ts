@@ -13,7 +13,11 @@ export const PLAN_LIMITS: Record<string, { messages: number; clients: number }> 
     basico: { messages: 10000, clients: 500 },
     avanzado: { messages: 30000, clients: 1500 },
     pro: { messages: 70000, clients: 4000 },
-    empresarial: { messages: 100000, clients: 7000 }
+    empresarial: { messages: 100000, clients: 7000 },
+    desarrollo_basico: { messages: 10000, clients: 500 },
+    desarrollo_avanzado: { messages: 30000, clients: 1500 },
+    desarrollo_pro: { messages: 70000, clients: 4000 },
+    desarrollo_empresarial: { messages: 100000, clients: 7000 }
 };
 
 /**
@@ -46,6 +50,7 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
     // Máximo 1 canal de cada tipo: 1 FB + 1 IG + 1 WhatsApp
     switch (profile.plan_type) {
         case 'basico':
+        case 'desarrollo_basico':
             return {
                 whatsapp: true,
                 facebook: true,
@@ -56,6 +61,9 @@ export const getChannelPermissions = (profile: Profile): ChannelPermissions => {
         case 'avanzado':
         case 'pro':
         case 'empresarial':
+        case 'desarrollo_avanzado':
+        case 'desarrollo_pro':
+        case 'desarrollo_empresarial':
             return {
                 whatsapp: true,
                 facebook: true,
@@ -242,10 +250,14 @@ export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => 
     // Fallback basado en el plan (para usuarios existentes o errores de datos)
     switch (profile.plan_type) {
         case 'basico':
+        case 'desarrollo_basico':
             return 'none';
         case 'avanzado':
         case 'pro':
         case 'empresarial':
+        case 'desarrollo_avanzado':
+        case 'desarrollo_pro':
+        case 'desarrollo_empresarial':
             return 'complete';
         default:
             return 'none';
@@ -257,7 +269,7 @@ export const getCRMLevel = (profile: Profile): 'none' | 'basic' | 'complete' => 
  */
 export const hasStatisticsAccess = (profile: Profile): boolean => {
     // Verificar explícitamente por tipo de plan
-    const allowedPlans = ['avanzado', 'pro', 'empresarial'];
+    const allowedPlans = ['avanzado', 'pro', 'empresarial', 'desarrollo_avanzado', 'desarrollo_pro', 'desarrollo_empresarial'];
     if (allowedPlans.includes(profile.plan_type)) {
         return true;
     }
