@@ -181,20 +181,75 @@ export class ProfileService {
       }
     ];
 
-    const developerEmails = ['sarkispanosian@gmail.com', 'aramdermarkarian@gmail.com'];
+    const developerEmails = ['sarkispanosian@gmail.com', 'aramdermarkarian@gmail.com', 'paidmediatutak@gmail.com'];
     if (userEmail && developerEmails.includes(userEmail.toLowerCase())) {
         plans.push({
-            name: 'Desarrollo',
+            name: 'Desarrollo Básico',
             price: '$1',
-            description: 'Plan exclusivo para equipo de desarrollo',
+            description: 'Prueba de pago para el plan Básico',
             features: [
               '3 canales',
               '10,000 mensajes/mes',
               '500 clientes',
               'Soporte bajo y normal'
             ],
-            current: currentPlanType === 'desarrollo',
+            current: currentPlanType === 'desarrollo_basico',
             icon: Zap,
+            color: 'text-stone-500',
+            bgColor: 'bg-stone-50'
+        });
+        
+        plans.push({
+            name: 'Desarrollo Avanzado',
+            price: '$1',
+            description: 'Prueba de pago para el plan Avanzado',
+            features: [
+              '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+              '30,000 mensajes/mes',
+              '1,500 clientes',
+              'CRM completo',
+              'Estadísticas',
+              'Soporte bajo y normal'
+            ],
+            current: currentPlanType === 'desarrollo_avanzado',
+            icon: Zap,
+            color: 'text-stone-500',
+            bgColor: 'bg-stone-50'
+        });
+        
+        plans.push({
+            name: 'Desarrollo Pro',
+            price: '$1',
+            description: 'Prueba de pago para el plan Pro',
+            features: [
+              '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+              '70,000 mensajes/mes',
+              '4,000 clientes',
+              'CRM completo',
+              'Estadísticas',
+              'Soporte: Bajo, Normal, Alta, Urgente'
+            ],
+            current: currentPlanType === 'desarrollo_pro',
+            icon: Crown,
+            color: 'text-stone-500',
+            bgColor: 'bg-stone-50'
+        });
+
+        plans.push({
+            name: 'Desarrollo Empresarial',
+            price: '$1',
+            description: 'Prueba de pago para el plan Empresarial',
+            features: [
+              '3 canales (1 FB + 1 IG + 1 WhatsApp)',
+              '100,000 mensajes/mes',
+              '7,000 clientes',
+              'CRM completo',
+              'Estadísticas',
+              'Soporte: Bajo, Normal, Alta, Urgente',
+              'Chat en vivo (próximamente)'
+            ],
+            current: currentPlanType === 'desarrollo_empresarial',
+            icon: Crown,
             color: 'text-stone-500',
             bgColor: 'bg-stone-50'
         });
