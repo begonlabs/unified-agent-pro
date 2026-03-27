@@ -42,9 +42,9 @@ serve(async (req) => {
     // 2. Obtener credenciales seguras SMTP (Mailcow / GoTrue local)
     const smtpHost = Deno.env.get('SMTP_HOST') || 'mail.ondai.ai';
     const smtpPort = Deno.env.get('SMTP_PORT') || '465';
-    // Mapeo adaptativo: soporta SMTP_USER o SMTP_ADMIN_EMAIL
-    const smtpUser = Deno.env.get('SMTP_USER') || Deno.env.get('SMTP_ADMIN_EMAIL');
-    const smtpPass = Deno.env.get('SMTP_PASS') || Deno.env.get('SMTP_PASSWORD');
+    // Mapeo adaptativo: soporta SMTP_USER o SMTP_ADMIN_EMAIL, con hard-fallback a la cuenta oficial de OndAI
+    const smtpUser = Deno.env.get('SMTP_USER') || Deno.env.get('SMTP_ADMIN_EMAIL') || 'hola@ondai.ai';
+    const smtpPass = Deno.env.get('SMTP_PASS') || Deno.env.get('SMTP_PASSWORD') || 'TTridG,77,{';
     
     // Remitente puede personalizarse o recaer en el correo central autenticado
     const fromEmail = Deno.env.get('EMAIL_FROM') || smtpUser || 'admin@ondai.ai';
