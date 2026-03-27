@@ -286,6 +286,64 @@ function createFallbackResponse(message: string): string {
   return `Disculpa, estamos experimentando dificultades técnicas para responder. Vuelve a escribirnos más tarde para recibir una respuesta. ¡Gracias por la comprensión!`;
 }
 
+// Implementación anti-spam (Debounce)
+let lastAlertTime = 0;
+const ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 Hora
+
+/**
+ * Notifica a los administradores cuando OpenAI falla masivamente
+ * @param errorContext - Detalle específico del error
+ */
+async function alertAdminsOfFailure(errorContext: string) {
+  try {
+    const now = Date.now();
+    if (now - lastAlertTime < ALERT_COOLDOWN_MS) {
+      console.log('🔕 Alerta omitida (Enfriamiento activo por 1 hora): ' + errorContext);
+      return;
+    }
+    
+    lastAlertTime = now;
+    console.log('🚨 ALERTANDO A ADMINISTRADORES POR CORREO...');
+    
+    const adminEmails = [
+      'admin@ondai.ai',
+      'aramdermarkarian@gmail.com',
+      'sarkispanosian@gmail.com'
+    ];
+    
+    const emailPromises = adminEmails.map(email => 
+      fetch('https://supabase.ondai.ai/functions/v1/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          subject: '⚠️ URGENTE: Falla Crítica en Inteligencia Artificial OndAI',
+          text: `El sistema ha detectado una falla en la generación de IA.\nContexto: ${errorContext}\nPor favor revisar el saldo en OpenAI o los logs de Supabase.`,
+          html: `<div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2 style="color: #d9534f;">Alerta de Falla en Inteligencia Artificial</h2>
+                  <p>La integración con OpenAI ha devuelto un error crítico o no ha podido conectarse.</p>
+                  <p><strong>Detalles del error detectado:</strong></p>
+                  <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${errorContext}</pre>
+                  <p>Esto puede causar que los clientes reciban el mensaje automático de contingencia.</p>
+                  <p>Sugerencias:</p>
+                  <ul>
+                    <li>Verificar la facturación en <a href="https://platform.openai.com/" style="color: #3b82f6;">OpenAI Platform</a>.</li>
+                    <li>Checar los logs en tu servidor VPS de OndAI.</li>
+                  </ul>
+                 </div>`
+        })
+      })
+    );
+    
+    await Promise.allSettled(emailPromises);
+    console.log('✅ Alertas enviadas a los administradores exitosamente');
+  } catch (err) {
+    // Fail silently so as not to interrupt the message fallback loop
+    console.error('❌ Error interno enviando alertas por correo:', err);
+  }
+}
+
+
 /**
  * Generates AI response using OpenAI with company context and conversation memory
  * @param message - The incoming message text
@@ -316,6 +374,7 @@ export async function generateAIResponse(
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
       console.error('OpenAI API key not configured');
+      alertAdminsOfFailure('La variable de entorno OPENAI_API_KEY no se encontró en el contenedor Edge.');
       return {
         success: true,
         response: createFallbackResponse(message),
@@ -353,6 +412,7 @@ Responde a este mensaje siguiendo las instrucciones del system prompt y mantenie
     if (!response.ok) {
       const errorData = await response.text();
       console.error('OpenAI API error:', errorData);
+      alertAdminsOfFailure(`HTTP ${response.status} - Posible saldo agotado. Respuesta de OpenAI:\n${errorData}`);
       return {
         success: true,
         response: createFallbackResponse(message),
@@ -401,6 +461,7 @@ Responde a este mensaje siguiendo las instrucciones del system prompt y mantenie
 
   } catch (error) {
     console.error('Error generating AI response:', error);
+    alertAdminsOfFailure(`Excepción general atrapada conectando a OpenAI:\n${error instanceof Error ? error.message : String(error)}`);
     return {
       success: true,
       response: createFallbackResponse(message),
