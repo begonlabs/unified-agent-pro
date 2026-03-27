@@ -283,7 +283,7 @@ INFORMACIÓN ACTUAL:
  * @returns string - Simple fallback response
  */
 function createFallbackResponse(message: string): string {
-  return `Disculpa, estoy experimentando dificultades técnicas en este momento. Tu mensaje "${message}" ha sido recibido. Por favor, intenta nuevamente en unos momentos o contacta directamente con nuestro equipo para asistencia inmediata.`;
+  return `Disculpa, estamos experimentando dificultades técnicas para responder. Vuelve a escribirnos más tarde para recibir una respuesta. ¡Gracias por la comprensión!`;
 }
 
 /**
