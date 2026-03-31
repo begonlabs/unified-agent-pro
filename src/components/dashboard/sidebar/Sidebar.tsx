@@ -26,12 +26,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     handleViewChange
   } = useSidebarNavigation(currentView, setCurrentView, user);
 
-  const { isMenuActive, activateMenu } = useSidebarState();
+  const { isMenuActive, isCollapsed, toggleCollapse, activateMenu } = useSidebarState();
 
   // Desktop Sidebar (fixed)
   if (!isMobile) {
     return (
-      <div className="sticky top-0 h-screen">
+      <div className="sticky top-0 h-screen z-40">
         <SidebarContent
           currentView={currentView}
           setCurrentView={setCurrentView}
@@ -44,6 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           onAdminAccess={handleAdminAccess}
           onViewChange={handleViewChange}
           isMobile={false}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapse}
         />
       </div>
     );

@@ -13,11 +13,7 @@ const ResponsiveSidebar: React.FC<SidebarProps> = ({
   onSignOut,
   user
 }) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
 
   const {
     isAdmin,
@@ -32,12 +28,12 @@ const ResponsiveSidebar: React.FC<SidebarProps> = ({
     handleViewChange
   } = useSidebarNavigation(currentView, setCurrentView, user);
 
-  const { isMenuActive, activateMenu } = useSidebarState();
+  const { isMenuActive, isCollapsed, toggleCollapse, activateMenu } = useSidebarState();
 
   // Desktop Sidebar (fixed)
   if (!isMobile) {
     return (
-      <div className="sticky top-0 h-screen">
+      <div className="sticky top-0 h-screen z-40">
         <SidebarContent
           currentView={currentView}
           setCurrentView={setCurrentView}

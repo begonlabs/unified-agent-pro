@@ -10,8 +10,8 @@ interface SidebarHeaderProps {
 export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isMobile = false, isCollapsed = false }) => {
   return (
     <div className={`p-3 sm:p-6 border-b bg-gradient-to-r from-[#3a0caa]/5 to-[#710db2]/5 ${isMobile ? 'p-3' : 'p-6'}`}>
-      <div className="flex items-center justify-between gap-2 sm:gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 group flex-1">
+      <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-between gap-2 sm:gap-3'}`}>
+        <div className={`flex items-center group ${isCollapsed ? 'justify-center' : 'gap-2 sm:gap-3 flex-1'}`}>
           <div className="relative">
             <img
               src={logoWhite}

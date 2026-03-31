@@ -39,7 +39,7 @@ const ResponsiveSidebarOptimized: React.FC<OptimizedSidebarProps> = ({
     handleViewChange
   } = useSidebarNavigation(currentView, onViewChange, user);
 
-  const { isMenuActive, activateMenu } = useSidebarState();
+  const { isMenuActive, isCollapsed, toggleCollapse, activateMenu } = useSidebarState();
 
   /**
    * Callbacks memoizados para evitar re-renderizados innecesarios
@@ -64,6 +64,10 @@ const ResponsiveSidebarOptimized: React.FC<OptimizedSidebarProps> = ({
     activateMenu();
   }, [activateMenu]);
 
+  const memoizedToggleCollapse = useCallback(() => {
+    toggleCollapse();
+  }, [toggleCollapse]);
+
   /**
    * Props memoizadas para SidebarContent
    */
@@ -79,6 +83,8 @@ const ResponsiveSidebarOptimized: React.FC<OptimizedSidebarProps> = ({
     onAdminAccess: memoizedHandleAdminAccess,
     onViewChange: memoizedHandleViewChange,
     isMobile: false,
+    isCollapsed,
+    onToggleCollapse: memoizedToggleCollapse,
   }), [
     currentView,
     onViewChange,
@@ -90,6 +96,8 @@ const ResponsiveSidebarOptimized: React.FC<OptimizedSidebarProps> = ({
     channelsLoading,
     memoizedHandleAdminAccess,
     memoizedHandleViewChange,
+    isCollapsed,
+    memoizedToggleCollapse,
   ]);
 
   /**
@@ -110,7 +118,7 @@ const ResponsiveSidebarOptimized: React.FC<OptimizedSidebarProps> = ({
     onAdminAccess: memoizedHandleAdminAccess,
     onViewChange: memoizedHandleViewChange,
     isMenuActive,
-    onActivateMenu: memoizedActivateMenu,
+    onMenuActivate: memoizedActivateMenu,
   }), [
     currentView,
     onViewChange,
@@ -134,14 +142,16 @@ const ResponsiveSidebarOptimized: React.FC<OptimizedSidebarProps> = ({
    */
   if (!isMobile) {
     return (
-      <div className="sticky top-0 h-screen">
+      <div className="sticky top-0 h-screen z-40">
         <SidebarContent {...sidebarContentProps} />
       </div>
     );
   }
 
   return (
-    <MobileSidebar {...mobileSidebarProps} />
+    <MobileSidebar {...mobileSidebarProps}>
+      <SidebarContent {...sidebarContentProps} isMobile={true} />
+    </MobileSidebar>
   );
 };
 

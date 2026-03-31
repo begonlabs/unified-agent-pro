@@ -24,7 +24,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
   return (
     <div className={`p-2 sm:p-4 border-t border-[#3a0caa]/20 bg-gradient-to-b from-[#3a0caa]/5 to-[#710db2]/5 ${isMobile ? 'p-2' : 'p-4'}`}>
-      {!isMobile && (
+      {!isMobile && !isCollapsed && (
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-[#3a0caa] flex items-center gap-2">
             <Crown className="h-4 w-4 text-[#3a0caa]" />

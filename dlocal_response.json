@@ -1,0 +1,21 @@
+{
+  "id": "DP-6673276",
+  "amount": 1,
+  "currency": "USD",
+  "balance_currency": "USD",
+  "country": "UY",
+  "description": "Test Sub",
+  "created_date": "2026-03-24T18:51:07",
+  "status": "PENDING",
+  "order_id": "TEST1774378267363",
+  "notification_url": "https://app.ondai.ai",
+  "success_url": "https://app.ondai.ai",
+  "back_url": "https://app.ondai.ai",
+  "redirect_url": "https://checkout.dlocalgo.com/validate/ohKDT3XtF1cck7Tblyp4kXPN5LM9yG2V",
+  "merchant_checkout_token": "ohKDT3XtF1cck7Tblyp4kXPN5LM9yG2V",
+  "direct": false,
+  "payer": {
+    "email": "test@example.com",
+    "document_country": "UY"
+  }
+}
