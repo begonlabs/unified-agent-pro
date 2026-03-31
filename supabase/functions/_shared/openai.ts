@@ -398,14 +398,11 @@ Responde a este mensaje siguiendo las instrucciones del system prompt y mantenie
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.3, // Lower temp for more strict adherence to rules
-        presence_penalty: 0.0, // Don't penalize for repeating required phrases (like links or greetings)
-        frequency_penalty: 0.0 // Allow the AI to be repetitive if the rules require it
+        ]
       }),
     });
 
